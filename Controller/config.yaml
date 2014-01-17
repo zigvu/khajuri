@@ -1,0 +1,38 @@
+# YAML describing commonly used configs in khajuri
+# Note: Dynamic changes to the config values should be made
+#       using the Config.py object
+
+# Configuration for various plugins
+# Note: The plugin names should match the directory
+#       under which they are created
+plugins: 
+    FrameExtraction:
+        defaultOrder     : 1
+    BlankDetection:
+        defaultOrder     : 2
+        threshold        : 0.1
+        stronger         : 0.1
+        weaker           : -0.1
+    BlurDetection:
+        defaultOrder     : 3
+        threshold        : 0.1
+        stronger         : 0.2
+        weaker           : -0.2
+    SelectSingleFrame:
+        defaultOrder     : 4
+    RemoveMultiModels:
+        defaultOrder     : 5
+    ModelDetection:
+        defaultOrder     : 6
+        threshold        : 0.6
+        stronger         : 0.2
+        weaker           : -0.2
+
+# Configuration for windowing
+window: 
+    frame: 
+      size               : 5
+      spacing            : 2
+
+
+
