@@ -7,7 +7,7 @@ FFMPEGLIBS:= $(shell pkg-config --libs libavformat libavcodec libswscale libavut
 
 # Boost libraries
 BOOSTLFLAGS= -I/usr/include/boost
-BOOSTLIBS= -lboost_thread 
+BOOSTLIBS= -lboost_thread -lboost_system
 
 # Targets
 EXEC= VideoReader
