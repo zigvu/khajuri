@@ -8,9 +8,11 @@ Testing the Blur Detector
 """
 
 # Inputs -  Directory Path (dont include "\" at the end)
-ImgDir = 'C:\Users\Amit\Documents\EvanVideo\BlankDetectionResults\NonBlanks'; # This is the directory containing input images
+ImgDir = 'C:\Users\Amit\Documents\EvanVideo\BlankDetectionResults\Blanks'; # This is the directory containing input images
 ImgExt = '*.jpg';   # Extension of the image files
-OutDir = 'C:\Users\Amit\Documents\EvanVideo\BlurDetectionResults';
+OutDir = 'C:\Users\Amit\Documents\EvanVideo\BlurDetectionResults\Blanks';
+#ImgDir = 'C:\Users\Amit\Documents\EvanVideo\VideoDownloader\VideosFromAmrit\NonBlanks'
+#OutDir = 'C:\Users\Amit\Documents\EvanVideo\VideoDownloader\VideosFromAmrit';
 SaveResultsTo_OutDir = 1; # If this is '1', the 'blank' and 'non-blanks' will be saved separately in the 'OutDir'
 AddBlurScoresToImg = 0;    # If this is '1', the program will add the entropy and img intensity span score to file
 
@@ -88,8 +90,8 @@ for ImgFile in ImgFiles:
     print str(k) + ' of '+ str(len(ImgFiles))+ " Blur: "+str(IsBlur[k]) + " ,("+ str(DR[k])+ ","+str(DR2[k]) +")"
     #print("Elapsed time was %g seconds" % (end_time - start_time))
     k = k+1; 
-    if k > 1000:
-        break;
+#    if k > 1000:
+#        break;
     if k%100 == 0:
         end_time = time.time();
         print("Elapsed time was %g seconds" % (end_time - start_time))
