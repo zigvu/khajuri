@@ -10,6 +10,8 @@ Set The inputs below
 ImgDir = 'C:\Users\Amit\Documents\EvanVideo\VideoDownloader\AllImages'; # This is the directory containing input images
 ImgExt = '*.jpg';   # Extension of the image files
 OutDir = 'C:\Users\Amit\Documents\EvanVideo\BlankDetectionResults';
+ImgDir = 'C:\Users\Amit\Documents\EvanVideo\VideoDownloader\VideosFromAmrit\ImgsFromVideo'
+OutDir = 'C:\Users\Amit\Documents\EvanVideo\VideoDownloader\VideosFromAmrit';
 SaveResultsTo_OutDir = 1; # If this is '1', the 'blank' and 'non-blanks' will be saved separately in the 'OutDir'
 AddBlankScoresToImg = 0;    # If this is '1', the program will add the entropy and img intensity span score to file
 
