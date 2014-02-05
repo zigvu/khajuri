@@ -1,13 +1,13 @@
 # Blank Image Detection 
 import numpy as np
-import matplotlib.image as mpimg
+#import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from skimage.color import rgb2gray
 
-    
-def Is_Blank(Img_FileName):
+# Takes an     
+def Is_Blank(Img):
     # Read the image file
-    Img = mpimg.imread(Img_FileName);    
+    #Img = mpimg.imread(Img_FileName);    
     # Convert to grayscale
     Img_Gray = rgb2gray(Img);
     # Flatten 2D Array to single Array
