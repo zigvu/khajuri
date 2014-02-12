@@ -3,6 +3,10 @@
 from Frame import FrameGroup
 from Plugin import PluginGroup
 from Result import ResultGroup
+import VideoReader
+import multiprocessing
+from multiprocessing.pool import ThreadPool
+import time, os, json
 
 class DetectionStrand:
 	"""Class to run a group of frames through a group of plugins.
@@ -54,10 +58,6 @@ class DetectionStrand:
 				and runAdditionalStrands:
 			# TODO: insert into DetectionStrandGroup
 			pass
-			
-		# resultGroup now holds all computation results
-		# Todo: JSONWriter(self.resultGroup)
-
 
 class DetectionStrandGroup:
 	"""Class to run a group of DetectionStrand.
@@ -68,4 +68,38 @@ class DetectionStrandGroup:
 	def __init__(self, videoFileName, config):
 		self.videoFileName = videoFileName
 		self.config = config
+		self.videoFrameReader = VideoReader.VideoFrameReader( 40, 40, self.videoFileName )
+		self.config.videoFrameReader = self.videoFrameReader
+		self.config.baseFrameFolder = os.path.join( os.path.dirname( self.videoFileName ),  "frames" )
+		if not os.path.exists( self.config.baseFrameFolder ):
+			os.makedirs( self.config.baseFrameFolder )
+		self.videoFrameReader.generateFrames()
 
+	def runVidPipe(self):
+	        results = []
+	        second = 0
+		fps = self.videoFrameReader.fps
+		time.sleep( 1 )
+		while not self.videoFrameReader.eof:
+			ds = DetectionStrand( int( ( second * fps ) + fps/2.0 ), self.config )
+			ds.process()
+			second += 1
+			results.extend( ds.resultGroup )
+		self.videoFrameReader.waitForEOF()
+		self.resultsByPlugin = {}
+		for result in results:
+			if not self.resultsByPlugin.get( result.plugin.name ):
+				self.resultsByPlugin[ result.plugin.name ] = []
+			self.resultsByPlugin[ result.plugin.name ].append( result )
+		for plugin in self.resultsByPlugin.keys():
+			self.saveResultToFile( plugin, self.resultsByPlugin[ plugin ] )
+	
+	def saveResultToFile( self, pluginName, results ):
+		resultsFolder = os.path.join( os.path.dirname( self.videoFileName ), "results" )
+		if not os.path.exists( resultsFolder ):
+			os.makedirs( resultsFolder )
+		resultsFileName = os.path.join( resultsFolder, "%s.json" % pluginName )
+		jsonResult = {}
+		for r in results:
+			jsonResult[ "%s" % r.frame ] = { "Score":"%s" % r.score, "State":"%s" % r.state }
+		json.dump( jsonResult, open( resultsFileName, "w" ) )

@@ -2,6 +2,9 @@
 
 # TODO: Remove
 from random import random
+import ModelDetectionHelper
+import BlankImageDetection
+import os, Error
 
 class Plugin:
 	"""Base class for all plugins.
@@ -37,12 +40,17 @@ class PluginGroup:
 		# set default plugins
 		# for pl in GLOBAL_ALL_PLUGINS:
 		# 	self.pluginList.append(pl)
-		self.pluginList.append(FrameExtraction(config.getPluginConfig('FrameExtraction')))
+		self.pluginList.append(FrameExtraction(config))
 		self.pluginList.append(BlankDetection(config.getPluginConfig('BlankDetection')))
-		self.pluginList.append(BlurDetection(config.getPluginConfig('BlurDetection')))
+		#self.pluginList.append(BlurDetection(config.getPluginConfig('BlurDetection')))
 		self.pluginList.append(SelectSingleFrame(config.getPluginConfig('SelectSingleFrame')))
 		self.pluginList.append(RemoveMultiModels(config.getPluginConfig('RemoveMultiModels')))
-		self.pluginList.append(ModelDetection(config.getPluginConfig('ModelDetection')))
+		for i in xrange( 1000 ):
+			try:
+				modelConfig = config.getPluginConfig('ModelDetection%s' % i)
+			    	self.pluginList.append(ModelDetection(modelConfig))
+			except Error.PluginNonExistError:
+				break
 
 	def __iter__(self):
 		"""Allow PluginGroup to behave like a regular list in for loops"""
@@ -67,12 +75,20 @@ class PluginGroup:
 class FrameExtraction(Plugin):
 	"""Frame Extraction Plugin."""
 	def __init__(self, config):
-		self.config = config
 		self.name = "FrameExtraction"
+		self.config = config
+		self.videoFrameReader = self.config.videoFrameReader
 
 	def process(self, frame):
+	        frame.vFrame = self.videoFrameReader.getFrameWithFrameNumber( int( frame.frameNumber ) )
+		while not frame.vFrame:
+	        	frame.vFrame = self.videoFrameReader.getFrameWithFrameNumber( int( frame.frameNumber ) )
+		frameDir = os.path.join( self.config.baseFrameFolder, str( frame.frameNumber ) )
+		if not os.path.exists( frameDir ):
+			os.makedirs( frameDir )
+		frame.imgName = os.path.join( frameDir, "original.ppm" )
+                self.videoFrameReader.saveFrameWithFrameNumber( int( frame.frameNumber ), frame.imgName )
 		return 1, True
-
 
 class BlankDetection(Plugin):
 	"""Blank Plugin."""
@@ -81,11 +97,11 @@ class BlankDetection(Plugin):
 		self.name = "BlankDetection"
 
 	def process(self, frame):
-		processResult = self.compute_FEAT_BLANKFRAME(frame)
+                result = BlankImageDetection.Is_Blank( frame.imgName )
 		processDecision = False
-		if processResult > self.config['threshold']:
+		if result[0] == 0:
 			processDecision = True
-		return processResult, processDecision
+		return result[1], processDecision
 
 
 class BlurDetection(Plugin):
@@ -129,8 +145,23 @@ class RemoveMultiModels(VisionDetection):
 		VisionDetection.__init__(self, config)
 		self.name = "RemoveMultiModels"
 
+modelDetectionHelpers = {}
 class ModelDetection(VisionDetection):
 	"""Model Detection Plugin."""
 	def __init__(self, config):
 		VisionDetection.__init__(self, config)
-		self.name = "ModelDetection"
+		self.modelName = config[ 'modelName' ]
+		self.modelVersion = config[ 'modelVersion' ]
+		self.name = "%s:%s:%s" % ( "ModelDetection", self.modelName, self.modelVersion )
+		self.modelDir = "structSVM-data/datasets/%s.%s/models/" % ( self.modelName, self.modelVersion )
+		global modelDetectionHelpers
+		if not modelDetectionHelpers.get( self.modelDir ):
+			modelDetectionHelper = ModelDetectionHelper.ModelDetectionHelper( self.modelDir )
+			modelDetectionHelpers[ self.modelDir ] = modelDetectionHelper
+
+	def process( self, frame ):
+		score = modelDetectionHelpers[ self.modelDir ].classifyImage( frame.imgName )
+		return score, True
+
+	def __str__( self ):
+		return "%s:%s:%s" % ( self.name, self.modelName, self.modelVersion )

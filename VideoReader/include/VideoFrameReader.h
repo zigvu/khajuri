@@ -6,7 +6,7 @@
 #include <boost/thread/condition_variable.hpp>
 
 // Define a list that will store VideoFrames
-typedef list<VideoFrame> VideoFrameList;
+typedef boost::intrusive::list<VideoFrame> VideoFrameList;
 
 // The disposer object function to delete 
 // video frames from list
@@ -22,7 +22,7 @@ class VideoFrameReader {
     VideoFrameReader(
       uint listTailBufNumOfFrames_,
       uint listHeadBufNumOfFrames_,
-      char *videoFileToOpen);
+      char * videoFileToOpen);
     ~VideoFrameReader();
     void startThreads();
     void joinThreads();
@@ -33,6 +33,8 @@ class VideoFrameReader {
     int seekToFrameWithFrameNumber(int64_t frameNumber);
     uint getLengthInMicroSeconds();
     double getFps();
+    
+    bool eof;
 
   private:
     // To manage list

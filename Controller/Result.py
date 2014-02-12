@@ -2,6 +2,7 @@
 
 from Error import ResultIncorrectStateError, ResultNotFoundError
 from collections import OrderedDict
+import json
 
 class Result:
 	"""Compute and store detection result when evaluating one frame
@@ -28,6 +29,7 @@ class Result:
 		self.frame = frame
 		self.plugin = plugin
 		self.state = Result.RESULT_EVALUATE_QUEUE
+		self.score = 0
 
 	def process(self):
 		if self.state != Result.RESULT_EVALUATE_QUEUE:
@@ -35,9 +37,9 @@ class Result:
 				self.frame, 
 				self.plugin, 
 				"Process request when not in RESULT_EVALUATE_QUEUE state. Received: " + self.state)
-		self.processResult = self.plugin.process(self.frame)
+		self.score, self.processResult = self.plugin.process(self.frame)
 		self.setState(Result.RESULT_EVALUATE_SUCCESS)
-		return self.processResult
+		return self.score, self.processResult
 		# process the frame here and store & return processed value
 
 	def getState(self):
@@ -50,10 +52,12 @@ class Result:
 
 	def __str__(self):
 		"""Return a nice string representation of the object."""
-		return ";\t".ljust(20).join([
-			"Frame: " + str(self.frame), 
-			"Plugin: " + str(self.plugin), 
-			"State: " + self.state])
+		return json.dumps({ 
+					"Frame": str(self.frame),
+					"Plugin": str(self.plugin),
+					"Score": str(self.score),
+					"State": str(self.state),
+		})
 
 class ResultGroup:
 	"""Compute and store results of running a group of plugins through a 

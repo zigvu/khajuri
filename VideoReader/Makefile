@@ -5,9 +5,14 @@ CC:= g++
 FFMPEGLFLAGS:= $(shell pkg-config --cflags libavformat libavcodec libswscale libavutil sdl) 
 FFMPEGLIBS:= $(shell pkg-config --libs libavformat libavcodec libswscale libavutil sdl) -lm
 
+#Python
+PYTHON_VERSION = 2.7
+PYTHON_INCLUDE = /usr/include/python$(PYTHON_VERSION)
+PYTHON_LIBS= -lpython2.7
+
 # Boost libraries
 BOOSTLFLAGS= -I/usr/include/boost
-BOOSTLIBS= -lboost_thread -lboost_system
+BOOSTLIBS= -lboost_thread -lboost_system -lboost_python
 
 # Targets
 EXEC= VideoReader
@@ -15,22 +20,27 @@ SOURCES= $(wildcard *.cpp)
 INCLUDES= $(wildcard include/*.h*)
 HEADERS= include
 OBJECTS= $(SOURCES:.cpp=.o)
-LFLAGS= $(BOOSTLFLAGS) $(FFMPEGLFLAGS)
-LIBS= $(BOOSTLIBS) $(FFMPEGLIBS) 
+LFLAGS= $(BOOSTLFLAGS) $(FFMPEGLFLAGS) -I$(PYTHON_INCLUDE)
+LIBS= $(BOOSTLIBS) $(FFMPEGLIBS) $(PYTHON_LIBS)
+SHAREDLIB= $(EXEC).so
 
-CFLAGS:= -Wall -ggdb -I$(HEADERS) -DDEBUG_BUILD
+#CFLAGS:= -Wall -ggdb -I$(HEADERS) -DDEBUG_BUILD -fPIC
+CFLAGS:= -Wall -ggdb -I$(HEADERS) -fPIC
 
-all: $(EXEC) cleanobj
+all: $(EXEC)
 MAIN= VideoReader
 
-$(MAIN): $(OBJECTS)
+$(MAIN): $(OBJECTS) $(SHAREDLIB)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJECTS) $(LIBS) $(LFLAGS)
 
+$(SHAREDLIB): $(OBJECTS)
+	g++ -shared -Wl,--export-dynamic $(OBJECTS) -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION) $(LIBS) -o $(MAIN).so
+
 %.o: %.cpp
-	$(CC) $(CFLAGS) $(LIBS) -c $<  -o $@
+	$(CC) $(CFLAGS) $(LFLAGS) $(LIBS) -c $<  -o $@
 
 cleanobj:
-	$(RM) *.o *~
+	$(RM) *.o *~ *.so
 
 clean:
-	$(RM) *.o *~ $(MAIN)
+	$(RM) *.o *~ $(MAIN) $(MAIN).so
