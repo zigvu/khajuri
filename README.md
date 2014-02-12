@@ -1,6 +1,6 @@
 Running
 ==========
-Usage ./VideoPipeline.py <config.yaml> <video.file>
+Usage ./VideoPipeline.py config.yaml video.file
 
 Model Directory Requirement
 ===========================
