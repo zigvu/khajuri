@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="-80.000000 -50.000000 690.000000 530.000000" preserveAspectRatio="none" onload="init()" onmousemove="mouseMove(evt)" >
+  <!-- Generalization Error -->  <polyline fill="none" class="class1" points="" />
+  <!-- Training Error -->  <polyline fill="none" class="class2" points="" />
+  <!-- Model Error -->  <polyline fill="none" class="class3" points="" />
+
+  <rect class="axis" x="0" y="0" width="600" height="400" />
+
+
+  <text class="title" text-anchor="middle" x="300" y="-4" >Error Decomposition</text>
+  <text class="xLabel" text-anchor="middle" x="300" y="456" >Training Time (sec)</text>
+  <text class="yLabel" transform="rotate(-90)" x="-200" y="-56" >Error</text>
+
+<g id="legend">
+  <rect id="legend_rect" class="legend" />
+  <polyline id="legend_line0" class="class1" points="5,5 25,5"/> <text id="legend_text0" class="legend" text-anchor="start" x="30" y="5" >Generalization Error</text>
+  <polyline id="legend_line1" class="class2" points="5,25 25,25"/> <text id="legend_text1" class="legend" text-anchor="start" x="30" y="25" >Training Error</text>
+  <polyline id="legend_line2" class="class3" points="5,45 25,45"/> <text id="legend_text2" class="legend" text-anchor="start" x="30" y="45" >Model Error</text>
+</g>
+</svg>

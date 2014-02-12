@@ -1,0 +1,339 @@
+{
+   "attributes" : [],
+   "certainties" : [],
+   "classes" : [
+      {
+         "attributeUserProbs" : null,
+         "id" : 0,
+         "meta" : null,
+         "name" : "negative"
+      },
+      {
+         "attributeUserProbs" : null,
+         "id" : 1,
+         "meta" : null,
+         "name" : "positive"
+      },
+      {
+         "id" : 2,
+         "meta" : null,
+         "name" : "negative"
+      },
+      {
+         "id" : 3,
+         "meta" : null,
+         "name" : "positive"
+      }
+   ],
+   "clickParts" : [],
+   "clickPoses" : [],
+   "codebooks" : [],
+   "detectionLoss" : "intersection_parts",
+   "featureWindows" : [
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : 0,
+         "height" : -2,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 25600,
+         "dx" : -1,
+         "dy" : -1,
+         "height" : -4,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : -1,
+         "dy" : 1,
+         "height" : -4,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : 1,
+         "dy" : -1,
+         "height" : -4,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : 1,
+         "dy" : 1,
+         "height" : -4,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : 0,
+         "height" : -2,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 25600,
+         "dx" : -1,
+         "dy" : -1,
+         "height" : -4,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : -1,
+         "dy" : 1,
+         "height" : -4,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : 1,
+         "dy" : -1,
+         "height" : -4,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : 1,
+         "dy" : 1,
+         "height" : -4,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 9600,
+         "dx" : 0,
+         "dy" : 0,
+         "height" : -2,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 9600,
+         "dx" : -1,
+         "dy" : -1,
+         "height" : -4,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 9600,
+         "dx" : -1,
+         "dy" : 1,
+         "height" : -4,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 9600,
+         "dx" : 1,
+         "dy" : -1,
+         "height" : -4,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 9600,
+         "dx" : 1,
+         "dy" : 1,
+         "height" : -4,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -4
+      },
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : -2,
+         "height" : -6,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : 0,
+         "height" : -6,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : 2,
+         "height" : -6,
+         "name" : "FISHER_SIFT",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : -2,
+         "height" : -6,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : 0,
+         "height" : -6,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 25600,
+         "dx" : 0,
+         "dy" : 2,
+         "height" : -6,
+         "name" : "FISHER_SIFT4",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 9600,
+         "dx" : 0,
+         "dy" : -2,
+         "height" : -6,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 9600,
+         "dx" : 0,
+         "dy" : 0,
+         "height" : -6,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      },
+      {
+         "dim" : 9600,
+         "dx" : 0,
+         "dy" : 2,
+         "height" : -6,
+         "name" : "FISHER_CIE",
+         "orientation" : 0,
+         "poseInd" : -1,
+         "scale" : 0,
+         "width" : -2
+      }
+   ],
+   "features" : null,
+   "fisherCodebooks" : [
+      "structSVM-data/datasets/skiingBoarding/models/classes.txt.codebook.0",
+      "structSVM-data/datasets/skiingBoarding/models/classes.txt.codebook.5",
+      "structSVM-data/datasets/skiingBoarding/models/classes.txt.codebook.10"
+   ],
+   "gammaClass" : 1,
+   "gammaClick" : 1,
+   "hogParams" : {
+      "cellWidth" : 8,
+      "combineOpposite" : true,
+      "dims" : 144,
+      "maxOrientations" : 9,
+      "maxScales" : 100,
+      "name" : "HOG",
+      "normEps" : 16,
+      "normMax" : 0.2,
+      "normalize" : true,
+      "numBins" : 9,
+      "numBlocks" : 4,
+      "numBlocksX" : 4,
+      "rot" : 0,
+      "smoothWidth" : 0,
+      "softHistogram" : false,
+      "subsample" : 0,
+      "subsamplePower" : 1.3,
+      "type" : "HOG"
+   },
+   "imageScale" : 1,
+   "numOrientations" : 1,
+   "numScales" : 100,
+   "parts" : [],
+   "poses" : [],
+   "questions" : [],
+   "scaleAttributesIndependently" : true,
+   "scaleOffset" : 0,
+   "scaleOrientationMethod" : 0,
+   "spatialGranularity" : 8,
+   "spatialTransitions" : null,
+   "supportsMultiObjectDetection" : false,
+   "version" : "0.0"
+}
