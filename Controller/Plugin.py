@@ -37,14 +37,9 @@ class PluginGroup:
 
 	def __init__(self, config):
 		self.pluginList = []
-		# set default plugins
-		# for pl in GLOBAL_ALL_PLUGINS:
-		# 	self.pluginList.append(pl)
 		self.pluginList.append(FrameExtraction(config))
 		self.pluginList.append(BlankDetection(config.getPluginConfig('BlankDetection')))
-		#self.pluginList.append(BlurDetection(config.getPluginConfig('BlurDetection')))
 		self.pluginList.append(SelectSingleFrame(config.getPluginConfig('SelectSingleFrame')))
-		self.pluginList.append(RemoveMultiModels(config.getPluginConfig('RemoveMultiModels')))
 		for i in xrange( 1000 ):
 			try:
 				modelConfig = config.getPluginConfig('ModelDetection%s' % i)
