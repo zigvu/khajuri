@@ -4,6 +4,7 @@ import os, json, argparse
 import pdb
 
 zsvm = None
+baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 
 class Model(Structure):
   pass
@@ -15,7 +16,7 @@ class ModelDetectionHelper( object ):
   def __init__( self, modelDir ):
     global zsvm
     if not zsvm:
-      zsvm = cdll.LoadLibrary("./VideoReader/libzsvm.so" )
+      zsvm = cdll.LoadLibrary("%s/../../VideoReader/libzsvm.so" % baseScriptDir )
       zsvm.initModel.restype = POINTER( Model )
       zsvm.loadClasses.restype = POINTER( Class )
       zsvm.testImage.argtypes = [ POINTER( Model ), POINTER( Class ), c_char_p ]
