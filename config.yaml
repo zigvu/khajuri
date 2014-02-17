@@ -1,54 +1,45 @@
-# YAML describing commonly used configs in khajuri
-# Note: Dynamic changes to the config values should be made
-#       using the Config.py object
+# YAML describing default plugins and settings in khajuri
 
 # Configuration for various plugins
 # Note: The plugin names should match the directory
 #       under which they are created
-plugins: 
-    FrameExtraction:
-        defaultOrder     : 1
-    BlankDetection:
-        defaultOrder     : 2
-        threshold        : 0.1
-        stronger         : 0.1
-        weaker           : -0.1
-    BlurDetection:
-        defaultOrder     : 3
-        threshold        : 0.1
-        stronger         : 0.2
-        weaker           : -0.2
-    SelectSingleFrame:
-        defaultOrder     : 4
-    RemoveMultiModels:
-        defaultOrder     : 5
-    ModelDetection0:
-        defaultOrder     : 6
-        threshold        : 0.6
-        stronger         : 0.2
-        weaker           : -0.2
-        modelName        : "skiingBoarding"
-        modelVersion     : 59
-    ModelDetection1:
-        defaultOrder     : 7
-        threshold        : 0.6
-        stronger         : 0.2
-        weaker           : -0.2
-        modelName        : "washingDishes"
-        modelVersion     : 42
-    ModelDetection2:
-        defaultOrder     : 7
-        threshold        : 0.6
-        stronger         : 0.2
-        weaker           : -0.2
-        modelName        : "washingDishes"
-        modelVersion     : 73
-
 # Configuration for windowing
 window: 
-    frame: 
-      size               : 5
-      spacing            : 2
+  frame: 
+    size             : 5
+    spacing          : 2
 
+campaign:
+  id                 : 5
+  name               : 'Fifth Campaign'
 
-
+plugins: 
+  FrameExtraction:
+    defaultOrder     : 1
+    required         : true
+  BlankDetection:
+    defaultOrder     : 2
+    required         : true
+    threshold        : 0.1
+  BlurDetection:
+    defaultOrder     : 3
+    required         : true
+    threshold        : 0.1
+  SelectSingleFrame:
+    defaultOrder     : 4
+    required         : true
+  ModelDetection0:
+      defaultOrder     : 6
+      threshold        : 0.6
+      modelName        : "skiingBoarding"
+      id               : 59
+  ModelDetection1:
+      defaultOrder     : 7
+      threshold        : 0.6
+      modelName        : "washingDishes"
+      id               : 42
+  ModelDetection2:
+      defaultOrder     : 7
+      threshold        : 0.6
+      modelName        : "washingDishes"
+      id               : 73

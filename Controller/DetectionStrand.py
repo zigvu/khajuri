@@ -69,10 +69,11 @@ class DetectionStrandGroup:
 		self.videoFileName = videoFileName
 		self.config = config
 		self.videoFrameReader = VideoReader.VideoFrameReader( 40, 40, self.videoFileName )
-		self.config.videoFrameReader = self.videoFrameReader
-		self.config.baseFrameFolder = os.path.join( os.path.dirname( self.videoFileName ),  "frames" )
-		if not os.path.exists( self.config.baseFrameFolder ):
-			os.makedirs( self.config.baseFrameFolder )
+		baseFrameFolder = os.path.join( os.path.dirname( self.videoFileName ),  "frames" )
+		self.config.getPluginConfig("FrameExtraction")["videoFrameReader"] = self.videoFrameReader
+		self.config.getPluginConfig("FrameExtraction")["baseFrameFolder"] = baseFrameFolder
+		if not os.path.exists( baseFrameFolder ):
+			os.makedirs( baseFrameFolder )
 		self.videoFrameReader.generateFrames()
 
 	def runVidPipe(self):
@@ -86,20 +87,18 @@ class DetectionStrandGroup:
 			second += 1
 			results.extend( ds.resultGroup )
 		self.videoFrameReader.waitForEOF()
-		self.resultsByPlugin = {}
-		for result in results:
-			if not self.resultsByPlugin.get( result.plugin.name ):
-				self.resultsByPlugin[ result.plugin.name ] = []
-			self.resultsByPlugin[ result.plugin.name ].append( result )
-		for plugin in self.resultsByPlugin.keys():
-			self.saveResultToFile( plugin, self.resultsByPlugin[ plugin ] )
-	
-	def saveResultToFile( self, pluginName, results ):
-		resultsFolder = os.path.join( os.path.dirname( self.videoFileName ), "results" )
-		if not os.path.exists( resultsFolder ):
-			os.makedirs( resultsFolder )
-		resultsFileName = os.path.join( resultsFolder, "%s.json" % pluginName )
-		jsonResult = {}
+		resultsDict = {}
 		for r in results:
-			jsonResult[ "%s" % r.frame ] = { "Score":"%s" % r.score, "State":"%s" % r.state }
-		json.dump( jsonResult, open( resultsFileName, "w" ) )
+			frameId = str( r.frame )
+			if not resultsDict.get( frameId ):
+				resultsDict[ frameId ] = { "filters": [ ], "models": [ ] }
+			if str( r.plugin ).startswith( "Model" ):
+				resultsDict[ frameId ][ "models" ].append( { "ModelID": "%s" % r.plugin.modelId,
+										"state" : "%s" % r.state,
+										"score" : "%s" % r.score } )
+			else:
+				resultsDict[ frameId ][ "filters" ].append( { "FilterName": "%s" % r.plugin,
+										"state" : "%s" % r.state,
+										"score" : "%s" % r.score } )
+		resultsFileName = os.path.join( os.path.dirname( self.videoFileName ), "%s.json" % self.config.getCampaignId() )
+		json.dump( resultsDict, open( resultsFileName, "w" ), sort_keys=True, indent=2 )

@@ -37,15 +37,17 @@ class PluginGroup:
 
 	def __init__(self, config):
 		self.pluginList = []
-		self.pluginList.append(FrameExtraction(config))
-		self.pluginList.append(BlankDetection(config.getPluginConfig('BlankDetection')))
-		self.pluginList.append(SelectSingleFrame(config.getPluginConfig('SelectSingleFrame')))
-		for i in xrange( 1000 ):
-			try:
-				modelConfig = config.getPluginConfig('ModelDetection%s' % i)
+		self.filterMap = { "FrameExtraction" : FrameExtraction,
+				   "BlankDetection" : BlankDetection,
+				   #"BlurDetection" : BlurDetection,
+				   "SelectSingleFrame" : SelectSingleFrame }
+		for plugin in config.getPluginClassNames():
+			if not plugin.startswith( "Model" ):
+				if self.filterMap.get( plugin ): 
+					self.pluginList.append( self.filterMap[ plugin ]( config.getPluginConfig( plugin ) ) )
+			else:
+				modelConfig = config.getPluginConfig( plugin )
 			    	self.pluginList.append(ModelDetection(modelConfig))
-			except Error.PluginNonExistError:
-				break
 
 	def __iter__(self):
 		"""Allow PluginGroup to behave like a regular list in for loops"""
@@ -72,13 +74,14 @@ class FrameExtraction(Plugin):
 	def __init__(self, config):
 		self.name = "FrameExtraction"
 		self.config = config
-		self.videoFrameReader = self.config.videoFrameReader
+		self.videoFrameReader = self.config["videoFrameReader"]
+		self.baseFrameFolder = self.config["baseFrameFolder"]
 
 	def process(self, frame):
 	        frame.vFrame = self.videoFrameReader.getFrameWithFrameNumber( int( frame.frameNumber ) )
 		while not frame.vFrame:
 	        	frame.vFrame = self.videoFrameReader.getFrameWithFrameNumber( int( frame.frameNumber ) )
-		frameDir = os.path.join( self.config.baseFrameFolder, str( frame.frameNumber ) )
+		frameDir = os.path.join( self.baseFrameFolder, str( frame.frameNumber ) )
 		if not os.path.exists( frameDir ):
 			os.makedirs( frameDir )
 		frame.imgName = os.path.join( frameDir, "original.ppm" )
@@ -110,6 +113,7 @@ class BlurDetection(Plugin):
 		processDecision = False
 		if processResult > self.config['threshold']:
 			processDecision = True
+		processDecision = True
 		return processResult, processDecision
 
 
@@ -146,9 +150,9 @@ class ModelDetection(VisionDetection):
 	def __init__(self, config):
 		VisionDetection.__init__(self, config)
 		self.modelName = config[ 'modelName' ]
-		self.modelVersion = config[ 'modelVersion' ]
-		self.name = "%s:%s:%s" % ( "ModelDetection", self.modelName, self.modelVersion )
-		self.modelDir = "structSVM-data/datasets/%s.%s/models/" % ( self.modelName, self.modelVersion )
+		self.modelId = config[ 'id' ]
+		self.name = "%s:%s:%s" % ( "ModelDetection", self.modelName, self.modelId )
+		self.modelDir = "structSVM-data/datasets/%s.%s/models/" % ( self.modelName, self.modelId )
 		global modelDetectionHelpers
 		if not modelDetectionHelpers.get( self.modelDir ):
 			modelDetectionHelper = ModelDetectionHelper.ModelDetectionHelper( self.modelDir )
@@ -159,4 +163,4 @@ class ModelDetection(VisionDetection):
 		return score, True
 
 	def __str__( self ):
-		return "%s:%s:%s" % ( self.name, self.modelName, self.modelVersion )
+		return "%s:%s:%s" % ( self.name, self.modelName, self.modelId )

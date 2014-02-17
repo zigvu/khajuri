@@ -4,6 +4,7 @@ import yaml
 import operator
 from Error import PluginNonExistError
 
+
 class Config:
 	"""Reads YAML config file and allows easy accessor to config attributes"""
 	def __init__(self, configFileName):
@@ -38,6 +39,10 @@ class Config:
 	def getPluginClassNameForModelDetection(self):
 		"""Get the plugin class name for the plugin which limits frame selection to 1"""
 		return 'ModelDetection'
+	
+	def getCampaignId(self):
+		"""Get the campaign id - used for saving results, etc """
+		return self.config['campaign']['id']
 
 	def __str__(self):
 		"""Return a nice string representation of the object."""
