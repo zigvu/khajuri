@@ -1,0 +1,26 @@
+# YAML describing default plugins and settings in khajuri
+
+# Configuration for various plugins
+# Note: The plugin names should match the directory
+#       under which they are created
+# Configuration for windowing
+window: 
+  frame: 
+    size             : 5
+    spacing          : 2
+
+plugins: 
+  FrameExtraction:
+    defaultOrder     : 1
+    required         : true
+  BlankDetection:
+    defaultOrder     : 2
+    required         : false
+    threshold        : 0.1
+  BlurDetection:
+    defaultOrder     : 3
+    required         : false
+    threshold        : 0.1
+  SelectSingleFrame:
+    defaultOrder     : 4
+    required         : true
