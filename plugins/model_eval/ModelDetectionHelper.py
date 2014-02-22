@@ -37,7 +37,7 @@ class ModelDetectionHelper( object ):
     f = open( self.predFile, "r" )
     predictions = json.load( f )
     f.close()
-    return float( predictions[ "predicted" ] ["score" ] )
+    return float( predictions[ "ground_truth" ] ["score" ] ) 
 
 modelDetectionHelpers = {}
 class ModelDetection(VisionDetection):
