@@ -1,8 +1,8 @@
 """ Class describing a single detection strand."""
 
-from Frame import FrameGroup
-from Plugin import PluginGroup
-from Result import ResultGroup
+from Controller.Frame import FrameGroup
+from Controller.PluginGroup import PluginGroup
+from Controller.Result import ResultGroup
 import VideoReader
 import multiprocessing
 from multiprocessing.pool import ThreadPool

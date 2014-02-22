@@ -3,17 +3,16 @@ import glob, sys
 import os
 
 # Add files to path
-baseScriptDir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append( '%s/Controller' % baseScriptDir )
-sys.path.append( '%s/VideoReader'% baseScriptDir  )
-for dir in glob.glob( '%s/plugins/*' % baseScriptDir  ):
-	sys.path.append( dir )
+#baseScriptDir = os.path.dirname(os.path.realpath(__file__))
+#sys.path.append( '%s/Controller' % baseScriptDir )
+#sys.path.append( '%s/VideoReader'% baseScriptDir  )
+#for dir in glob.glob( '%s/plugins/*' % baseScriptDir  ):
+#	sys.path.append( dir )
 
-import Config
-from Frame import FrameGroup
-from Plugin import PluginGroup, BlankDetection, BlurDetection
-from Result import ResultGroup
-from DetectionStrand import DetectionStrand, DetectionStrandGroup
+import Controller.Config
+from Controller.Frame import FrameGroup
+from Controller.Result import ResultGroup
+from Controller.DetectionStrand import DetectionStrand, DetectionStrandGroup
 
 def processVideo( configPath, videoFilePath ):
 	config = Config.Config( configPath )

@@ -3,9 +3,14 @@ from ctypes import *
 import os, json, argparse
 import pdb
 
+from plugins.Plugin import Plugin
+from plugins.Plugin import VisionDetection
+
 zsvm = None
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 
+def my_method(mystr):
+    print str
 class Model(Structure):
   pass
 
@@ -33,3 +38,24 @@ class ModelDetectionHelper( object ):
     predictions = json.load( f )
     f.close()
     return float( predictions[ "predicted" ] ["score" ] )
+
+modelDetectionHelpers = {}
+class ModelDetection(VisionDetection):
+	"""Model Detection Plugin."""
+	def __init__(self, config):
+		VisionDetection.__init__(self, config)
+		self.modelName = config[ 'modelName' ]
+		self.modelId = config[ 'id' ]
+		self.name = "%s:%s:%s" % ( "ModelDetection", self.modelName, self.modelId )
+		self.modelDir = "structSVM-data/datasets/%s.%s/models/" % ( self.modelName, self.modelId )
+		global modelDetectionHelpers
+		if not modelDetectionHelpers.get( self.modelDir ):
+			modelDetectionHelper = ModelDetectionHelper( self.modelDir )
+			modelDetectionHelpers[ self.modelDir ] = modelDetectionHelper
+
+	def process( self, frame ):
+		score = modelDetectionHelpers[ self.modelDir ].classifyImage( frame.imgName )
+		return score, True
+
+	def __str__( self ):
+		return "%s:%s:%s" % ( self.name, self.modelName, self.modelId )
