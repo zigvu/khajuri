@@ -9,8 +9,6 @@ from plugins.Plugin import VisionDetection
 zsvm = None
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 
-def my_method(mystr):
-    print str
 class Model(Structure):
   pass
 
@@ -37,7 +35,6 @@ class ModelDetectionHelper( object ):
     f = open( self.predFile, "r" )
     predictions = json.load( f )
     f.close()
-<<<<<<< HEAD
     return float( predictions[ "ground_truth" ] ["score" ] ) 
 
 modelDetectionHelpers = {}
@@ -60,6 +57,3 @@ class ModelDetection(VisionDetection):
 
 	def __str__( self ):
 		return "%s:%s:%s" % ( self.name, self.modelName, self.modelId )
-=======
-    return float( predictions[ "ground_truth" ] ["score" ] )
->>>>>>> issue5

@@ -1,2 +1,1 @@
-cd ~/khajuri
-valgrind --tool=memcheck --leak-check=full --show-reachable=yes ~/khajuri/VideoPipeline.py ~/khajuri/config.yaml ~/3/Timers.mp4  > output.txt 2>&1
+valgrind --tool=memcheck --leak-check=full --show-reachable=yes ../VideoPipeline.py config.yaml videos/lUA7i4K2Sq8.mp4  > output.txt 2>&1
