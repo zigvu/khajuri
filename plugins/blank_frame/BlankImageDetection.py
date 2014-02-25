@@ -10,7 +10,8 @@ class BlankDetection(Plugin):
 	def __init__(self, config):
 		self.config = config
 		self.name = "BlankDetection"
-		# Access config Parameters
+		# Access config Parameters from self.config
+                # TODO Use this threshold for calculation
 		self.threshold = self.config[ 'threshold' ]
 
 	def process(self, frame):
@@ -19,7 +20,7 @@ class BlankDetection(Plugin):
 		if result[0] == 0:
 			processDecision = True
 		# Storing Computed results for next look up
-		frame.Is_Bank = result[ 0 ]
+		frame.vFrame.Is_Blank = result[ 0 ]
 		return result[1], processDecision
 
         def Is_Blank(self,Img_FileName):

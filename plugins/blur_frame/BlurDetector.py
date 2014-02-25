@@ -1,4 +1,3 @@
-from random import random
 import os
 from plugins.Plugin import Plugin
 
@@ -9,6 +8,11 @@ class BlurDetection(Plugin):
 		self.name = "BlurDetection"
 
 	def process(self, frame):
+	        # Use Value from Blank Detection in Blur
+		if hasattr(frame.vFrame, 'Is_Blank'):
+	        	print frame.vFrame.Is_Blank
+		else:
+			print 'Blank Computation is not done yet'
 		processResult = self.compute_FEAT_BLANKFRAME(frame)
 		processDecision = False
 		if processResult > self.config['threshold']:

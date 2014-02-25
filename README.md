@@ -1,3 +1,8 @@
+Installing
+==========
+After cloning this directory, run:
+sudo python setup.py install
+
 Running
 ==========
 Usage ./VideoPipeline.py config.yaml video.file

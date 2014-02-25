@@ -1,4 +1,3 @@
-# TODO: Remove
 from random import random
 import os, Error
 from plugins.blank_frame.BlankImageDetection import BlankDetection

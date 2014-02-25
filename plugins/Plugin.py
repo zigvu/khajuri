@@ -1,3 +1,4 @@
+from random import random
 class Plugin:
 	"""Base class for all plugins.
 	All common computaion is written here - such computation methods
