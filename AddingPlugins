@@ -1,0 +1,8 @@
+- Each Plugin must be in a separate file of its own inside plugins/<Plugin_Dir>/<Plugin_Name>.py
+- Each Plugin must be added to the self.filterMap in Controller/PluginGroups.py as a "name" to class item.
+- The Plugin class must extend the Plugin class from plugins.Plugin 
+- The Plugin class can override the __init__ method which accepts its config. It can ascess values set in the config.yaml here. See plugins/blank_frame/BlankFrameDetection.py as an example where the property 'threshold' is accessed.
+- The Plugin class must override the process method which accepts a frame
+- Inside the process method, you can set frame.vFrame.<PropName> = <PropValue> to store frame properties across plugins. In a subsequent plugin, you can check if frame.vFrame.<PropName> is set and access it accordingly. See plugins/blank_frame/BlankFrameDetection.py and plugins/blur_frame/BlurDetector.py as examples.
+
+

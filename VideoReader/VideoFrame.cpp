@@ -30,16 +30,14 @@ void VideoFrame::setFrameNumber(int64_t frameNumber){
 }
 int64_t VideoFrame::getFrameNumber(){ return videoFrameNumber; }
 
-void VideoFrame::saveFrame(char *fileNamePrefix, SwsContext *sws_ctx){
+void VideoFrame::saveFrame(char *fileName, SwsContext *sws_ctx){
   FILE *pFile;
-  char szFilename[1024];
   
   // populate pFrameRGB
   getPFrame(sws_ctx);
   
   // Open file
-  sprintf(szFilename, "%s_%lld.ppm",fileNamePrefix, (long long)getFrameNumber());
-  pFile=fopen(szFilename, "wb");
+  pFile=fopen(fileName, "wb");
   if(pFile == NULL)
     return;
   

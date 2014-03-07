@@ -72,6 +72,7 @@ VideoFrameReader::VideoFrameReader(
   maxVideoFrameListSize = listTailBufNumOfFrames + listHeadBufNumOfFrames;
   data_ready = true;
   maxVideoFrameNumber = LLONG_MAX; // set to max possible for now
+  eof = false;
 }
 
 void VideoFrameReader::startThreads(){
@@ -135,6 +136,7 @@ void VideoFrameReader::videoFrameBufferProducer(){
   }
   // when done reading, we know max frame size
   maxVideoFrameNumber = frameNumber - 1;
+  eof = true;
 }
 
 void VideoFrameReader::videoFrameBufferConsumer(int numberOfFramesToConsume){
