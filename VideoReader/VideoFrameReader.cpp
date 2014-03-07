@@ -121,6 +121,7 @@ void VideoFrameReader::videoFrameBufferProducer(){
         vf->setTimeStamp(packet.pts * time_base); // this will be ignored if not new frame
 
         videoFrameList.push_front(*vf);
+	vf->getPFrame( sws_ctx );
         if(videoFrameList.size() >= maxVideoFrameListSize){
           data_ready = false;
         }
