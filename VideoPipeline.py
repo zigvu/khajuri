@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import glob, sys
-import os
+import os, tempfile, pdb
 
 # Add files to path
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
@@ -15,9 +15,8 @@ from Controller.Result import ResultGroup
 from Controller.DetectionStrand import DetectionStrand, DetectionStrandGroup
 
 def processVideo( configPath, videoFilePath ):
-	config = Config( configPath )
-	videoFileName = videoFilePath
-	dsg = DetectionStrandGroup( videoFileName, config )
+	config = Config.Config( configPath )
+	dsg = DetectionStrandGroup( videoFilePath, config )
 	dsg.runVidPipe()
 
 if __name__ == '__main__':

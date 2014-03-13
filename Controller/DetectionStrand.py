@@ -69,11 +69,7 @@ class DetectionStrandGroup:
 		self.videoFileName = videoFileName
 		self.config = config
 		self.videoFrameReader = VideoReader.VideoFrameReader( 40, 40, self.videoFileName )
-		baseFrameFolder = os.path.join( os.path.dirname( self.videoFileName ),  "frames" )
 		self.config.getPluginConfig("FrameExtraction")["videoFrameReader"] = self.videoFrameReader
-		self.config.getPluginConfig("FrameExtraction")["baseFrameFolder"] = baseFrameFolder
-		if not os.path.exists( baseFrameFolder ):
-			os.makedirs( baseFrameFolder )
 		self.videoFrameReader.generateFrames()
 
 	def runVidPipe(self):
@@ -82,10 +78,15 @@ class DetectionStrandGroup:
 		fps = self.videoFrameReader.fps
 		time.sleep( 1 )
 		while not self.videoFrameReader.eof:
-			ds = DetectionStrand( int( ( second * fps ) + fps/2.0 ), self.config )
-			ds.process()
-			second += 1
-			results.extend( ds.resultGroup )
+			with TempFileFS( self.videoFileName ) as ramFSDir:
+				baseFrameFolder = os.path.join( ramFSDir,  "frames" )
+				if not os.path.exists( baseFrameFolder ):
+					os.makedirs( baseFrameFolder )
+		        	self.config.getPluginConfig("FrameExtraction")["baseFrameFolder"] = baseFrameFolder
+				ds = DetectionStrand( int( ( second * fps ) + fps/2.0 ), self.config )
+				ds.process()
+				second += 1
+				results.extend( ds.resultGroup )
 		self.videoFrameReader.waitForEOF()
 		resultsDict = {}
 		for r in results:
