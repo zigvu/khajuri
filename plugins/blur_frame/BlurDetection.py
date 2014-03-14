@@ -21,9 +21,9 @@ class BlurDetection(Plugin):
 
     def process(self,frame):
         IsImgBlurry = self.Is_Blurry( skd.imread( frame.imgName ) );  # Assuming frame is BGR array
-        processDecision = False;
-        if IsImgBlurry == 3:
-            processDecision = True;    # Image is not blurry
+        processDecision = True;
+        if IsImgBlurry > 0:     # 1: Blurry, 0: May be, -1: Not Blurry
+            processDecision = False;    # Image is blurry
         # Store results for next lookup
         #frame.vFrame.Is_Blank = IsImgBlank;
         return IsImgBlurry, processDecision; 
@@ -109,5 +109,12 @@ class BlurDetection(Plugin):
         Blur_Vert,DR2 = self.ImageBlockVariance(Img_Gray,"Vertical");
         #DR1,DR2 = int(DR1),int(DR2)
         Blur = min( (Blur_Horz, Blur_Vert));
-        #return (Blur,DR1,DR2)
+        # Change from 1: Blurry, 2: In between, 3: Not blurry 
+        # to 1: Blurr, 0: In Between, -1: No blurry
+        if Blur == 2:
+            Blur = 0;
+        elif Blur == 3:
+            Blur = -1;
+            
+        
         return Blur
