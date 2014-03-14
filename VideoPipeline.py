@@ -15,7 +15,7 @@ from Controller.Result import ResultGroup
 from Controller.DetectionStrand import DetectionStrand, DetectionStrandGroup
 
 def processVideo( configPath, videoFilePath ):
-	config = Config.Config( configPath )
+	config = Config( configPath )
 	dsg = DetectionStrandGroup( videoFilePath, config )
 	dsg.runVidPipe()
 

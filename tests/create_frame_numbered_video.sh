@@ -1,7 +1,7 @@
 #!/bin/bash
 rm /tmp/VideoFrames/*
 mkdir -p /tmp/VideoFrames/
-for i in `seq 1 9000`; do
+for i in `seq 1 100`; do
     convert -size 800x600 -background lightblue -fill blue -font Courier -pointsize 200 label:$i /tmp/VideoFrames/img$i.jpg
 done
 cd /tmp/VideoFrames/

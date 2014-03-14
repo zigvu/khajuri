@@ -14,11 +14,15 @@ Flat (Blank ) image detection utilizing color histogram
 import numpy as np
 from sklearn.externals import joblib    # To load SVM parameters
 import CartoonFeatures as CF
+from plugins.Plugin import Plugin
+import cv2
+import os
 
 class BlankDetection(Plugin):
     
     # Load parameters for the SVM
-    SVM_Filename = 'ModelParams\BlankModel_ColorHist.mdl';
+    baseScriptDir = os.path.dirname(os.path.realpath(__file__))
+    SVM_Filename = os.path.join( baseScriptDir, 'ModelParams', 'BlankModel_ColorHist.mdl' )
     BlankDetectionModel = joblib.load(SVM_Filename)
     
     """Blank plugin"""
@@ -27,9 +31,9 @@ class BlankDetection(Plugin):
         self.name = "BlankDetection"
 
     def process(self,frame):
-        IsImgBlank, BlankScore = self.Is_Blank(frame);  # Assuming frame is BGR array
+        IsImgBlank, BlankScore = self.Is_Blank( cv2.imread( frame.imgName ));  # Assuming frame is BGR array
         processDecision = False;
-        if IsImgBlank > 0:
+        if IsImgBlank < 0:
             processDecision = True;    # Image is not blank
         # Store results for next lookup
         #frame.vFrame.Is_Blank = IsImgBlank;

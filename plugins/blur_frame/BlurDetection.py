@@ -9,6 +9,8 @@ Created on Thu Jan 16 18:19:05 2014
 import numpy as np
 import cv2
 from skimage.color import rgb2gray
+from plugins.Plugin import Plugin
+import skimage.data as skd
 
 class BlurDetection(Plugin):
        
@@ -18,11 +20,10 @@ class BlurDetection(Plugin):
         self.name = "BlurDetection"
 
     def process(self,frame):
-        
-        IsImgBlurry = self.Is_Blurry(ImgGray);  # Assuming frame is BGR array
-        processDecision = True;
+        IsImgBlurry = self.Is_Blurry( skd.imread( frame.imgName ) );  # Assuming frame is BGR array
+        processDecision = False;
         if IsImgBlurry == 3:
-            processDecision = False;    # Image is not blurry
+            processDecision = True;    # Image is not blurry
         # Store results for next lookup
         #frame.vFrame.Is_Blank = IsImgBlank;
         return IsImgBlurry, processDecision; 

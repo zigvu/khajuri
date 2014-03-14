@@ -1,8 +1,8 @@
 from random import random
 import os, Error
-from plugins.blank_frame.BlankImageDetection import BlankDetection
+from plugins.blank_frame.BlankDetection import BlankDetection
 from plugins.frame_extraction.FrameExtraction import FrameExtraction
-from plugins.blur_frame.BlurDetector import BlurDetection
+from plugins.blur_frame.BlurDetection import BlurDetection
 from plugins.select_single_frame.SelectSingleFrame import SelectSingleFrame
 from plugins.model_eval.ModelDetectionHelper import ModelDetection
 
@@ -20,7 +20,7 @@ class PluginGroup:
 		self.pluginList = []
 		self.filterMap = { "FrameExtraction" : FrameExtraction,
 				   "BlankDetection" : BlankDetection,
-				   #"BlurDetection" : BlurDetection,
+				   "BlurDetection" : BlurDetection,
 				   "SelectSingleFrame" : SelectSingleFrame }
 		for plugin in config.getPluginClassNames():
 			if not plugin.startswith( "Model" ):
