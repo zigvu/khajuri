@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Wed Mar 05 22:21:38 2014
@@ -16,7 +17,7 @@ from sklearn.externals import joblib    # To load SVM parameters
 import CartoonFeatures as CF
 from plugins.Plugin import Plugin
 import cv2
-import os
+import os, sys
 
 class BlankDetection(Plugin):
     
@@ -86,4 +87,11 @@ class BlankDetection(Plugin):
             
         return  IsImgBlank, BlankScore;
 
-    
+from plugins.Plugin import StandAlonePlugin 
+if __name__ == '__main__':
+  if len( sys.argv ) < 2:
+    print 'Usage %s <img_file>' % sys.argv[ 0 ]
+    sys.exit( 1 )
+  standAlone = StandAlonePlugin( BlankDetection )
+  print standAlone.process( sys.argv[ 1 ] )
+

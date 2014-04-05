@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jan 16 18:19:05 2014
@@ -10,6 +11,7 @@ import numpy as np
 import cv2
 from skimage.color import rgb2gray
 from plugins.Plugin import Plugin
+import sys
 
 class BlurDetection(Plugin):
        
@@ -117,3 +119,11 @@ class BlurDetection(Plugin):
             
         
         return Blur
+
+from plugins.Plugin import StandAlonePlugin 
+if __name__ == '__main__':
+  if len( sys.argv ) < 2:
+    print 'Usage %s <img_file>' % sys.argv[ 0 ]
+    sys.exit( 1 )
+  standAlone = StandAlonePlugin( BlurDetection )
+  print standAlone.process( sys.argv[ 1 ] )
