@@ -4,6 +4,9 @@
 /*.egg
 /*.egg-info
 /dist/
+/tests/videos/*json
+/tests/videos/frames/*
+/tests/videos/*mp4
 build
 eggs
 parts
