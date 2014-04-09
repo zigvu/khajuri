@@ -37,7 +37,9 @@ class BlankDetection(Plugin):
             processDecision = True;    # Image is not blank
         # Store results for next lookup
         #frame.vFrame.Is_Blank = IsImgBlank;
-        return BlankScore, processDecision;            
+            
+        # Simply return whether the image is 1, -1 as the score            
+        return IsImgBlank, processDecision;            
 
         
     def Is_Blank(self,Img_BGR):        
