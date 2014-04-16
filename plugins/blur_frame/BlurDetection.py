@@ -9,7 +9,7 @@ Created on Thu Jan 16 18:19:05 2014
 # Blurry Image Detection 
 import numpy as np
 import cv2
-from skimage.color import rgb2gray
+import scipy.special as sc
 from plugins.Plugin import Plugin
 import sys
 
