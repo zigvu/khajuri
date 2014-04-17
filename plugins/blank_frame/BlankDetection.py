@@ -53,7 +53,7 @@ class BlankDetection(Plugin):
         # Compute color histogram of overall image
         Xb = CF.ColorHist(Img_BGR,Color_HistBins).flatten();
         # Test if all of image is blank        
-        IsImgBlank = self.BlankDetectionModel.predict(Xb)[ 0 ]
+        IsImgBlank = self.BlankDetectionModel.predict(Xb)
         if IsImgBlank < 0:
             BlankScore = -1;     # Image is globally not blank, set the score to 0
         # If image is not globally sharp, then check the percent of smaller chunks

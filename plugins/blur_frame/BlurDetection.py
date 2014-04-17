@@ -11,8 +11,9 @@ import numpy as np
 import cv2
 import scipy.special as sc
 from plugins.Plugin import Plugin
-import sys
+import sys, os
 
+baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 class BlurDetection(Plugin):
     
     """ Model Parameters """
@@ -20,8 +21,10 @@ class BlurDetection(Plugin):
     blocksizecol    = 96;
     blockrowoverlap = 0;
     blockcoloverlap = 0;
-    mu_prisparam = np.genfromtxt('NIQE_mu_prisparam.csv',delimiter=',');
-    cov_prisparam = np.genfromtxt('NIQE_cov_prisparam.csv',delimiter=',');
+    mu_prisparam = os.path.join( baseScriptDir, 'NIQE_mu_prisparam.csv' )
+    cov_prisparam = os.path.join( baseScriptDir, 'NIQE_cov_prisparam.csv' )
+    mu_prisparam = np.genfromtxt(mu_prisparam,delimiter=',');
+    cov_prisparam = np.genfromtxt(cov_prisparam,delimiter=',');
     Threshold = 7.63135;
        
     """Blur plugin"""
