@@ -22,7 +22,11 @@ class BlurDetection(Plugin):
     blockcoloverlap = 0;
     mu_prisparam = np.genfromtxt('NIQE_mu_prisparam_v1.csv',delimiter=',');
     cov_prisparam = np.genfromtxt('NIQE_cov_prisparam_v1.csv',delimiter=',');
-    Threshold = 4.4124;
+    Threshold = 5.0;
+       
+    # Precalculation to avoid calculating everytime    
+    gam = np.linspace(0.2,10,num=9801);
+    r_gam = ((sc.gamma(2/gam))**2) / (sc.gamma(1/gam)*sc.gamma(3/gam));
        
     """Blur plugin"""
     def __init__(self,config):
@@ -128,9 +132,10 @@ class BlurDetection(Plugin):
             
     # From the authors code
     def estimateAggdParam(self,vec):
-        # Scipy gamma function needed for the following        
-        gam = np.linspace(0.2,10,num=9801);
-        r_gam = ((sc.gamma(2/gam))**2) / (sc.gamma(1/gam)*sc.gamma(3/gam));
+        # Scipy gamma function needed for the following   
+        # Pre-computed during class initiation.
+        gam = self.gam; #np.linspace(0.2,10,num=9801);
+        r_gam = self.r_gam; #((sc.gamma(2/gam))**2) / (sc.gamma(1/gam)*sc.gamma(3/gam));
         
         leftstd = np.sqrt(np.mean(vec[vec<-.000001]**2));
         rightstd = np.sqrt(np.mean(vec[vec>.00001]**2));
