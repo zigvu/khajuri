@@ -20,9 +20,9 @@ class BlurDetection(Plugin):
     blocksizecol    = 96;
     blockrowoverlap = 0;
     blockcoloverlap = 0;
-    mu_prisparam = np.genfromtxt('NIQE_mu_prisparam.csv',delimiter=',');
-    cov_prisparam = np.genfromtxt('NIQE_cov_prisparam.csv',delimiter=',');
-    Threshold = 7.63135;
+    mu_prisparam = np.genfromtxt('NIQE_mu_prisparam_v1.csv',delimiter=',');
+    cov_prisparam = np.genfromtxt('NIQE_cov_prisparam_v1.csv',delimiter=',');
+    Threshold = 4.4124;
        
     """Blur plugin"""
     def __init__(self,config):
@@ -32,7 +32,7 @@ class BlurDetection(Plugin):
     def process(self,frame):
         BlurScore = self.Is_Blurry( cv2.imread( frame.imgName ) );  # Assuming frame is BGR array
         processDecision = True;
-        if BlurScore > self.Threshold:     # 1: Blurry, 0: May be, -1: Not Blurry
+        if BlurScore > self.Threshold:     # 1: Blurry, -1: Not Blurry
             processDecision = False;    # Image is blurry
             BlurScore = 1.0;    # Image is blurry
         else:
