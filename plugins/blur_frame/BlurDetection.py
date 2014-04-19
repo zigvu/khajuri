@@ -25,7 +25,11 @@ class BlurDetection(Plugin):
     cov_prisparam = os.path.join( baseScriptDir, 'NIQE_cov_prisparam.csv' )
     mu_prisparam = np.genfromtxt(mu_prisparam,delimiter=',');
     cov_prisparam = np.genfromtxt(cov_prisparam,delimiter=',');
-    Threshold = 7.63135;
+    Threshold = 5.0;
+       
+    # Precalculation to avoid calculating everytime    
+    gam = np.linspace(0.2,10,num=9801);
+    r_gam = ((sc.gamma(2/gam))**2) / (sc.gamma(1/gam)*sc.gamma(3/gam));
        
     """Blur plugin"""
     def __init__(self,config):
@@ -35,7 +39,7 @@ class BlurDetection(Plugin):
     def process(self,frame):
         BlurScore = self.Is_Blurry( cv2.imread( frame.imgName ) );  # Assuming frame is BGR array
         processDecision = True;
-        if BlurScore > self.Threshold:     # 1: Blurry, 0: May be, -1: Not Blurry
+        if BlurScore > self.Threshold:     # 1: Blurry, -1: Not Blurry
             processDecision = False;    # Image is blurry
             BlurScore = 1.0;    # Image is blurry
         else:
@@ -131,9 +135,10 @@ class BlurDetection(Plugin):
             
     # From the authors code
     def estimateAggdParam(self,vec):
-        # Scipy gamma function needed for the following        
-        gam = np.linspace(0.2,10,num=9801);
-        r_gam = ((sc.gamma(2/gam))**2) / (sc.gamma(1/gam)*sc.gamma(3/gam));
+        # Scipy gamma function needed for the following   
+        # Pre-computed during class initiation.
+        gam = self.gam; #np.linspace(0.2,10,num=9801);
+        r_gam = self.r_gam; #((sc.gamma(2/gam))**2) / (sc.gamma(1/gam)*sc.gamma(3/gam));
         
         leftstd = np.sqrt(np.mean(vec[vec<-.000001]**2));
         rightstd = np.sqrt(np.mean(vec[vec>.00001]**2));
