@@ -20,7 +20,7 @@ plugins:
   BlurDetection:
     defaultOrder     : 3
     required         : false
-    threshold        : 0.1
+    threshold        : 5.0
   SelectSingleFrame:
     defaultOrder     : 4
     required         : true
