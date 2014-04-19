@@ -21,11 +21,10 @@ class BlurDetection(Plugin):
     blocksizecol    = 96;
     blockrowoverlap = 0;
     blockcoloverlap = 0;
-    mu_prisparam = os.path.join( baseScriptDir, 'NIQE_mu_prisparam.csv' )
-    cov_prisparam = os.path.join( baseScriptDir, 'NIQE_cov_prisparam.csv' )
+    mu_prisparam = os.path.join( baseScriptDir, 'NIQE_mu_prisparam_v1.csv' )
+    cov_prisparam = os.path.join( baseScriptDir, 'NIQE_cov_prisparam_v1.csv' )
     mu_prisparam = np.genfromtxt(mu_prisparam,delimiter=',');
     cov_prisparam = np.genfromtxt(cov_prisparam,delimiter=',');
-    Threshold = 5.0;
        
     # Precalculation to avoid calculating everytime    
     gam = np.linspace(0.2,10,num=9801);
@@ -35,6 +34,7 @@ class BlurDetection(Plugin):
     def __init__(self,config):
         self.config = config;
         self.name = "BlurDetection"
+        self.Threshold = self.config['threshold']
 
     def process(self,frame):
         BlurScore = self.Is_Blurry( cv2.imread( frame.imgName ) );  # Assuming frame is BGR array

@@ -35,3 +35,8 @@ nosetests.xml
 .project
 .pydevproject
 *.swp
+
+
+output.txt
+*.o
+VideoReader.so
