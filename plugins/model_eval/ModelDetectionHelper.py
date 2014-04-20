@@ -5,6 +5,7 @@ import pdb
 
 from plugins.Plugin import Plugin
 from plugins.Plugin import VisionDetection
+import tempfile
 
 zsvm = None
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
@@ -27,7 +28,7 @@ class ModelDetectionHelper( object ):
     self.modelDir = modelDir
     self.model = zsvm.initModel( self.modelDir + os.path.sep + "model.txt" )
     self.modelclass = zsvm.loadClasses( self.modelDir + os.path.sep + "classes.txt" )
-    self.predFile = "/tmp/%d.pred.score" % os.getpid() 
+    self.predFile = tempfile.NamedTemporaryFile().name
 
   def classifyImage( self, imageFileName ):
     zsvm.testImage( self.model, self.modelclass, imageFileName, self.predFile )
