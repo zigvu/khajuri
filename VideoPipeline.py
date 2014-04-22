@@ -11,9 +11,11 @@ for dir in glob.glob( '%s/plugins/*' % baseScriptDir  ):
   sys.path.append( dir )
 
 from Controller.Config import Config
+from Controller.PluginGroup import PluginGroup
 from Controller.Frame import FrameGroup
 from Controller.Result import ResultGroup
 from Controller.DetectionStrand import DetectionStrand, DetectionStrandGroup
+from plugins.model_eval.ModelDetectionHelper import ModelDetection
 
 def processVideo( dsg, videoFilePath ):
   dsg.runVidPipe( videoFilePath )
@@ -25,6 +27,10 @@ if __name__ == '__main__':
     config = Config( sys.argv[ 1 ] )
     dsg = DetectionStrandGroup( config )
     pendingProcess = []
+    for plugin in config.getPluginClassNames():
+      if plugin.startswith( "Model" ):
+        modelConfig = config.getPluginConfig( plugin )
+        modelDet = ModelDetection(modelConfig)
     for video in range( 2, len( sys.argv ) ):
       p = Process(target=processVideo, args=( dsg, sys.argv[ video ] ))
       p.start()

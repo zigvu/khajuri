@@ -5,7 +5,7 @@ sudo python setup.py install
 
 Running
 ==========
-Usage ./VideoPipeline.py config.yaml video.file
+Usage ./VideoPipeline.py config.yaml video.file1 video.file2 video.file3 etc
 
 Model Directory Requirement
 ===========================
