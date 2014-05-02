@@ -4,7 +4,7 @@ from Controller.Frame import FrameGroup
 from Controller.PluginGroup import PluginGroup
 from Controller.Result import ResultGroup
 from Controller.TempFS import TempFileFS
-import VideoReader
+from VideoReader import VideoReader
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 import time, os, json
