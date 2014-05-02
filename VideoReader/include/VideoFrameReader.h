@@ -4,7 +4,6 @@
 #include <boost/date_time.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include <cstdlib>
 
 // Define a list that will store VideoFrames
 typedef boost::intrusive::list<VideoFrame> VideoFrameList;
