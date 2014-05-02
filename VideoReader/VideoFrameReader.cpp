@@ -53,13 +53,24 @@ VideoFrameReader::VideoFrameReader(
     throw new std::runtime_error("Not able to open codec information");
   }
 
+  int width = pCodecCtx->width;
+  int height = pCodecCtx->height;
+  if( getenv( "VIDEO_FRAME_WIDTH" ) ) {
+    width = atoi( getenv( "VIDEO_FRAME_WIDTH" ) );
+  }
+  if( getenv( "VIDEO_FRAME_HEIGHT" ) ) {
+    height = atoi( getenv( "VIDEO_FRAME_HEIGHT" ) );
+  }
+
+  //std::cout << "Using width " << width << " and height " << height << std::endl;
+
   sws_ctx =
     sws_getContext(
       pCodecCtx->width,
       pCodecCtx->height,
       pCodecCtx->pix_fmt,
-      pCodecCtx->width,
-      pCodecCtx->height,
+      width,
+      height,
       PIX_FMT_RGB24,
       SWS_BILINEAR,
       NULL,
