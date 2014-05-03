@@ -9,14 +9,18 @@ class TempFileFS:
     
     def system( self, cmd ):
         if os.system( cmd ):
-	   raise Exception( 'Error with command: %s' % cmd )
-	
+          raise Exception( 'Error with command: %s' % cmd )
+  
     def __enter__(self):
-	self.ramFSBaseDir = tempfile.mkdtemp( dir="/mnt/tmp" )
-	return self.ramFSBaseDir
+        self.ramFSBaseDir = tempfile.mkdtemp( dir="/mnt/tmp" )
+        return self.ramFSBaseDir
 
     def __exit__(self, *args):
         try:
-	   self.system( "cp -r %s/* %s" % ( self.ramFSBaseDir, self.regularFSBaseDir ) )
-	finally:
-	   self.system( "rm -rf %s" % self.ramFSBaseDir )
+          width = os.environ[ "VIDEO_FRAME_WIDTH" ]
+          height = os.environ[ "VIDEO_FRAME_HEIGHT" ]
+          cmd = "find %s -name '*.ppm' | xargs mogrify -resize %sx%s" % ( self.ramFSBaseDir, width, height ) 
+          self.system( cmd )
+          self.system( "cp -r %s/* %s" % ( self.ramFSBaseDir, self.regularFSBaseDir ) )
+        finally:
+          self.system( "rm -rf %s" % self.ramFSBaseDir )

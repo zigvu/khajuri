@@ -25,6 +25,8 @@ if __name__ == '__main__':
     print 'Usage %s <config.yaml> <video.file>' % sys.argv[ 0 ]
   else:
     config = Config( sys.argv[ 1 ] )
+    os.environ[ "VIDEO_FRAME_WIDTH" ] = "%s" % config.getFrameWidth()
+    os.environ[ "VIDEO_FRAME_HEIGHT" ] = "%s" % config.getFrameHeight()
     dsg = DetectionStrandGroup( config )
     pendingProcess = []
     for plugin in config.getPluginClassNames():
