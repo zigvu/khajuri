@@ -94,6 +94,6 @@ if __name__ == '__main__':
   if len( sys.argv ) < 2:
     print 'Usage %s <img_file>' % sys.argv[ 0 ]
     sys.exit( 1 )
-  standAlone = StandAlonePlugin( BlankDetection )
+  standAlone = StandAlonePlugin( BlankDetection, 'BlankDetection' )
   print standAlone.process( sys.argv[ 1 ] )
 

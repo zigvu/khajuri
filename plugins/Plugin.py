@@ -1,5 +1,6 @@
 from random import random
 import os, sys
+from Controller.Config import Config
 
 class Plugin:
 	"""Base class for all plugins.
@@ -37,14 +38,15 @@ class Bunch(dict):
     self.__dict__ = self
 
 class StandAlonePlugin( object ):
-  def __init__( self, PluginClass ):
-     self.PluginClass = PluginClass
+  def __init__( self, pluginClass, pluginName ):
+     self.PluginClass = pluginClass
+     self.name = pluginName
 
   def process( self, imgFile ):
      baseScriptDir = os.path.dirname(os.path.realpath(__file__))
-     configFile = os.path.join( baseScriptDir, "..", "..", "default_config.yaml" )
-     myConfig = Bunch()
-     plugin = self.PluginClass( myConfig )
+     configFile = os.path.join( baseScriptDir, "..", "default_config.yaml" )
+     myConfig = Config( configFile )
+     plugin = self.PluginClass( myConfig.getPluginConfig( self.name ) )
      frame = Bunch()
      frame.imgName = sys.argv[ 1 ]
      return plugin.process( frame )
