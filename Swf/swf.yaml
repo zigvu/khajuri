@@ -1,0 +1,8 @@
+# Config file specific to SWF Video Pipeline
+domain: ZigVu
+workflowtype: VideoEvaluateWorkflow
+version: "1.3"
+task_list: kheer
+bucketname: zigvuvideosdevelopment
+videoUrlKey : video.url
+videoIdKey : video.id

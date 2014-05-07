@@ -1,0 +1,10 @@
+[Core]
+Name = Download Video
+Module = download_video
+
+[Documentation]
+Author = Sudip Regmi
+Version = 0.1
+Website = http://zigvu.com
+Description = Download the video from Youtube
+Order = 1
