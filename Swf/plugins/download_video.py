@@ -19,13 +19,12 @@ class DownloadVideo(IPlugin):
         activityWorker.heartbeat()
         videoJson, videoFile = downloadYoutubeVideo( youtubeUrl )
         videoDir = os.path.join( os.getcwd(), videoFile.split('.')[0] )
+        if not os.path.exists( videoDir ):
+           os.makedirs( videoDir )
         videoDescription = FFProbe.probeVideoFile( videoFile, videoJson )
         inspectOutputFile = open( os.path.join( videoDir, "inspect.json" ), "w" )
         json.dump( videoDescription, inspectOutputFile, indent=2 )
         inspectOutputFile.close()
-        inspectOutputFile.close()
-        if not os.path.exists( videoDir ):
-           os.makedirs( videoDir )
         os.system( "mv %s %s" % ( videoFile, videoDir ) )
         videoFile = os.path.join( videoDir, videoFile )
         logging.info( 'Done with Video Download, saving at: %s ' % videoFile )

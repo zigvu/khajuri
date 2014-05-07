@@ -4,7 +4,7 @@ from Controller.Frame import FrameGroup
 from Controller.PluginGroup import PluginGroup
 from Controller.Result import ResultGroup
 from Controller.TempFS import TempFileFS
-import VideoReader
+from VideoReader import VideoReader
 import multiprocessing
 from multiprocessing.pool import ThreadPool
 import time, os, json
@@ -34,12 +34,13 @@ class DetectionStrand:
     else:
       self.strandType = strandType
 
-  def process(self):
+  def process(self, activityWorker):
     """Run the detection strand and save subsequent resultGroup"""
     runAdditionalStrands = False
     result = self.resultGroup.getNextResultToEvaluate()
     while result != None:
       # first, process the result
+      activityWorker.heartbeat()
       processResult, processDecision = result.process()
       # if the plugin is to let through only 1 frame:
       if result.plugin.name == self.config.getPluginClassNameForSelectingSingleFrame():
@@ -69,11 +70,13 @@ class DetectionStrandGroup:
   def __init__(self, config ):
     self.config = config
 
-  def runVidPipe(self, videoFileName):
+  def runVidPipe(self, videoFileName, activityWorker):
+    activityWorker.heartbeat()
     self.videoFileName = videoFileName
     self.videoFrameReader = VideoReader.VideoFrameReader( 40, 40, self.videoFileName )
     self.config.getPluginConfig("FrameExtraction")["videoFrameReader"] = self.videoFrameReader
     self.videoFrameReader.generateFrames()
+    activityWorker.heartbeat()
     results = []
     second = 0
     fps = self.videoFrameReader.fps
@@ -84,8 +87,9 @@ class DetectionStrandGroup:
         if not os.path.exists( baseFrameFolder ):
           os.makedirs( baseFrameFolder )
           self.config.getPluginConfig("FrameExtraction")["baseFrameFolder"] = baseFrameFolder
+        activityWorker.heartbeat()
         ds = DetectionStrand( int( ( second * fps ) + fps/2.0 ), self.config )
-        ds.process()
+        ds.process( activityWorker )
         second += 1
         results.extend( ds.resultGroup )
     self.videoFrameReader.waitForEOF()
