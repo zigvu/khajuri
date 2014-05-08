@@ -4,7 +4,7 @@ import shlex, subprocess
 import time
 import boto.swf.layer2 as swf
 import logging, json, yaml
-import glob, sys
+import glob, sys, os
 import os, tempfile, pdb
 from multiprocessing import Process
 import VideoPipeline
@@ -92,6 +92,8 @@ class VideoTaskContainer(swf.ActivityWorker):
           if plugin.startswith( "Model" ):
             modelConfig = config.getPluginConfig( plugin )
             modelDet = ModelDetection(modelConfig)
+        os.environ[ "VIDEO_FRAME_WIDTH" ] = "%s" % config.getFrameWidth()
+        os.environ[ "VIDEO_FRAME_HEIGHT" ] = "%s" % config.getFrameHeight()
         dsg = DetectionStrandGroup( config )
       
       #startPlugins( self, dsg, jsonInput )
