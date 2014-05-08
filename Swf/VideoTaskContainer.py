@@ -7,6 +7,7 @@ import logging, json, yaml
 import glob, sys
 import os, tempfile, pdb
 from multiprocessing import Process
+import VideoPipeline
 from Controller.Config import Config
 from Controller.DetectionStrand import DetectionStrandGroup
 from plugins.model_eval.ModelDetectionHelper import ModelDetection

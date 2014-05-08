@@ -40,3 +40,5 @@ nosetests.xml
 output.txt
 *.o
 VideoReader.so
+*.log
+*.json
