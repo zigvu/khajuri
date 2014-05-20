@@ -39,4 +39,5 @@ nosetests.xml
 
 output.txt
 *.o
+*.log
 VideoReader.so
