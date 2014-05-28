@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 #include "VideoFrameReader.h"
 
 int main(int argc, char *argv[]) {
@@ -33,12 +34,12 @@ int main(int argc, char *argv[]) {
   system(command);
 
   while(seeReturnValue == 0){
-    sprintf(fileName, "frame_%d.ppm", seekFrameNumber);
+    sprintf(fileName, "%s_frame_%d.ppm", basename(argv[3]), seekFrameNumber);
     printf(">>Saving Frame: %d\n", seekFrameNumber);
 
     seeReturnValue = vf.saveFrameWithFrameNumber(seekFrameNumber, fileName);
     if (seeReturnValue == 0){
-      sprintf(command, "convert %s %s/frame_%d.png", fileName, argv[3], seekFrameNumber);
+      sprintf(command, "convert %s %s/%s_frame_%d.png", fileName, argv[3], basename(argv[3]), seekFrameNumber);
       system(command);
       seekFrameNumber = seekFrameNumber + nthFrame;
     }
