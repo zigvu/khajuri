@@ -52,6 +52,13 @@ void VideoFrame::saveFrame(char *fileName, SwsContext *sws_ctx){
   fclose(pFile);
 }
 
+void VideoFrame::saveCroppedFrame( char *fileName, int top, int bottom, int left, int right ){
+  cv::Mat image = cv::Mat( getIplImage(), true );
+  cv::Rect myROI( top, bottom, left, right );
+  cv::Mat croppedImage = image(myROI);
+  imwrite( "cropped.jpg", croppedImage );
+}
+
 AVFrame * VideoFrame::getPFrame(SwsContext *sws_ctx){
   if(!pFrameRGB){
     // Allocate an AVFrame structure
@@ -88,3 +95,42 @@ VideoFrame::~VideoFrame(){
   if(pFrameRGB){ av_free(pFrameRGB); }
   if(buffer){ av_free(buffer); }
 }
+
+
+static IplImage* fill_iplimage_from_frame(const AVFrame *frame, enum AVPixelFormat pixfmt)
+{
+    IplImage *tmpimg;
+    int depth, channels_nb;
+
+    if      (pixfmt == AV_PIX_FMT_GRAY8) { depth = IPL_DEPTH_8U;  channels_nb = 1; }
+    else if (pixfmt == AV_PIX_FMT_BGRA)  { depth = IPL_DEPTH_8U;  channels_nb = 4; }
+    else if (pixfmt == AV_PIX_FMT_BGR24) { depth = IPL_DEPTH_8U;  channels_nb = 3; }
+    else return NULL;
+
+    tmpimg = cvCreateImageHeader((CvSize){frame->width, frame->height}, depth, channels_nb);
+    tmpimg->imageData = tmpimg->imageDataOrigin = (char *)frame->data[0];
+    tmpimg->dataOrder = IPL_DATA_ORDER_PIXEL;
+    tmpimg->origin    = IPL_ORIGIN_TL;
+    tmpimg->widthStep = frame->linesize[0];
+    return tmpimg;
+}
+
+IplImage* VideoFrame::getIplImage(){
+  if(!iplImage) { 
+     iplImage = fill_iplimage_from_frame( pFrame, AV_PIX_FMT_BGR24 );
+  }
+  return iplImage;
+}
+
+caffe::Datum *VideoFrame::getCaffeProtoBuf( int top, int bottom, int left, int right ) {
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+  caffe::Datum *protoBuf = new caffe::Datum;
+  cv::Mat image = cv::Mat( getIplImage(), true );
+  cv::Rect myROI( top, bottom, left, right );
+  cv::Mat croppedImage = image(myROI);
+
+  // TODO put the data in protoBuf
+  protoBuf->set_data( croppedImage.data, (int)(croppedImage.total()) );
+  return protoBuf;
+}
+

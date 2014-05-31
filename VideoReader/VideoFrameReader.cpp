@@ -165,6 +165,7 @@ int VideoFrameReader::saveFrameWithFrameNumber(int64_t frameNumber, char *fileNa
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
   if(retVideoFrame != NULL){
     retVideoFrame->saveFrame(fileName, sws_ctx);
+    retVideoFrame->saveCroppedFrame(fileName, 10, 10, 200, 200);
     return 0;
   }
   return -1;

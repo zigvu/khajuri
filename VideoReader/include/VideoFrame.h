@@ -13,6 +13,10 @@
 
 #include <stdexcept>
 #include <boost/intrusive/list.hpp>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+#include <opencv/cxcore.h>
+#include "caffe.pb.h"
 
 using namespace boost::intrusive;
 
@@ -32,12 +36,16 @@ class VideoFrame : public list_base_hook<>{
 		void setFrameNumber(int64_t frameNumber);
 		int64_t getFrameNumber();
 		void saveFrame(char *fileNamePrefix, SwsContext *sws_ctx);
+		void saveCroppedFrame(char *fileNamePrefix, int top, int bottom, int left, int right );
 		AVFrame * getPFrame(SwsContext *sws_ctx);
+    IplImage* getIplImage();
+    caffe::Datum *getCaffeProtoBuf( int top, int bottom, int left, int right );
 
 	private:
 		AVFrame *pFrame = NULL;
 	  AVFrame *pFrameRGB = NULL;
 	  uint8_t *buffer = NULL;
+    IplImage *iplImage = NULL;
 
 	  int width;
 	  int height;

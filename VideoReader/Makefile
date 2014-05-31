@@ -14,14 +14,18 @@ PYTHON_LIBS= -lpython2.7
 BOOSTLFLAGS= -I/usr/include/boost
 BOOSTLIBS= -lboost_thread -lboost_system -lboost_python
 
+# Open CV Libs
+LIBS_CV = -lopencv_highgui -lopencv_imgproc -lopencv_core # opencv-2.0
+LIBS_PROTO = -lpthread -lprotobuf
+
 # Targets
 EXEC= VideoReader
 SOURCES= $(wildcard *.cpp)
 INCLUDES= $(wildcard include/*.h*)
 HEADERS= include
 OBJECTS= $(SOURCES:.cpp=.o)
-LFLAGS= $(BOOSTLFLAGS) $(FFMPEGLFLAGS) -I$(PYTHON_INCLUDE)
-LIBS= $(BOOSTLIBS) $(FFMPEGLIBS) $(PYTHON_LIBS)
+LFLAGS= $(BOOSTLFLAGS) $(FFMPEGLFLAGS) -I$(PYTHON_INCLUDE) -L/usr/local/lib
+LIBS= $(BOOSTLIBS) $(FFMPEGLIBS) $(PYTHON_LIBS) $(LIBS_CV) $(LIBS_PROTO)
 SHAREDLIB= $(EXEC).so
 
 #CFLAGS:= -Wall -ggdb -I$(HEADERS) -DDEBUG_BUILD -fPIC
