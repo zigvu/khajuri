@@ -129,8 +129,21 @@ caffe::Datum *VideoFrame::getCaffeProtoBuf( int top, int bottom, int left, int r
   cv::Rect myROI( top, bottom, left, right );
   cv::Mat croppedImage = image(myROI);
 
-  // TODO put the data in protoBuf
-  protoBuf->set_data( croppedImage.data, (int)(croppedImage.total()) );
+  protoBuf->set_channels(3);
+  protoBuf->set_height(croppedImage.rows);
+  protoBuf->set_width(croppedImage.cols);
+  protoBuf->clear_data();
+  protoBuf->clear_float_data();
+  std::string* datum_string = protoBuf->mutable_data();
+  for (int c = 0; c < 3; ++c) {
+    for (int h = 0; h < croppedImage.rows; ++h) {
+      for (int w = 0; w < croppedImage.cols; ++w) {
+        datum_string->push_back(
+            static_cast<char>(croppedImage.at<cv::Vec3b>(h, w)[c]));
+      }
+    }
+  }
+
   return protoBuf;
 }
 
