@@ -13,6 +13,9 @@
 
 #include <stdexcept>
 #include <boost/intrusive/list.hpp>
+#include <opencv/cv.h>
+#include <opencv/highgui.h>
+#include <opencv/cxcore.h>
 
 using namespace boost::intrusive;
 
@@ -32,6 +35,7 @@ class VideoFrame : public list_base_hook<>{
 		void setFrameNumber(int64_t frameNumber);
 		int64_t getFrameNumber();
 		void saveFrame(char *fileNamePrefix, SwsContext *sws_ctx);
+		void savePng(char *fileNamePrefix, SwsContext *sws_ctx);
 		AVFrame * getPFrame(SwsContext *sws_ctx);
 
 	private:

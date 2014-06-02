@@ -34,20 +34,13 @@ int main(int argc, char *argv[]) {
   system(command);
 
   while(seeReturnValue == 0){
-    sprintf(fileName, "%s_frame_%d.ppm", basename(argv[3]), seekFrameNumber);
-    printf(">>Saving Frame: %d\n", seekFrameNumber);
+    sprintf(fileName, "%s/%s_frame_%d.png", argv[3],basename(argv[3]), seekFrameNumber);
+    printf(">>Saving Frame: %d at %s\n", seekFrameNumber, fileName );
 
-    seeReturnValue = vf.saveFrameWithFrameNumber(seekFrameNumber, fileName);
-    if (seeReturnValue == 0){
-      sprintf(command, "convert %s %s/%s_frame_%d.png", fileName, argv[3], basename(argv[3]), seekFrameNumber);
-      system(command);
-      seekFrameNumber = seekFrameNumber + nthFrame;
-    }
+    seeReturnValue = vf.savePngWithFrameNumber(seekFrameNumber, fileName);
+    seekFrameNumber = seekFrameNumber + nthFrame;
   }
-  sprintf(command, "rm -rf *.ppm");
-  system(command);
-  
-  vf.joinThreads();
 
+  vf.joinThreads();
   return 0;
 }
