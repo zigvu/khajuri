@@ -1,0 +1,10 @@
+[Core]
+Name = Process Video
+Module = process_video
+
+[Documentation]
+Author = Sudip Regmi
+Version = 0.1
+Website = http://zigvu.com
+Description = Run Video Pipeline on Video
+Order = 2

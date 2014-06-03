@@ -37,6 +37,7 @@ class VideoFrame : public list_base_hook<>{
 		int64_t getFrameNumber();
 		void saveFrame(char *fileNamePrefix, SwsContext *sws_ctx);
 		void saveCroppedFrame(char *fileNamePrefix, int top, int bottom, int left, int right );
+		void savePng(char *fileNamePrefix, SwsContext *sws_ctx);
 		AVFrame * getPFrame(SwsContext *sws_ctx);
     IplImage* getIplImage();
     caffe::Datum *getCaffeProtoBuf( int top, int bottom, int left, int right );

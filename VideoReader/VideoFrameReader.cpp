@@ -171,6 +171,16 @@ int VideoFrameReader::saveFrameWithFrameNumber(int64_t frameNumber, char *fileNa
   return -1;
 }
 
+int VideoFrameReader::savePngWithFrameNumber(int64_t frameNumber, char *fileName){
+  DEBUG("VideoFrameReader: savePngWithFrameNumber: %lld\n", (long long)frameNumber);
+  VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
+  if(retVideoFrame != NULL){
+    retVideoFrame->savePng(fileName, sws_ctx);
+    return 0;
+  }
+  return -1;
+}
+
 VideoFrame* VideoFrameReader::getFrameWithFrameNumber(int64_t frameNumber){
   DEBUG("VideoFrameReader: getFrameWithFrameNumber: %lld\n", (long long)frameNumber);
   int retVal = seekToFrameWithFrameNumber(frameNumber);
