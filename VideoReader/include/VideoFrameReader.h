@@ -53,15 +53,15 @@ class VideoFrameReader {
     boost::condition_variable cond;
 
     // To manage frame extraction
-    AVFormatContext   *pFormatCtx = NULL;
+    AVFormatContext   *pFormatCtx;
     int               videoStream;
-    AVCodecContext    *pCodecCtx = NULL;
-    AVCodec           *pCodec = NULL;
+    AVCodecContext    *pCodecCtx;
+    AVCodec           *pCodec;
     AVPacket          packet;
     int               frameFinished;
     int               numBytes;
-    AVDictionary      *optionsDict = NULL;
-    struct SwsContext *sws_ctx = NULL;
+    AVDictionary      *optionsDict;
+    struct SwsContext *sws_ctx;
     float             time_base;
     AVRational        fps;
 

@@ -4,7 +4,7 @@
 
 int main(int argc, char *argv[]) {
   if(argc < 4) {
-    printf("Usage: FrameCreator <videoFileName> <nthFrame> <outputFolder>\n");
+    printf("Usage: VideoReader <videoFileName> <nthFrame> <outputFolder>\n");
     printf("    <videoFileName> : File name of the video\n");
     printf("    <nthFrame>      : Dump every nth frame\n");
     printf("    <outputFolder>  : Folder to put all dumped frames\n");
