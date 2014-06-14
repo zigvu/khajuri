@@ -8,6 +8,14 @@ VideoFrameReader::VideoFrameReader(
   
   DEBUG("%s\n", "VideoFrameReader: Constructor");
 
+  // initialize values to NULL
+  pFormatCtx = NULL;
+  pFormatCtx = NULL;
+  pCodecCtx = NULL;
+  pCodec = NULL;
+  optionsDict = NULL;
+  sws_ctx = NULL;
+
   // Register all formats and codecs
   av_register_all();
 

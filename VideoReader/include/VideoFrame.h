@@ -13,10 +13,8 @@
 
 #include <stdexcept>
 #include <boost/intrusive/list.hpp>
-#include <opencv/cv.h>
-#include <opencv/highgui.h>
-#include <opencv/cxcore.h>
 #include "caffe.pb.h"
+#include <opencv2/opencv.hpp>
 
 using namespace boost::intrusive;
 
@@ -44,10 +42,10 @@ class VideoFrame : public list_base_hook<>{
     caffe::Datum *getCaffeProtoBuf( int top, int bottom, int left, int right );
 
 	private:
-		AVFrame *pFrame = NULL;
-	  AVFrame *pFrameRGB = NULL;
-	  uint8_t *buffer = NULL;
-    IplImage *iplImage = NULL;
+    IplImage *iplImage;
+		AVFrame *pFrame;
+	  AVFrame *pFrameRGB;
+	  uint8_t *buffer;
 
 	  int width;
 	  int height;

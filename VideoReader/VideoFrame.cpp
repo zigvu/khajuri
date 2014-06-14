@@ -6,6 +6,11 @@ VideoFrame::VideoFrame(int w, int h){
   width = w;
   height = h;
 
+  pFrame = NULL;
+  pFrameRGB = NULL;
+  buffer = NULL;
+  iplImage = NULL;
+
   pFrame = avcodec_alloc_frame();
   videoFrameNumber = -1;
   videoFrameTimeStamp = -1.0;
