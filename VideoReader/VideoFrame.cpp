@@ -81,6 +81,13 @@ void VideoFrame::saveCroppedFrame( char *fileName, int top, int bottom, int left
   cv::Mat croppedImage = image(myROI);
   imwrite( "cropped.jpg", croppedImage );
 }
+void VideoFrame::saveAnnotatedFrame( char *fileName, SwsContext *sws_ctx, int x, int y, int width, int height ){
+  cv::Mat image = cv::Mat( getIplImage(), true );
+  cv::Rect myROI( x, y, width, height );
+  cv::Mat croppedImage = image(myROI);
+  imwrite( fileName, croppedImage );
+}
+
 
 AVFrame * VideoFrame::getPFrame(SwsContext *sws_ctx){
   if(!pFrameRGB){

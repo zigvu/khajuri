@@ -38,7 +38,7 @@ $(MAIN): $(OBJECTS) $(SHAREDLIB)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJECTS) $(LIBS) $(LFLAGS)
 
 $(SHAREDLIB): $(OBJECTS)
-	g++ -shared -Wl,--export-dynamic $(OBJECTS) -L/usr/lib/python$(PYTHON_VERSION)/config -lpython$(PYTHON_VERSION) $(LIBS) -o $(MAIN).so
+	g++ -shared -Wl,--export-dynamic $(OBJECTS) -L/usr/lib/python$(PYTHON_VERSION)/config -L/usr/local/lib -lpython$(PYTHON_VERSION) $(LIBS) -o $(MAIN).so
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(LFLAGS) $(LIBS) -c $<  -o $@

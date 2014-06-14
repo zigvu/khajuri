@@ -30,6 +30,8 @@ class VideoFrameReader {
     void videoFrameBufferConsumer(int numberOfFramesToConsume);
     int saveFrameWithFrameNumber(int64_t frameNumber, char *fileName);
     int savePngWithFrameNumber(int64_t frameNumber, char *fileName);
+    int annotateFrameNumber(int64_t frameNumber, char *fileName, 
+        int x, int y, int width, int height );
     VideoFrame* getFrameWithFrameNumber(int64_t frameNumber);
     int seekToFrameWithFrameNumber(int64_t frameNumber);
     uint getLengthInMicroSeconds();

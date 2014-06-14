@@ -20,6 +20,7 @@ BOOST_PYTHON_MODULE(VideoReader)
                         .def("getFrameWithFrameNumber", &VideoFrameReader::getFrameWithFrameNumber, boost::python::return_internal_reference<>())
                         .def("saveFrameWithFrameNumber", &VideoFrameReader::saveFrameWithFrameNumber)
                         .def("savePngWithFrameNumber", &VideoFrameReader::savePngWithFrameNumber)
+                        .def("annotateFrameNumber", &VideoFrameReader::annotateFrameNumber)
 
     ;
 
