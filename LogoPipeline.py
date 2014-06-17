@@ -48,6 +48,11 @@ class BoundingBoxes( object ):
         boundingBoxes.append( ( int( self.width - patchSize ), y, patchSize, patchSize ) )
         y += stepSize
 
+    if x < self.width and y < self.height:
+      boundingBoxes.append( ( int( self.width - patchSize ), 
+                              int( self.height - patchSize ), 
+                              patchSize, patchSize ) )
+
     return boundingBoxes
 
 
@@ -58,7 +63,7 @@ class Annotations( object ):
     self.myDict = {}
     self.myDict[ 'annotation_filename' ] = '%s_frame_%s.json' % ( videoId, frameId )
     self.myDict[ 'frame_filename' ] = '%s_frame_%s.png' % ( videoId, frameId )
-    self.myDict[ 'frame_number' ] = '%s' % ( frameId )
+    self.myDict[ 'frame_number' ] = frameId
     self.myDict[ 'scales' ] = []
     self.scales = {}
     for scale in scaling:
@@ -71,10 +76,10 @@ class Annotations( object ):
                                                                  scale,
                                                                  patchNum ),
            'patch' : {
-             'x' : '%s' % x,
-             'y' : '%s' % y,
-             'width' : '%s' % width,
-             'height' : '%s' % height,
+             'x' : x,
+             'y' : y,
+             'width' : width,
+             'height' : height,
              }
            } )
 
@@ -119,7 +124,7 @@ if __name__ == '__main__':
 
     # Get the bouding boxes
     boundingBoxes = {}
-    frameNum = 0
+    frameNum = 1
     while not videoFrameReader.eof or frameNum <= videoFrameReader.totalFrames:
       fileName = os.path.join( outputFramesDir, "%s_frame_%s.png" % ( videoId, frameNum ) )
       # print 'Saving Frame: %s' % fileName
@@ -136,8 +141,8 @@ if __name__ == '__main__':
           patchFileName = os.path.join( outputPatchesDir, "%s_frame_%s_scl_%s_idx_%s.png" % ( videoId, int( frameNum ), scale,  patchNum ) )
           # print 'Saving Patch: %s' % patchFileName
           videoFrameReader.patchFromFrameNumber( frameNum, patchFileName, scale, box[ 0 ], box[ 1 ], box[ 2 ], box [ 3 ] )
-          patchNum += 1
           annotations.addBoundingBox( scale, patchNum, box[ 0 ], box[ 1 ], box[ 2 ], box[ 3 ] )
+          patchNum += 1
       annotations.dump( 
           os.path.join( outputJsonDir, '%s_frame_%s.json'  % ( videoId, frameNum ) ) )
       frameNum += frameStep
