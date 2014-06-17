@@ -128,8 +128,8 @@ void VideoFrameReader::videoFrameBufferProducer(){
         vf->setFrameNumber(frameNumber++);
         vf->setTimeStamp(packet.pts * time_base); // this will be ignored if not new frame
 
+	      vf->getPFrame( sws_ctx );
         videoFrameList.push_front(*vf);
-	vf->getPFrame( sws_ctx );
         if(videoFrameList.size() >= maxVideoFrameListSize){
           data_ready = false;
         }
@@ -173,7 +173,6 @@ int VideoFrameReader::saveFrameWithFrameNumber(int64_t frameNumber, char *fileNa
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
   if(retVideoFrame != NULL){
     retVideoFrame->saveFrame(fileName, sws_ctx);
-    retVideoFrame->saveCroppedFrame(fileName, 10, 10, 200, 200);
     return 0;
   }
   return -1;
@@ -189,12 +188,12 @@ int VideoFrameReader::savePngWithFrameNumber(int64_t frameNumber, char *fileName
   return -1;
 }
 
-int VideoFrameReader::annotateFrameNumber(int64_t frameNumber, char *fileName,
+int VideoFrameReader::patchFromFrameNumber(int64_t frameNumber, char *fileName, float scale,
     int x, int y, int width, int height){
-  DEBUG("VideoFrameReader: annotateFrameNumber: %lld\n", (long long)frameNumber);
+  DEBUG("VideoFrameReader: patchFromFrameNumber: %lld\n", (long long)frameNumber);
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
   if(retVideoFrame != NULL){
-    retVideoFrame->saveAnnotatedFrame(fileName, sws_ctx, x, y, width, height);
+    retVideoFrame->saveCroppedFrame(fileName, sws_ctx, scale, x, y, width, height);
     return 0;
   }
   return -1;
@@ -294,6 +293,11 @@ uint VideoFrameReader::getLengthInMicroSeconds() {
 double VideoFrameReader::getFps(){
   return fps.num / fps.den ;
 }
+
+int VideoFrameReader::getTotalFrames(){
+  return maxVideoFrameNumber;
+}
+
 
 VideoFrameReader::~VideoFrameReader() {
   // clear out any remaining frames from list

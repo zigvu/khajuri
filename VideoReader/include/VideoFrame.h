@@ -31,20 +31,19 @@ class VideoFrame : public list_base_hook<>{
 		AVFrame * getAVFrame();
 		void setTimeStamp(double timestamp);
 		double getTimeStamp();
+		int getWidth();
+		int getHeight();
 		void setFrameNumber(int64_t frameNumber);
 		int64_t getFrameNumber();
 		void saveFrame(char *fileNamePrefix, SwsContext *sws_ctx);
-		void saveCroppedFrame(char *fileNamePrefix, int top, int bottom, int left, int right );
 		void savePng(char *fileNamePrefix, SwsContext *sws_ctx);
-    void saveAnnotatedFrame( char *fileNamePrefix, SwsContext *sws_ctx, int x, int y, int width, int height );
+    void saveCroppedFrame( char *fileNamePrefix, SwsContext *sws_ctx, float scale, int x, int y, int width, int height );
 		AVFrame * getPFrame(SwsContext *sws_ctx);
-    IplImage* getIplImage();
-    caffe::Datum *getCaffeProtoBuf( int top, int bottom, int left, int right );
 
 	private:
     IplImage *iplImage;
 		AVFrame *pFrame;
-	  AVFrame *pFrameRGB;
+		AVFrame *dst;
 	  uint8_t *buffer;
 
 	  int width;
@@ -52,4 +51,5 @@ class VideoFrame : public list_base_hook<>{
 
 	  int64_t videoFrameNumber;
 	  double videoFrameTimeStamp;
+    std::map< float, cv::Mat *> scaledFrames;
 };

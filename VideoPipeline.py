@@ -3,6 +3,10 @@ import glob, sys
 import os, tempfile, pdb
 from multiprocessing import Process
 
+class MyMock( object ):
+  def heartbeat( self ):
+    pass
+
 # Add files to path
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append( '%s/Controller' % baseScriptDir )
@@ -18,7 +22,7 @@ from Controller.DetectionStrand import DetectionStrand, DetectionStrandGroup
 from plugins.model_eval.ModelDetectionHelper import ModelDetection
 
 def processVideo( dsg, videoFilePath ):
-  dsg.runVidPipe( videoFilePath )
+  dsg.runVidPipe( videoFilePath, MyMock() )
 
 if __name__ == '__main__':
   if len( sys.argv ) < 3:
