@@ -1,12 +1,14 @@
-# Configuration for Logo Pipeline
+# Dimension of patches
+output_width:    256
+output_height:   256
 
-boundingBoxes:
-  stepSize:   128
-  patchSize:   256
-
-scaling: [0.4, 0.6, 0.8, 1.0, 1.2 ]
-
-frameExtraction:
-  # Extract Every frameStep's frame from video
-  frameStep: 5
-
+# Sliding window configurations
+sliding_window:
+  is_test:                                    false
+  folders:
+    patch_output:                             patches
+    annotation_output:                        annotations
+  frame_density:                              5
+  x_stride:                                 128
+  y_stride:                                 128
+  scaling:                                  [0.4, 0.6, 0.8, 1.0, 1.2 ] 

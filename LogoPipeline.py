@@ -30,28 +30,30 @@ class BoundingBoxes( object ):
 
   def getBoundingBoxes( self ):
     boundingBoxes = []
-    stepSize  = self.config[ 'boundingBoxes' ] [ 'stepSize' ]
-    patchSize =self.config[ 'boundingBoxes' ] [ 'patchSize' ]
+    xstepSize  = self.config[ 'sliding_window' ] [ 'x_stride' ]
+    ystepSize  = self.config[ 'sliding_window' ] [ 'y_stride' ]
+    patchSizeWidth = self.config[ 'output_width' ]
+    patchSizeHeight = self.config[ 'output_height' ]
     x = 0
-    while x + patchSize <= self.width:
+    while x + patchSizeWidth <= self.width:
       y = 0
-      while y + patchSize <= self.height:
-        boundingBoxes.append( ( x, y, patchSize, patchSize ) )
-        y += stepSize
+      while y + patchSizeHeight <= self.height:
+        boundingBoxes.append( ( x, y, patchSizeWidth, patchSizeHeight ) )
+        y += ystepSize
       if y < self.height:
-        boundingBoxes.append(( x, int( self.height - patchSize), patchSize, patchSize ) )
-      x += stepSize
+        boundingBoxes.append(( x, int( self.height - patchSizeHeight), patchSizeWidth, patchSizeHeight ) )
+      x += xstepSize
 
     if x < self.width:
       y = 0
-      while y + patchSize <= self.height:
-        boundingBoxes.append( ( int( self.width - patchSize ), y, patchSize, patchSize ) )
-        y += stepSize
+      while y + patchSizeHeight <= self.height:
+        boundingBoxes.append( ( int( self.width - patchSizeWidth ), y, patchSizeWidth, patchSizeHeight ) )
+        y += ystepSize
 
     if x < self.width and y < self.height:
-      boundingBoxes.append( ( int( self.width - patchSize ), 
-                              int( self.height - patchSize ), 
-                              patchSize, patchSize ) )
+      boundingBoxes.append( ( int( self.width - patchSizeWidth ), 
+                              int( self.height - patchSizeHeight ), 
+                              patchSizeWidth, patchSizeHeight ) )
 
     return boundingBoxes
 
@@ -110,10 +112,10 @@ if __name__ == '__main__':
 
     # Part of Config.yaml file
     outputFramesDir = os.path.join( "output", "frames" )
-    outputPatchesDir = os.path.join( "output", "patches" )
-    outputJsonDir = os.path.join( "output", "annotations" )
-    frameStep = config[ 'frameExtraction' ] [ 'frameStep' ]
-    scaling = config[ 'scaling' ]
+    outputPatchesDir = os.path.join( "output", config[ 'sliding_window' ][ 'folders' ]["patch_output" ] )
+    outputJsonDir = os.path.join( "output", config[ 'sliding_window' ][ 'folders' ]["annotation_output"] )
+    frameStep = config[ 'sliding_window' ] [ 'frame_density' ]
+    scaling = config[ 'sliding_window' ][ 'scaling' ]
 
     # Setup
     videoName = os.path.basename( videoFileName )
