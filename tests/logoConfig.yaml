@@ -1,0 +1,12 @@
+# Configuration for Logo Pipeline
+
+boundingBoxes:
+  stepSize:   128
+  patchSize:   256
+
+scaling: [ 0.5, 1.0, 1.2 ]
+
+frameExtraction:
+  # Extract Every frameStep's frame from video
+  frameStep: 5
+
