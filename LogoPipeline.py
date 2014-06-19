@@ -55,7 +55,7 @@ class BoundingBoxes( object ):
                               int( self.height - patchSizeHeight ), 
                               patchSizeWidth, patchSizeHeight ) )
 
-    return boundingBoxes
+    return set( boundingBoxes )
 
 
 class Annotations( object ):
