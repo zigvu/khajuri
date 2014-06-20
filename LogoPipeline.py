@@ -40,22 +40,23 @@ class BoundingBoxes( object ):
       while y + patchSizeHeight <= self.height:
         boundingBoxes.append( ( x, y, patchSizeWidth, patchSizeHeight ) )
         y += ystepSize
-      if y < self.height:
+      if y - ystepSize + patchSizeHeight != self.height:
         boundingBoxes.append(( x, int( self.height - patchSizeHeight), patchSizeWidth, patchSizeHeight ) )
       x += xstepSize
 
-    if x < self.width:
+    if x - xstepSize + patchSizeWidth != self.width:
       y = 0
       while y + patchSizeHeight <= self.height:
         boundingBoxes.append( ( int( self.width - patchSizeWidth ), y, patchSizeWidth, patchSizeHeight ) )
         y += ystepSize
 
-    if x < self.width and y < self.height:
+    if x - xstepSize + patchSizeWidth != self.width\
+        and y - ystepSize + patchSizeHeight != self.height:
       boundingBoxes.append( ( int( self.width - patchSizeWidth ), 
                               int( self.height - patchSizeHeight ), 
                               patchSizeWidth, patchSizeHeight ) )
 
-    return set( boundingBoxes )
+    return boundingBoxes
 
 
 class Annotations( object ):
