@@ -3,6 +3,7 @@ import glob, sys
 import os, tempfile, pdb
 from multiprocessing import Process
 import yaml, json
+from collections import OrderedDict
 
 class MyMock( object ):
   def heartbeat( self ):
@@ -63,28 +64,28 @@ class Annotations( object ):
   def __init__( self, videoId, frameId, scaling ):
     self.videoId = videoId
     self.frameId = frameId
-    self.myDict = {}
+    self.myDict = OrderedDict()
     self.myDict[ 'annotation_filename' ] = '%s_frame_%s.json' % ( videoId, frameId )
     self.myDict[ 'frame_filename' ] = '%s_frame_%s.png' % ( videoId, frameId )
     self.myDict[ 'frame_number' ] = frameId
     self.myDict[ 'scales' ] = []
-    self.scales = {}
+    self.scales = OrderedDict()
     for scale in scaling:
       self.scales[ scale ]  = []
 
   def addBoundingBox( self, scale, patchNum, x, y, width, height ):
-    self.scales[ scale ].append( 
-        { 'patch_filename' : '%s_frame_%s_scl_%s_idx_%s.png' % ( self.videoId,
+    self.scales[ scale ].append( OrderedDict(
+        [ ( 'patch_filename' , '%s_frame_%s_scl_%s_idx_%s.png' % ( self.videoId,
                                                                  self.frameId,
                                                                  scale,
-                                                                 patchNum ),
-           'patch' : {
-             'x' : x,
-             'y' : y,
-             'width' : width,
-             'height' : height,
-             }
-           } )
+                                                                 patchNum ) ),
+           ( 'patch' , OrderedDict( [
+             ( 'x' , x ),
+             ( 'y' , y ),
+             ( 'width' , width ),
+             ( 'height' , height)
+             ] )
+            ) ] ) )
 
 
   def dump( self, fileName ):
@@ -98,8 +99,8 @@ class Annotations( object ):
       json.dump( self.myDict, f, indent=2 )
 
 if __name__ == '__main__':
-  if len( sys.argv ) < 3:
-    print 'Usage %s <config.yaml> <video.file>' % sys.argv[ 0 ]
+  if len( sys.argv ) < 4:
+    print 'Usage %s <config.yaml> <video.file> <output.dir>' % sys.argv[ 0 ]
   else:
     f = open( sys.argv[ 1 ] )
     config = yaml.safe_load(f)
@@ -112,9 +113,10 @@ if __name__ == '__main__':
     fps = videoFrameReader.fps
 
     # Part of Config.yaml file
-    outputFramesDir = os.path.join( "output", "frames" )
-    outputPatchesDir = os.path.join( "output", config[ 'sliding_window' ][ 'folders' ]["patch_output" ] )
-    outputJsonDir = os.path.join( "output", config[ 'sliding_window' ][ 'folders' ]["annotation_output"] )
+    outputDir = sys.argv[ 3 ]
+    outputFramesDir = os.path.join( outputDir, "frames" )
+    outputPatchesDir = os.path.join( outputDir, config[ 'sliding_window' ][ 'folders' ]["patch_output" ] )
+    outputJsonDir = os.path.join( outputDir, config[ 'sliding_window' ][ 'folders' ]["annotation_output"] )
     frameStep = config[ 'sliding_window' ] [ 'frame_density' ]
     scaling = config[ 'sliding_window' ][ 'scaling' ]
 
