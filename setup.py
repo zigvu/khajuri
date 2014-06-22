@@ -11,7 +11,7 @@ setup(name='VideoPipeline',
       classifiers=[
         'Copyright (C) ZigVu',
       ],
-      packages=['Controller', 'tests', 'plugins', 'Swf', 'VideoReader' ],
+      packages=['Controller', 'Logo', 'tests', 'plugins', 'Swf', 'VideoReader' ],
       test_suite='nose.collector',
       tests_require=['nose', 'nose-cover3'],
       include_package_data=True,
