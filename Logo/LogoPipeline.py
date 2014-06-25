@@ -51,6 +51,7 @@ class BoundingBoxes( object ):
 class AnnotationsReader( object ):
   def __init__( self, fileName ):
     self.myDict = json.load( open( fileName, "r" ) )
+    self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
 
   def getAnnotationFileName( self ):
     return self.myDict[ 'annotation_filename' ]
@@ -62,7 +63,7 @@ class AnnotationsReader( object ):
     return self.myDict[ 'frame_number' ]
 
   def getScalingFactors( self ):
-    return [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
+    return self.scalingFactors
 
   def getPatches( self, scale ):
     for obj in self.myDict[ 'scales' ]:
@@ -85,8 +86,12 @@ class AnnotationsReader( object ):
           boxes.append( patch[ 'patch' ] )
     return boxes
 
-  def getScoreForPatchId( self, patchId, classId, scale ):
-    return random.rand() * 1
+  def getClassIds( self ):
+    return self.myDict['scales'][0]['patches'][0]['scores'].keys()
+
+  def getScoreForPatchIdAtScale( self, patchId, classId, scale ):
+    return self.myDict['scales'][ self.scalingFactors.index( scale ) ]['patches']\
+        [patchId]['scores'][classId]
 
 class Annotations( object ):
   def __init__( self, videoId, frameId, scaling ):
