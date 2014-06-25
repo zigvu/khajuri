@@ -1,0 +1,12 @@
+# Can be Prediction, SubSample, OverSample, HeatMapDump
+mode: Prediction
+      SubSample
+      OverSample
+      HeatMapDump
+
+resultFolder:
+    Predictor: "predictions"
+    SubSample: "subsample"
+    OverSample: "oversample"
+    HeatMapDump: "heatmapdump"
+
