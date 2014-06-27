@@ -13,7 +13,6 @@
 
 #include <stdexcept>
 #include <boost/intrusive/list.hpp>
-#include "caffe.pb.h"
 #include <opencv2/opencv.hpp>
 
 using namespace boost::intrusive;
