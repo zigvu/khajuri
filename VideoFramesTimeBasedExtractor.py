@@ -32,8 +32,9 @@ if __name__ == '__main__':
     expectedFrame = int( fps * float( second ) )
     for frame in range( expectedFrame - numOfFrames/2, expectedFrame + ( numOfFrames/2 ) + 1 ):
       frameNums.append( frame )
+  videoFileNameId = os.path.basename( videoFileName ).split('.')[0]
   for frameNum in sorted( set( frameNums ) ):
-    fileName = os.path.join( outputDir, "%s.png" % frameNum )
+    fileName = os.path.join( outputDir, "%s_%s_%s.png" % ( outputDir.replace("/",""), videoFileNameId,frameNum ) )
     print 'Saving Frame: %s' % fileName
     videoFrameReader.savePngWithFrameNumber(int(frameNum), fileName)
 

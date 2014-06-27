@@ -24,8 +24,9 @@ if __name__ == '__main__':
   videoFrameReader = VideoReader.VideoFrameReader( 40, 40, videoFileName )
   videoFrameReader.generateFrames()
   fps = videoFrameReader.fps
+  videoFileNameId = os.path.basename( videoFileName ).split('.')[0]
   for frameNum in sorted( frameNums ):
-    fileName = os.path.join( outputDir, "%s.png" % frameNum )
+    fileName = os.path.join( outputDir, "%s_%s_%s.png" % ( outputDir.replace("/",""), videoFileNameId,frameNum ) )
     videoFrameReader.savePngWithFrameNumber(int(frameNum), fileName)
     if videoFrameReader.eof:
       break;
