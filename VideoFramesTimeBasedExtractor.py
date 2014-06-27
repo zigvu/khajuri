@@ -36,3 +36,5 @@ if __name__ == '__main__':
     fileName = os.path.join( outputDir, "%s.png" % frameNum )
     print 'Saving Frame: %s' % fileName
     videoFrameReader.savePngWithFrameNumber(int(frameNum), fileName)
+
+  print "Done"
