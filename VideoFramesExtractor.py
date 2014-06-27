@@ -26,7 +26,7 @@ if __name__ == '__main__':
   fps = videoFrameReader.fps
   videoFileNameId = os.path.basename( videoFileName ).split('.')[0]
   for frameNum in sorted( frameNums ):
-    fileName = os.path.join( outputDir, "%s_%s_%s.png" % ( outputDir.replace("/",""), videoFileNameId,frameNum ) )
+    fileName = os.path.join( outputDir, "%s_frame_%s.png" % ( outputDir.replace("/",""), frameNum ) )
     videoFrameReader.savePngWithFrameNumber(int(frameNum), fileName)
     if videoFrameReader.eof:
       break;
