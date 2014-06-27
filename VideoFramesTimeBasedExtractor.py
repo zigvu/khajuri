@@ -36,8 +36,3 @@ if __name__ == '__main__':
     fileName = os.path.join( outputDir, "%s.png" % frameNum )
     print 'Saving Frame: %s' % fileName
     videoFrameReader.savePngWithFrameNumber(int(frameNum), fileName)
-
-  while not videoFrameReader.eof or frameNum <= videoFrameReader.totalFrames:
-    videoFrameReader.seekToFrameWithFrameNumber( int( frameNum ) )
-    frameNum = int( frameNum ) + 100
-  videoFrameReader.waitForEOF()
