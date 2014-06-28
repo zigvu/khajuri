@@ -14,12 +14,13 @@ class Predictor( object ):
     self.outputDir = self.config.getOutputir()
     annotationsFiles = os.path.join( self.inputDir, "annotations", "*json" )
     jsonFiles = glob.glob( annotationsFiles )
+    #pdb.set_trace();
     for f in jsonFiles:
       reader = AnnotationsReader( f )
       self.reader[ reader.getFrameNumber() ] = reader
       self.reader[ reader.getFrameNumber() ].myDict[ "frame_scores" ]\
           = OrderedDict()
-
+    #pdb.set_trace()
     self.listOfClassIds = self.reader[ 1 ].getClassIds()
     self.scalingFactors = self.reader[ 1 ].scalingFactors
     # Testing
@@ -48,8 +49,22 @@ class Predictor( object ):
   def getScore( self, frameId, patchId, classId, scale ):
     return self.reader[ frameId ].getScoreForPatchIdAtScale( patchId, classId, scale )
  
-  def run( self ):
-    raise NotImplementedError( "TODO - Amit - fill in the implementation " )
+  def run( self ):    
+      # Set parameters from config file
+      Parameters = {};
+      Parameters['HitThresh'] = self.config.yamlConfig['parameters']['SpatialCombo']['DetectorThresh'];
+      Parameters['DetectorThresh'] = self.config.yamlConfig['parameters']['SpatialCombo']['HitThresh'];
+      import SpatialScoreCombiner as S
+      SpatialCombo = S.SpatialScoreCombiner();
+      # Iterate through each of the Frames
+      f = 1;
+      for frameId in self.getFrameIds():
+          # SpatialCombo will process each frame and then save the score
+          SpatialCombo.processFrame(self,Parameters,frameId);
+          # Show Progress report
+          if f%25 == 0:
+              print str(f)+" frames processed";
+          f +=1;
  
   def saveScore( self, frameId, classId, score ):
     self.frameScores[ ( frameId, classId ) ] = score
@@ -58,6 +73,7 @@ class Predictor( object ):
     for ( frameId, classId ), score in self.frameScores.iteritems():
       frame_score = self.reader[ frameId ].myDict[ "frame_scores" ]
       frame_score[ classId ] = score
+      
       outputDir = os.path.join( self.outputDir, self.config.getDirToSavePredictions() )
       if not os.path.exists( outputDir ):
         os.makedirs( outputDir )
