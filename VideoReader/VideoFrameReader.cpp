@@ -291,7 +291,7 @@ uint VideoFrameReader::getLengthInMicroSeconds() {
 }
 
 double VideoFrameReader::getFps(){
-  return fps.num / fps.den ;
+  return (double)fps.num/fps.den ;
 }
 
 int VideoFrameReader::getTotalFrames(){
