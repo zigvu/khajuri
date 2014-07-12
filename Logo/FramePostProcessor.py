@@ -12,6 +12,8 @@ class FramePostProcessor(object):
     self.allClassIds = self.jsonReaderWriter.getClassIds()
     self.backgroundClassIds = configReader.pp_backgroundClassIds
     self.nonBackgroundClassIds = [x for x in self.allClassIds if x not in self.backgroundClassIds]
+    # cache computation
+    self.classPixelMaps = {}
 
   def run(self):
     """Collect and analyze detection results"""
@@ -46,5 +48,8 @@ class FramePostProcessor(object):
       for cp in curationPatches:
         self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'])
       # ---------------- END: curation ---------------- 
+      # caching
+      self.classPixelMaps[classId] = {'localizationMap': localizationPixelMap, \
+        'intensityMap': curationPixelMap}
     # save json
     self.jsonReaderWriter.saveState()

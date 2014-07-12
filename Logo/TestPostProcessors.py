@@ -10,22 +10,62 @@ from ImageManipulator import ImageManipulator
 from ScaleSpaceCombiner import ScaleSpaceCombiner
 from FramePostProcessor import FramePostProcessor
 from CurationManager import CurationManager
+from VideoWriter import VideoWriter
 
 class TestPostProcessors(object):
   def __init__(self, configFileName, imageDim):
     self.configReader = ConfigReader(configFileName)
+    self.imageDim = imageDim
     # initialize dimensions
     patchDimension = Rectangle.rectangle_from_dimensions(\
       self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
     self.staticBoundingBoxes = BoundingBoxes(imageDim, \
       self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
 
+  def test_videoWriter(self, jsonFolder, imageFolder, outputFolder):
+    """Test FramePostProcesor.py"""
+    # TODO: dynamically populate fps from input video information
+    fps = 1
+    # we need frames in order
+    frameIndex = {}
+    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
+    for jsonFileName in jsonFiles:
+      print "Post-processing " + os.path.basename(jsonFileName)
+      jsonReaderWriter = JSONReaderWriter(jsonFileName)
+      framePostProcessor = FramePostProcessor(jsonReaderWriter, self.staticBoundingBoxes, self.configReader)
+      framePostProcessor.run()
+      frameNumber = jsonReaderWriter.getFrameNumber()
+      frameIndex[frameNumber] = framePostProcessor
+    print "Total of " + str(len(frameIndex.keys())) + " frames"
+    classIds = JSONReaderWriter(jsonFiles[0]).getClassIds()
+    # create video for each class - except background
+    for classId in classIds:
+      if classId in self.configReader.pp_backgroundClassIds:
+        continue
+      print "Working on video for class " + str(classId)
+      videoFileName = os.path.join(outputFolder, "video_cls_" + str(classId) + ".avi")
+      videoWriter = VideoWriter(videoFileName, fps, self.imageDim)
+      for frameNumber in sorted(frameIndex.keys()):
+        print "\tFrame number " + str(frameNumber)
+        jsonReaderWriter = frameIndex[frameNumber].jsonReaderWriter
+        imageFileName = os.path.join(imageFolder, jsonReaderWriter.getFrameFileName())
+        lclzPixelMap = frameIndex[frameNumber].classPixelMaps[classId]['localizationMap']
+        imgLclz = ImageManipulator(imageFileName)
+        imgLclz.addPixelMap(lclzPixelMap)
+        for lclzPatch in jsonReaderWriter.getLocalizations(classId):
+          bbox = Rectangle.rectangle_from_json(lclzPatch['bbox'])
+          score = float(lclzPatch['score'])
+          label = str(classId) + (": %.2f" % score)
+          imgLclz.addLabeledBbox(bbox, label)
+        videoWriter.addFrame(imgLclz)
+      videoWriter.save()
+
   def test_curationManager(self, jsonFolder, imageFolder, outputFolder):
     """Test FramePostProcesor.py"""
     curationManager = CurationManager(jsonFolder, self.configReader)
     for frameNumber in curationManager.getFrameNumbers():
       for curationPatch in curationManager.getCurationPatches(frameNumber):
-        bbox = curationPatch['bbox']
+        bbox = Rectangle.rectangle_from_json(curationPatch['bbox'])
         patchFolderName = os.path.join(outputFolder, curationPatch['patch_foldername'])
         self.mkdir_p(patchFolderName)
         patchFileName = os.path.join(patchFolderName, curationPatch['patch_filename'])

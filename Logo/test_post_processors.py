@@ -11,7 +11,7 @@ if __name__ == '__main__':
     print 'Usage %s <config.yaml> <testMode> <jsonFolder> <imageFolder> <outputFolder>' % sys.argv[ 0 ]
     print 'Test modes (integer):'
     print '\t1: Test PixelMapper\n\t2: Test ScaleSpaceCombiner\n\t3: Test FramePostProcessor'
-    print '\t4: Test CurationManager\n'
+    print '\t4: Test CurationManager\n\t5: Test VideoWriter\n'
     sys.exit(1)
 
   configFileName = sys.argv[1]
@@ -34,4 +34,6 @@ if __name__ == '__main__':
         testPostProcessors.test_framePostProcessor(jsonFileName, imageFolder, outputFolder)
   elif (testMode == 4):
     testPostProcessors.test_curationManager(jsonFolder, imageFolder, outputFolder)
+  elif (testMode == 5):
+    testPostProcessors.test_videoWriter(jsonFolder, imageFolder, outputFolder)
 
