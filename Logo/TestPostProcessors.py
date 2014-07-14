@@ -1,5 +1,7 @@
 import glob, sys
 import os, errno
+import numpy as np
+from skimage.transform import resize
 
 from Rectangle import Rectangle
 from BoundingBoxes import BoundingBoxes
@@ -30,12 +32,10 @@ class TestPostProcessors(object):
     frameIndex = {}
     jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
     for jsonFileName in jsonFiles:
-      print "Post-processing " + os.path.basename(jsonFileName)
+      print "Reading json " + os.path.basename(jsonFileName)
       jsonReaderWriter = JSONReaderWriter(jsonFileName)
-      framePostProcessor = FramePostProcessor(jsonReaderWriter, self.staticBoundingBoxes, self.configReader)
-      framePostProcessor.run()
       frameNumber = jsonReaderWriter.getFrameNumber()
-      frameIndex[frameNumber] = framePostProcessor
+      frameIndex[frameNumber] = jsonFileName
     print "Total of " + str(len(frameIndex.keys())) + " frames"
     classIds = JSONReaderWriter(jsonFiles[0]).getClassIds()
     # create video for each class - except background
@@ -47,9 +47,11 @@ class TestPostProcessors(object):
       videoWriter = VideoWriter(videoFileName, fps, self.imageDim)
       for frameNumber in sorted(frameIndex.keys()):
         print "\tFrame number " + str(frameNumber)
-        jsonReaderWriter = frameIndex[frameNumber].jsonReaderWriter
+        jsonReaderWriter = JSONReaderWriter(frameIndex[frameNumber])
+        framePostProcessor = FramePostProcessor(jsonReaderWriter, self.staticBoundingBoxes, self.configReader)
+        framePostProcessor.run()
         imageFileName = os.path.join(imageFolder, jsonReaderWriter.getFrameFileName())
-        lclzPixelMap = frameIndex[frameNumber].classPixelMaps[classId]['localizationMap']
+        lclzPixelMap = framePostProcessor.classPixelMaps[classId]['localizationMap']
         imgLclz = ImageManipulator(imageFileName)
         imgLclz.addPixelMap(lclzPixelMap)
         for lclzPatch in jsonReaderWriter.getLocalizations(classId):
@@ -166,6 +168,36 @@ class TestPostProcessors(object):
       imgIntn = ImageManipulator(imageFileName)
       imgIntn.addPixelMap(intensityMap)
       imgIntn.saveImage(outputFileIntn)
+
+  def test_slidingWindows(self):
+    """Test sliding window pixel calculations"""
+    swScalesMin = 0.4
+    swScalesMax = 3.0
+    swScalesIncr = 0.1
+    # original sliding windows
+    for scale in np.arange(swScalesMin, swScalesMax, swScalesIncr):
+      bboxes = self.staticBoundingBoxes.getBoundingBoxes(scale)
+      maxX, maxY = 0, 0
+      for bbox in bboxes:
+        if maxX < (bbox[0] + bbox[2]):
+          maxX = bbox[0] + bbox[2]
+        if maxY < (bbox[1] + bbox[3]):
+          maxY = bbox[1] + bbox[3]
+        # print ("X: %d, Y: %d, W: %d, H: %d, X2: %d, Y2: %d" % 
+        #   (bbox[0], bbox[1], bbox[2], bbox[3], bbox[0] + bbox[2], bbox[1] + bbox[3]))
+      # test pixelMap shape
+      pixelMapShape = np.shape(self.staticBoundingBoxes.pixelMapToRemoveDoubleCounting(scale))
+      #print ("X: PM: %d, SW: %d; Y: PM: %d, SW: %d" % (pixelMapShape[1], maxX, pixelMapShape[0], maxY))
+      if (pixelMapShape[1] != maxX) or (pixelMapShape[0] != maxY):
+        raise RuntimeError("Sliding window and pixelMap creation don't match")
+      # test zoom
+      zoomMap = np.zeros(pixelMapShape)
+      zoomedMapShape = np.shape(resize(zoomMap, (self.imageDim.height, self.imageDim.width)))
+      # print ("X: Orig: %d, Zoom: %d; Y: Orig: %d, Zoom: %d" % 
+      #   (self.imageDim.width, zoomedMapShape[1], self.imageDim.height, zoomedMapShape[0]))
+      if (self.imageDim.width != zoomedMapShape[1]) or (self.imageDim.height != zoomedMapShape[0]):
+        raise RuntimeError("PixelMap zoom don't match")
+      print ("Scale: %0.2f - Pass" % scale)
 
   def mkdir_p(self, path):
     """Util to make path"""

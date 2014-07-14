@@ -1,11 +1,13 @@
 import math
 import numpy as np
 import scipy.ndimage as ndimage
+from skimage.transform import resize
 
 class PixelMapper(object):
   def __init__(self, staticBoundingBoxes, jsonReaderWriter):
     """Initialize pixelMap according to dimensions of image and sliding window"""
     self.staticBoundingBoxes = staticBoundingBoxes
+    self.origImageShape = (staticBoundingBoxes.imageDim.height, staticBoundingBoxes.imageDim.width)
     self.jsonReaderWriter = jsonReaderWriter
     self.pixelMaps = []
     for classId in jsonReaderWriter.getClassIds():
@@ -31,8 +33,8 @@ class PixelMapper(object):
       intensityScoreMask = intensityMap[rStart:rEnd, cStart:cEnd] < patchScore
       intensityMap[rStart:rEnd, cStart:cEnd][intensityScoreMask] = patchScore
     # localization needs rescoring to get rid of double counting artifacts
-    localizationMapZoomed = ndimage.zoom(localizationMap * rescoringMap, 1.0/scale, order=0)
-    intensityMapZoomed = ndimage.zoom(intensityMap, 1.0/scale, order=0)
+    localizationMapZoomed = resize(localizationMap * rescoringMap, self.origImageShape, order=0)
+    intensityMapZoomed = resize(intensityMap, self.origImageShape, order=0)
     # TODO: convolution will be required when doing temporal combination
     # convolutedMap = ndimage.gaussian_filter(reScoredPixelMap, round(16/scale))
     return localizationMapZoomed, intensityMapZoomed
