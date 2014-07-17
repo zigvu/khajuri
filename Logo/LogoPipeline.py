@@ -4,13 +4,16 @@ import os, tempfile, pdb
 from multiprocessing import Process
 import yaml, json
 from collections import OrderedDict
+from Queue import Queue
+from MultiProcessFramePostProcessor import MultiProcessFramePostProcessor
+from RemovePatch import RemovePatch
+
 
 def createDirIfNotExists( dirName ):
   if not os.path.exists( dirName ):
     os.makedirs( dirName )
 
 import VideoReader
-
 class BoundingBoxes( object ):
   def __init__( self, config, width, height, scale ):
     self.config = config
@@ -21,8 +24,8 @@ class BoundingBoxes( object ):
     boundingBoxes = []
     xstepSize  = self.config[ 'sliding_window' ] [ 'x_stride' ]
     ystepSize  = self.config[ 'sliding_window' ] [ 'y_stride' ]
-    patchSizeWidth = self.config[ 'output_width' ]
-    patchSizeHeight = self.config[ 'output_height' ]
+    patchSizeWidth = self.config[ 'sliding_window' ][ 'output_width' ]
+    patchSizeHeight = self.config[ 'sliding_window' ][ 'output_height' ]
     x = 0
     while x + patchSizeWidth <= self.width:
       y = 0
@@ -102,6 +105,7 @@ class Annotations( object ):
     self.myDict[ 'frame_filename' ] = '%s_frame_%s.png' % ( videoId, frameId )
     self.myDict[ 'frame_number' ] = frameId
     self.myDict[ 'scales' ] = []
+    self.scores = OrderedDict()
     self.scales = OrderedDict()
     for scale in scaling:
       self.scales[ scale ]  = []
@@ -120,16 +124,51 @@ class Annotations( object ):
              ] )
             ) ] ) )
 
+  def saveScore( self, patchFileName, scores ):
+    scale = patchFileName.split('_')[ 4 ]
+    self.scores[ ( scale, os.path.basename( patchFileName ) ) ] = scores
 
   def dump( self, fileName ):
     self.myDict[ "scales" ] = []
     for key, value in self.scales.iteritems():
+      for patch in value:
+        patch[ "scores" ] = self.scores[ ( '%s' % key, patch[ 'patch_filename'] ) ]
       self.myDict[ 'scales' ].append( {
         'scale': key,
         'patches': value
         } )
     with open( fileName, "w" ) as f:
       json.dump( self.myDict, f, indent=2 )
+
+import caffe
+class TestNet( object ):
+  def __init__( self, pretrained_file, classes ):
+    self.pretrained_file = pretrained_file 
+    self.classes = classes
+    baseScriptDir = os.path.dirname(os.path.realpath(__file__))
+    self.model_file = os.path.join( baseScriptDir, "logo_val.prototxt" )
+    self.test_net = None
+  
+  def prepareImageList( self, frameNum, patchList ):
+    with open( "image_list.txt", "w" ) as f:
+      for patchFileName in patchList:
+        f.write( "%s 0\n" % patchFileName )
+      f.write( "\n" )
+
+  def computeScores( self, frameNum, patchList ):
+    self.prepareImageList( frameNum, patchList )
+    self.test_net = caffe.Net( self.model_file, self.pretrained_file )
+    self.test_net.set_phase_test()
+    self.test_net.set_mode_gpu()
+    output = self.test_net.forward()
+    probablities = output['prob']
+    numOfClasses = len( self.classes )
+    scores = {}
+    for i in range( 0, output[ 'label' ].size ):
+      scores[ i ] = {}
+      for j in range( 0, numOfClasses ):
+        scores[ i ][ self.classes[ j ] ] = probablities.item( numOfClasses * i + j )
+    return scores
 
 class LogoPipeline( object ):
   def run( self ):
@@ -150,6 +189,8 @@ class LogoPipeline( object ):
     outputJsonDir = os.path.join( outputDir, config[ 'sliding_window' ][ 'folders' ]["annotation_output"] )
     frameStep = config[ 'sliding_window' ] [ 'frame_density' ]
     scaling = config[ 'sliding_window' ][ 'scaling' ]
+    pretrained_file = config[ 'pretrained_file' ]
+    classes = config[ 'classes' ]
 
     # Setup
     videoName = os.path.basename( videoFileName )
@@ -157,16 +198,32 @@ class LogoPipeline( object ):
     createDirIfNotExists( outputFramesDir )
     createDirIfNotExists( outputPatchesDir )
     createDirIfNotExists( outputJsonDir )
+    queue = Queue()
+
+    # Init Patch Removal
+    patchRemoveQueue = Queue()
+    myT = RemovePatch( patchRemoveQueue )
+    myT.setDaemon( True )
+    myT.start()
+
+    myT = None
 
     # Get the bouding boxes
     boundingBoxes = {}
     frameNum = 1
+    testnet = TestNet( pretrained_file, classes )
     while not videoFrameReader.eof or frameNum <= videoFrameReader.totalFrames:
       fileName = os.path.join( outputFramesDir, "%s_frame_%s.png" % ( videoId, frameNum ) )
       frame = videoFrameReader.getFrameWithFrameNumber( int( frameNum ) )
       while not frame:
         frame = videoFrameReader.getFrameWithFrameNumber( int( frameNum ) )
+      if not myT:
+        myT = MultiProcessFramePostProcessor( queue, sys.argv[ 1 ], frame.width, frame.height )
+        myT.setDaemon( True )
+        myT.start()
+
       annotations = Annotations( videoId, frameNum, scaling )
+      patchFileNames = []
       for scale in scaling:
         if not boundingBoxes.get( scale ):
           boundingBoxes[ scale ] = BoundingBoxes( config, frame.width, frame.height, scale ).getBoundingBoxes()
@@ -176,7 +233,14 @@ class LogoPipeline( object ):
           patchFileName = os.path.join( outputPatchesDir, "%s_frame_%s_scl_%s_idx_%s.png" % ( videoId, int( frameNum ), scale,  patchNum ) )
           videoFrameReader.patchFromFrameNumber( frameNum, patchFileName, scale, box[ 0 ], box[ 1 ], box[ 2 ], box [ 3 ] )
           annotations.addBoundingBox( scale, patchNum, box[ 0 ], box[ 1 ], box[ 2 ], box[ 3 ] )
+          patchFileNames.append( patchFileName )
           patchNum += 1
+      scores = testnet.computeScores( frameNum, patchFileNames )
+      for patchNum, score in scores.iteritems():
+        annotations.saveScore( patchFileNames[patchNum], score )
       annotations.dump( 
           os.path.join( outputJsonDir, '%s_frame_%s.json'  % ( videoId, frameNum ) ) )
+      queue.put( os.path.join( outputJsonDir, '%s_frame_%s.json'  % ( videoId, frameNum ) ) )
       frameNum += frameStep
+      for f in patchFileNames:
+      	patchRemoveQueue.put( f )
