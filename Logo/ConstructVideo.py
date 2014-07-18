@@ -83,5 +83,6 @@ if __name__ == "__main__":
         imgLclz.addLabeledBbox(bbox, label)
       videoWriter.addFrame(imgLclz)
       frameNumber += 1
+      os.remove( imageFileName )
     videoWriter.save()
   print 'Done - ignore the core dump'
