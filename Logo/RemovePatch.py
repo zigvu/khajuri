@@ -9,7 +9,7 @@ class RemovePatch( threading.Thread ):
   def run( self ):
     while True:
       self.startNewJob()
-      time.sleep( 0.1 )
+      time.sleep( 1 )
 
   def startNewJob( self ):
     try:
