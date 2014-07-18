@@ -15,8 +15,8 @@ class RemovePatch( threading.Thread ):
     try:
       pngFile = self.queue.get( False )
       while pngFile:
-      	pngFile = self.queue.get( False )
       	os.remove( pngFile )
+      	pngFile = self.queue.get( False )
     except Queue.Empty:
      pass
 
