@@ -2,10 +2,11 @@ import yaml, json
 from collections import OrderedDict
 
 class JSONReaderWriter( object ):
-  def __init__( self, fileName ):
+  def __init__( self, fileName, create_new = False ):
     self.fileName = fileName
-    self.myDict = json.load( open( fileName, "r" ) )
-    self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
+    if not create_new:
+      self.myDict = json.load( open( fileName, "r" ) )
+      self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
 
   def getAnnotationFileName( self ):
     return self.myDict[ 'annotation_filename' ]
@@ -47,6 +48,27 @@ class JSONReaderWriter( object ):
     return self.myDict['scales'][ self.scalingFactors.index( scale ) ]['patches']\
         [patchId]['scores'][classId]
 
+  def initializeJSON(self, videoId, frameId, scales):
+    self.videoId = videoId
+    self.frameId = frameId
+    self.myDict = OrderedDict()
+    self.myDict[ 'annotation_filename' ] = '%s_frame_%s.json' % ( videoId, frameId )
+    self.myDict[ 'frame_filename' ] = '%s_frame_%s.png' % ( videoId, frameId )
+    self.myDict[ 'frame_number' ] = frameId
+    self.myDict[ 'scales' ] = []
+    for scale in scales:
+      self.myDict[ 'scales' ].append(OrderedDict(\
+        [('scale', scale), ('patches', [])]))
+
+  def addPatch(self, scale, patchNum, leveldbCounter, x, y, width, height):
+    for scaleVal in self.myDict['scales']:
+      if scaleVal['scale'] == scale:
+        scaleVal['patches'].append(OrderedDict(\
+          [('patch_filename' , 
+            '%s_frame_%s_scl_%s_idx_%s.png' % (self.videoId, self.frameId, scale, patchNum)),
+          ('patch', OrderedDict([('x', x), ('y', y), ('width', width), ('height', height)])),
+          ('leveldb_counter', leveldbCounter)]))
+          
   def initializeLocalizations( self ):
     if not 'localizations' in self.myDict.keys():
       self.myDict['localizations'] = OrderedDict()

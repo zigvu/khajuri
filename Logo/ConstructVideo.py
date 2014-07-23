@@ -57,7 +57,7 @@ if __name__ == "__main__":
   classIds = JSONReaderWriter(jsonFiles[0]).getClassIds()
   # create video for each class - except background
   for classId in classIds:
-    if classId in configReader.pp_backgroundClassIds:
+    if classId in configReader.ci_backgroundClassIds:
       continue
     print "Working on video for class " + str(classId)
     videoFileName = os.path.join(outputFolder, "video_cls_" + str(classId) + ".avi")

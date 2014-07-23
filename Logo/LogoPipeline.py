@@ -146,7 +146,7 @@ class TestNet( object ):
     self.pretrained_file = pretrained_file 
     self.classes = classes
     baseScriptDir = os.path.dirname(os.path.realpath(__file__))
-    self.model_file = os.path.join( baseScriptDir, "logo_val.prototxt" )
+    self.prototxt_file = os.path.join( baseScriptDir, "logo_val.prototxt" )
     self.test_net = None
   
   def prepareImageList( self, frameNum, patchList ):
@@ -157,7 +157,7 @@ class TestNet( object ):
 
   def computeScores( self, frameNum, patchList ):
     self.prepareImageList( frameNum, patchList )
-    self.test_net = caffe.Net( self.model_file, self.pretrained_file )
+    self.test_net = caffe.Net( self.prototxt_file, self.pretrained_file )
     self.test_net.set_phase_test()
     self.test_net.set_mode_gpu()
     output = self.test_net.forward()
@@ -189,8 +189,8 @@ class LogoPipeline( object ):
     outputJsonDir = os.path.join( outputDir, config[ 'sliding_window' ][ 'folders' ]["annotation_output"] )
     frameStep = config[ 'sliding_window' ] [ 'frame_density' ]
     scaling = config[ 'sliding_window' ][ 'scaling' ]
-    pretrained_file = config[ 'pretrained_file' ]
-    classes = config[ 'classes' ]
+    model_file = config[ 'model_file' ]
+    classes = config[ 'all_classes' ]
 
     # Setup
     videoName = os.path.basename( videoFileName )
@@ -211,7 +211,7 @@ class LogoPipeline( object ):
     # Get the bouding boxes
     boundingBoxes = {}
     frameNum = 1
-    testnet = TestNet( pretrained_file, classes )
+    testnet = TestNet( model_file, classes )
     while not videoFrameReader.eof or frameNum <= videoFrameReader.totalFrames:
       fileName = os.path.join( outputFramesDir, "%s_frame_%s.png" % ( videoId, frameNum ) )
       frame = videoFrameReader.getFrameWithFrameNumber( int( frameNum ) )

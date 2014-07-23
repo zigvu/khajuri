@@ -40,7 +40,7 @@ class TestPostProcessors(object):
     classIds = JSONReaderWriter(jsonFiles[0]).getClassIds()
     # create video for each class - except background
     for classId in classIds:
-      if classId in self.configReader.pp_backgroundClassIds:
+      if classId in self.configReader.ci_backgroundClassIds:
         continue
       print "Working on video for class " + str(classId)
       videoFileName = os.path.join(outputFolder, "video_cls_" + str(classId) + ".avi")
@@ -69,7 +69,7 @@ class TestPostProcessors(object):
       for curationPatch in curationManager.getCurationPatches(frameNumber):
         bbox = Rectangle.rectangle_from_json(curationPatch['bbox'])
         patchFolderName = os.path.join(outputFolder, curationPatch['patch_foldername'])
-        self.mkdir_p(patchFolderName)
+        ConfigReader.mkdir_p(patchFolderName)
         patchFileName = os.path.join(patchFolderName, curationPatch['patch_filename'])
         frameFileName = os.path.join(imageFolder, curationPatch['frame_filename'])
         imageManipulator = ImageManipulator(frameFileName)
@@ -87,7 +87,7 @@ class TestPostProcessors(object):
     # also output heatmap
     scaleSpaceCombiner =  ScaleSpaceCombiner(self.staticBoundingBoxes, jsonReaderWriter)
     for classId in jsonReaderWriter.getClassIds():
-      if classId in self.configReader.pp_backgroundClassIds:
+      if classId in self.configReader.ci_backgroundClassIds:
         continue
       # test PeaksExtractor.getPeakBboxes
       lclzPixelMap = scaleSpaceCombiner.getBestInferredPixelMap(classId)
@@ -123,7 +123,7 @@ class TestPostProcessors(object):
 
     scaleSpaceCombiner =  ScaleSpaceCombiner(self.staticBoundingBoxes, jsonReaderWriter)
     for classId in jsonReaderWriter.getClassIds():
-      if classId in self.configReader.pp_backgroundClassIds:
+      if classId in self.configReader.ci_backgroundClassIds:
         continue
       # test getBestInferredPixelMap
       lclzPixelMap = scaleSpaceCombiner.getBestInferredPixelMap(classId)
@@ -152,7 +152,7 @@ class TestPostProcessors(object):
     for pm in pixelMapper.pixelMaps:
       classId = pm['classId']
       scale = pm['scale']
-      if classId in self.configReader.pp_backgroundClassIds:
+      if classId in self.configReader.ci_backgroundClassIds:
         continue
       # test localization
       localizationMap = pm['localizationMap']
@@ -199,10 +199,3 @@ class TestPostProcessors(object):
         raise RuntimeError("PixelMap zoom don't match")
       print ("Scale: %0.2f - Pass" % scale)
 
-  def mkdir_p(self, path):
-    """Util to make path"""
-    try:
-      os.makedirs(path)
-    except OSError as exc: # Python >2.5
-      if exc.errno == errno.EEXIST and os.path.isdir(path):
-        pass

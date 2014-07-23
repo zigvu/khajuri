@@ -1,12 +1,16 @@
 # TODO: Consolidate and clean these settings
 
+# in increasing level of severity: DEBUG, INFO, ERROR
+log_level:                                  DEBUG
 
 # Sliding window configurations
 sliding_window:
   is_test:                                    false
   folders:
+    frame_output:                             frames
     patch_output:                             patches
     annotation_output:                        json
+    levedb_output:                            leveldb
   frame_density:                              5
   # Dimension of patches
   output_width:                               256
@@ -20,13 +24,21 @@ sliding_window:
     - 1.0
     - 1.2
     - 1.4
-pretrained_file: "caffe_logo_train_iter_500"
-classes: [ "0", "1" ]
+
+# Caffe input
+caffe_input:
+  model_file:                                 "caffe_logo_train_iter_5000"
+  prototxt_file:                              "logo_video.prototxt"
+  # number of frames to put in one leveldb - ensure no more than 3.5GB
+  num_frames_per_leveldb:                    10
+  all_classes:
+    - '0'
+    - '1'
+  background_classes:
+    - '1'
 
 # Post processing
 post_processing:
-  background_classes:
-    - '1'
   detector_threshold:                         0.9
 
 # Curation

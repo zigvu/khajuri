@@ -10,7 +10,7 @@ class FramePostProcessor(object):
     self.detectorThreshold = configReader.pp_detectorThreshold
     # sort out class ids
     self.allClassIds = self.jsonReaderWriter.getClassIds()
-    self.backgroundClassIds = configReader.pp_backgroundClassIds
+    self.backgroundClassIds = configReader.ci_backgroundClassIds
     self.nonBackgroundClassIds = [x for x in self.allClassIds if x not in self.backgroundClassIds]
     # cache computation
     self.classPixelMaps = {}
