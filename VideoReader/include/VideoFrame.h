@@ -15,6 +15,8 @@
 #include <boost/intrusive/list.hpp>
 #include <opencv2/opencv.hpp>
 
+#include <glog/logging.h>
+#include "caffe.pb.h"
 using namespace boost::intrusive;
 
 #ifdef DEBUG_BUILD
@@ -38,6 +40,7 @@ class VideoFrame : public list_base_hook<>{
 		void savePng(char *fileNamePrefix, SwsContext *sws_ctx);
     void saveCroppedFrame( char *fileNamePrefix, SwsContext *sws_ctx, float scale, int x, int y, int width, int height );
 		AVFrame * getPFrame(SwsContext *sws_ctx);
+    void saveCroppedFrameToDatum( float scale, int x, int y, int width, int height, int label, VideoReader::Datum *datum );
 
 	private:
     IplImage *iplImage;

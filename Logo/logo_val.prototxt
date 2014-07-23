@@ -1,17 +1,15 @@
 name: "CaffeNet"
 layers {
   name: "data"
-  type: IMAGE_DATA
+  type: DATA
   top: "data"
   top: "label"
-  image_data_param {
-    source: "image_list.txt"
+  data_param {
+    source: "logo-leveldb/level-Db"
     mean_file: "imagenet_mean.binaryproto"
-    batch_size: 251
+    batch_size: 20
     crop_size: 227
     mirror: false
-    new_height: 256
-    new_width: 256
   }
 }
 layers {

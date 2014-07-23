@@ -199,6 +199,17 @@ int VideoFrameReader::patchFromFrameNumber(int64_t frameNumber, char *fileName, 
   return -1;
 }
 
+int VideoFrameReader::savePatchFromFrameNumberToLevelDb(int64_t frameNumber, float scale,
+    int x, int y, int width, int height, int label, VideoReader::Datum *datum ) {
+  DEBUG("VideoFrameReader: patchFromFrameNumber: %lld\n", (long long)frameNumber);
+  VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
+  if(retVideoFrame != NULL){
+    retVideoFrame->saveCroppedFrameToDatum(scale, x, y, width, height, label, datum );
+    return 0;
+  }
+  return -1;
+}
+
 
 VideoFrame* VideoFrameReader::getFrameWithFrameNumber(int64_t frameNumber){
   DEBUG("VideoFrameReader: getFrameWithFrameNumber: %lld\n", (long long)frameNumber);

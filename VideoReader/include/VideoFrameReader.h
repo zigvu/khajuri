@@ -4,7 +4,11 @@
 #include <boost/date_time.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include <glog/logging.h>
+#include <leveldb/db.h>
+#include <leveldb/write_batch.h>
 
+class VideoLevelDb;
 // Define a list that will store VideoFrames
 typedef boost::intrusive::list<VideoFrame> VideoFrameList;
 
@@ -32,6 +36,8 @@ class VideoFrameReader {
     int savePngWithFrameNumber(int64_t frameNumber, char *fileName);
     int patchFromFrameNumber(int64_t frameNumber, char *fileName, float scale,
         int x, int y, int width, int height );
+    int savePatchFromFrameNumberToLevelDb(int64_t frameNumber, float scale,
+        int x, int y, int width, int height, int label, VideoReader::Datum *datum );
     VideoFrame* getFrameWithFrameNumber(int64_t frameNumber);
     int seekToFrameWithFrameNumber(int64_t frameNumber);
     uint getLengthInMicroSeconds();

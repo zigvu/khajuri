@@ -66,6 +66,36 @@ void VideoFrame::savePng( char*fileName, SwsContext *sws_ctx ) {
   cv::imwrite( fileName, m );
 }
 
+void VideoFrame::saveCroppedFrameToDatum( float scale, int x, int y, 
+    int width, int height, int label, VideoReader::Datum *datum ) {
+  if( scaledFrames.find( scale ) == scaledFrames.end() ) {
+    int w = pFrame->width, h = pFrame->height;
+    cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
+    cv::Size size = cv::Size( w * scale, h * scale );
+    cv::resize( *m, *m, size );
+    scaledFrames[ scale ] = m;
+  }
+  cv::Mat *m = scaledFrames[ scale ];
+  cv::Rect myROI( x, y, width, height );
+  cv::Mat croppedImage = (*m)(myROI);
+
+  datum->set_channels(3);
+  datum->set_height(croppedImage.rows);
+  datum->set_width(croppedImage.cols);
+  datum->set_label(label);
+  datum->clear_data();
+  datum->clear_float_data();
+  std::string* datum_string = datum->mutable_data();
+  for (int c = 0; c < 3; ++c) {
+    for (int h = 0; h < croppedImage.rows; ++h) {
+      for (int w = 0; w < croppedImage.cols; ++w) {
+        datum_string->push_back(
+            static_cast<char>(croppedImage.at<cv::Vec3b>(h, w)[c]));
+      }
+    }
+  }
+}
+
 void VideoFrame::saveCroppedFrame( char *fileName, SwsContext *sws_ctx, float scale, int x, int y, int width, int height ){
   if( scaledFrames.find( scale ) == scaledFrames.end() ) {
     int w = pFrame->width, h = pFrame->height;
