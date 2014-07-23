@@ -12,8 +12,8 @@ import VideoReader
 import caffe
 
 if __name__ == '__main__':
-  if len( sys.argv ) < 3:
-    print 'Usage %s <video.file> <output.dir>' % sys.argv[ 0 ]
+  if len( sys.argv ) < 5:
+    print 'Usage %s <video.file> <output.dir> <model.file> <caffe.train.file>' % sys.argv[ 0 ]
     sys.exit( 1 )
   videoFileName = sys.argv[ 1 ]
   outputDir = sys.argv[ 2 ]
@@ -44,8 +44,8 @@ if __name__ == '__main__':
 
   # TestNet to get the scores for the patches
   classes = [ "0", "1" ]
-  model_file = "/home/sudip/khajuri/Logo/logo_val.prototxt"
-  pretrained_file = "/home/sudip/data/caffe_logo_train_iter_500"
+  model_file = sys.argv[ 3 ]
+  pretrained_file = sys.argv[ 4 ]
   test_net = caffe.Net( model_file, pretrained_file )
   test_net.set_phase_test()
   test_net.set_mode_cpu()
