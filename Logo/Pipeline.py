@@ -1,6 +1,9 @@
 import os, time
-
-from multiprocessing import Queue, Process
+import json
+from collections import OrderedDict
+import multiprocessing
+from multiprocessing import Queue, JoinableQueue, Process, Manager
+from Queue import PriorityQueue
 import logging
 
 import VideoReader
@@ -8,41 +11,114 @@ from ConfigReader import ConfigReader
 from Rectangle import Rectangle
 from BoundingBoxes import BoundingBoxes
 from JSONReaderWriter import JSONReaderWriter
+from CaffeNet import CaffeNet
+from FramePostProcessor import FramePostProcessor
+from VideoHeatMapper import VideoHeatMapper
+
+def videoHeatMapperRun(sharedDict, videoHeatMapperQueue):
+  """Process for creating heat map video"""
+  logging.info("VideoHeatMapper thread started")
+  configReader = ConfigReader(sharedDict['configFileName'])
+  videoFileName = sharedDict['videoFileName']
+  videoOutputFolder = sharedDict['videoOutputFolder']
+  videoHeatMapper = VideoHeatMapper(configReader, videoFileName, videoOutputFolder, videoHeatMapperQueue)
+  videoHeatMapper.run()
+
+def framePostProcessorRun(sharedDict, postProcessQueue, videoHeatMapperQueue):
+  """Process for running post-processing of JSON outputs"""
+  logging.info("Frame post processing thread started")
+  configReader = ConfigReader(sharedDict['configFileName'])
+  imageDim = Rectangle.rectangle_from_dimensions(sharedDict['image_width'], \
+    sharedDict['image_height'])
+  patchDimension = Rectangle.rectangle_from_dimensions(\
+    configReader.sw_patchWidth, configReader.sw_patchHeight)
+  staticBoundingBoxes = BoundingBoxes(imageDim, \
+    configReader.sw_xStride, configReader.sw_xStride, patchDimension)
+  numpyFolder = sharedDict['numpyFolder']
+  while True:
+    jsonFileName = postProcessQueue.get()
+    if jsonFileName is None:
+      postProcessQueue.task_done()
+      # poison pill means done with json post processing
+      break
+    logging.debug("Post processing of file %s" % jsonFileName)
+    jsonReaderWriter = JSONReaderWriter(jsonFileName)
+    framePostProcessor = FramePostProcessor(jsonReaderWriter, staticBoundingBoxes, configReader)
+    framePostProcessor.run()
+    # if dumping video heatmap, then put in queue
+    if configReader.ci_saveVideoHeatmap:
+      frameNumber = jsonReaderWriter.getFrameNumber()
+      numpyFileName = os.path.join(numpyFolder, "%d.npz" % frameNumber)
+      framePostProcessor.saveLocalizations(numpyFileName)
+      videoHeatMapperQueue.put((frameNumber, [jsonFileName, numpyFileName]))
+    postProcessQueue.task_done()
+
+def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
+  """Process for running caffe on a leveldb folder"""
+  logging.info("Caffe thread started")
+  configReader = ConfigReader(sharedDict['configFileName'])
+  caffeNet = CaffeNet(configReader, postProcessQueue)
+  while True:
+    levedbFolder = leveldbQueue.get()
+    if levedbFolder is None:
+      leveldbQueue.task_done()
+      # poison pill means done with leveldb evaluation
+      break
+    logging.info("Caffe working on leveldb %s" % levedbFolder)
+    if caffeNet.run_net(levedbFolder):
+      logging.info("Finished processing levedbFolder: %s" % levedbFolder)
+      leveldbQueue.task_done()
 
 class Pipeline( object ):
+  """Main class for pipeline of running logo
+     In separate processes, this class 
+     (a) creates leveldb of patches from video,
+     (b) evaluates leveldb through caffe
+     (c) analyses caffe output per frame in post-processing step
+  """
   def __init__(self, configFileName, videoFileName, outputDir):
     """Initialize values"""
+    self.configFileName = configFileName
     self.configReader = ConfigReader(configFileName)
     self.videoFileName = videoFileName
 
-    # sliding window creation
+    # Sliding window creation
     self.frameStep = self.configReader.sw_frame_density
     self.scales = self.configReader.sw_scales
     self.numFramesPerLeveldb = self.configReader.ci_numFramesPerLeveldb
+    self.numConcurrentLeveldbs = self.configReader.ci_numConcurrentLeveldbs
+    self.startFrameNumber = self.configReader.ci_videoFrameNumberStart
 
-    # folder to save files
+    # Folder to save files
     self.outputFramesDir = os.path.join(outputDir, self.configReader.sw_folders_frame)
-    self.outputPatchesDir = os.path.join(outputDir, self.configReader.sw_folders_patch)
     self.outputJsonDir = os.path.join(outputDir, self.configReader.sw_folders_annotation)
     self.outputLeveldbDir = os.path.join(outputDir, self.configReader.sw_folders_leveldb)
+    self.videoOutputFolder = os.path.join(outputDir, self.configReader.sw_folders_video)
+    self.numpyFolder = os.path.join(outputDir, self.configReader.sw_folders_numpy)
     ConfigReader.mkdir_p(self.outputFramesDir)
-    ConfigReader.mkdir_p(self.outputPatchesDir)
     ConfigReader.mkdir_p(self.outputJsonDir)
     ConfigReader.mkdir_p(self.outputLeveldbDir)
+    ConfigReader.mkdir_p(self.videoOutputFolder)
+    ConfigReader.mkdir_p(self.numpyFolder)
 
-    # prefix for all frames/patches:
+    # Video name prefix for all frames/patches:
     self.videoId = os.path.basename(videoFileName).split('.')[0]
 
-    # logging levels
+    # Logging levels
     logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
       level=self.configReader.log_level)
 
   def run( self ):
+    """Run the pipeline"""
+    logging.info("Setting up pipeline for video %s" % self.videoFileName)
+
+    # Load video - since no expilicit synchronization exists to check if
+    # VideoReader is ready, wait for 10 seconds
     videoFrameReader = VideoReader.VideoFrameReader(40, 40, self.videoFileName)
     videoFrameReader.generateFrames()
-    time.sleep(1)
+    time.sleep(10)
 
-    # get dimensions and create bounding boxes
+    # Get frame dimensions and create bounding boxes
     frame = videoFrameReader.getFrameWithFrameNumber(1)
     while not frame:
       frame = videoFrameReader.getFrameWithFrameNumber(1)
@@ -52,68 +128,120 @@ class Pipeline( object ):
     staticBoundingBoxes = BoundingBoxes(imageDim, \
       self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
 
-    # setup queues - since each object going into the queue needs to be
-    # pickled, only include file names in the queue
-    leveldbQueue = Queue()
-    postProcessQueue = Queue()
+    # Share state with other processes - since objects need ot be pickled
+    # only put primitives where possible
+    sharedManager = Manager()
+    sharedDict = sharedManager.dict()
+    sharedDict['configFileName'] = self.configFileName
+    sharedDict['image_width'] = frame.width
+    sharedDict['image_height'] = frame.height
+    sharedDict['videoFileName'] = self.videoFileName
+    sharedDict['videoOutputFolder'] = self.videoOutputFolder
+    sharedDict['numpyFolder'] = self.numpyFolder
 
-    # initialize variables
-    frameNum = 1
-    frameCounter = 0
-    leveldbId = 0
-    leveldbPatchCounter = 0
-    leveldbPyBlobFolder = None
-    leveldbPyBlob = None
-    jsonNamesInPyBlob = None
-    # main loop to go through video
-    while leveldbPatchCounter >= 0:
-      if ((frameCounter %  self.numFramesPerLeveldb) == 0):
-        # for a set of frames, create leveldb and put in queue for testnet
-        if leveldbPyBlob != None:
-          logging.debug("Leveldb ID: %d" % (leveldbId))
-          leveldbPyBlob.save()
-          leveldbQueue.put({'blob_folder': leveldbPyBlobFolder, 'jsons': jsonNamesInPyBlob})
-        frameCounter = 0
-        jsonNamesInPyBlob = []
-        leveldbPyBlobFolder = os.path.join(self.outputLeveldbDir, "%s_leveldb_%d" % (self.videoId, leveldbId))
-        # TODO: Remove comment and test
-        #leveldbPyBlob = videoFrameReader.getNewPyBlob(leveldbPyBlobFolder)
+    # Setup producer/consumer queues - since objects need ot be pickled
+    # only put primitives where possible
+    leveldbQueue = JoinableQueue(self.numConcurrentLeveldbs)
+    postProcessQueue = JoinableQueue()
+    videoHeatMapperQueue = JoinableQueue()
+    caffeNetProcess = Process(target=caffeNetRun, args=(sharedDict, leveldbQueue, postProcessQueue))
+    caffeNetProcess.start()
+
+    # Post processing
+    framePostProcesses = []
+    num_consumers = multiprocessing.cpu_count()
+    #num_consumers = 1
+    for i in xrange(num_consumers):
+      framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, \
+        postProcessQueue, videoHeatMapperQueue))
+      framePostProcesses += [framePostProcess]
+      framePostProcess.start()
+    # Video heatmap
+    if self.configReader.ci_saveVideoHeatmap:
+      videoHeatMapperProcess = Process(target=videoHeatMapperRun, args=(sharedDict, videoHeatMapperQueue))
+      videoHeatMapperProcess.start()
+
+    # Initialize variables
+    currentFrameNum = self.startFrameNumber # frame number being extracted
+    extractedFrameCounter = 0               # total number of extracted frames
+    leveldbPatchCounter = 0                 # for each leveldb, counter of patches inside it
+    levedbFolder = None                     # folder where to write leveldb
+    videoLeveldb = None                     # levedb object from VideoReader
+    leveldbMapping = None                   # mapping between patches in leveldb and corresponding jsons
+    leveldbId = 0                           # number of leveldb created
+    
+    # Main loop to go through video
+    logging.info("Start patch extraction")
+    while (not videoFrameReader.eof) or (currentFrameNum <= videoFrameReader.totalFrames):
+      # Create new leveldbs for each set of numFramesPerLeveldb frames
+      if ((extractedFrameCounter %  self.numFramesPerLeveldb) == 0):
+        # If ready, save leveldb and put in queue for CaffeNet
+        if videoLeveldb != None:
+          logging.info("Saving leveldb ID: %d" % (leveldbId))
+          videoLeveldb.saveLevelDb()
+          with open(leveldbMappingFile, "w") as f :
+            json.dump(leveldbMapping, f, indent=2)
+          leveldbQueue.put(levedbFolder)
+        # Set up new levedb
+        extractedFrameCounter = 0
+        leveldbPatchCounter = 0
+        levedbFolder = os.path.join(self.outputLeveldbDir, "%s_leveldb_%d" % (self.videoId, leveldbId))
+        leveldbMappingFile = os.path.join(levedbFolder, "leveldb_mapping.json")
+        videoLeveldb = VideoReader.VideoLevelDb(levedbFolder)
+        videoLeveldb.setVideoFrameReader(videoFrameReader)
+        leveldbMapping = OrderedDict()
         leveldbId += 1
-      # extract patches, save JSON and save to leveldb
-      frameName = os.path.join(self.outputFramesDir, "%s_frame_%s.png" % (self.videoId, frameNum))
-      jsonName = os.path.join(self.outputJsonDir, "%s_frame_%s.json" % (self.videoId, frameNum))
-      jsonNamesInPyBlob += [jsonName]
-      # save annotation
+      # Start json annotation file
+      jsonName = os.path.join(self.outputJsonDir, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
       jsonAnnotation = JSONReaderWriter(jsonName, create_new=True)
-      jsonAnnotation.initializeJSON(self.videoId, frameNum, self.scales)
-      # put patch into leveldb
-      patchNum = 0
+      jsonAnnotation.initializeJSON(self.videoId, currentFrameNum, self.scales)
+      # Put patch into leveldb
       for scale in self.scales:
+        patchNum = 0
         for box in staticBoundingBoxes.getBoundingBoxes(scale):
           # Generate leveldb
-          # TODO: Remove comment and test
-          #leveldbPatchCounter = leveldbPyBlob.savePatch(frameNum, scale, box[0], box[1], box[2], box [3])
-          # save to json
+          videoLeveldb.savePatch(currentFrameNum, scale, box[0], box[1], box[2], box [3])
+          # Add patch to annotation file
           jsonAnnotation.addPatch(scale, patchNum, leveldbPatchCounter, box[0], box[1], box[2], box [3])
+          leveldbMapping[leveldbPatchCounter] = jsonName
+          # Increment counters
           patchNum += 1
-          # TODO: Remove:
           leveldbPatchCounter += 1
+      # Save annotation file
       jsonAnnotation.saveState()
-      frameNum += self.frameStep
-      frameCounter += 1
-      logging.debug("Finished working on frame %d, Patch %d" % (frameNum, leveldbPatchCounter))
-      # TODO: Remove:
-      if frameCounter >= 10:
-        leveldbPatchCounter = -1
-    # for the last leveldb group, save and put in queue (but avoid double counting if only 1 leveldb)
-    if (leveldbPyBlob != None) and (frameCounter > 1):
-      leveldbPyBlob.save()
-      leveldbQueue.put({'blob_folder': leveldbPyBlobFolder, 'jsons': jsonNamesInPyBlob})
+      currentFrameNum += self.frameStep
+      extractedFrameCounter += 1
+      logging.debug("Finished working on frame %d, Patch %d" % (currentFrameNum, leveldbPatchCounter))
+    # end while
 
-    # join all threads
+    # For the last leveldb group, save and put in queue
+    if videoLeveldb != None:
+      logging.info("Saving leveldb ID: %d" % (leveldbId))
+      videoLeveldb.saveLevelDb()
+      with open(leveldbMappingFile, "w") as f :
+        json.dump(leveldbMapping, f, indent=2)
+      leveldbQueue.put(levedbFolder)
 
-    # quite video reader gracefully
-    frameNum = videoFrameReader.totalFrames
-    while not videoFrameReader.eof or frameNum <= videoFrameReader.totalFrames:
-      videoFrameReader.seekToFrameWithFrameNumber(frameNum)
-      frameNum += 1
+    # HACK: work around so that VideoLevelDb releases lock on levedbFolder
+    videoLeveldb = None
+    # HACK: quite video reader gracefully
+    currentFrameNum = videoFrameReader.totalFrames
+    while not videoFrameReader.eof or currentFrameNum <= videoFrameReader.totalFrames:
+      videoFrameReader.seekToFrameWithFrameNumber(currentFrameNum)
+      currentFrameNum += 1
+
+    # Put poison pills and wait to join all threads
+    logging.info("Done with all patch extraction. Waiting for threads to join")
+    leveldbQueue.put(None)
+    leveldbQueue.join()
+    for i in xrange(num_consumers):
+      postProcessQueue.put(None)
+    postProcessQueue.join()
+    videoHeatMapperQueue.join() # no need for poison pill
+    # join processes
+    caffeNetProcess.join()
+    for framePostProcess in framePostProcesses:
+      framePostProcess.join()
+    if self.configReader.ci_saveVideoHeatmap:
+      videoHeatMapperProcess.join()
+    logging.info("Joined all threads")

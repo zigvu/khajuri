@@ -7,7 +7,7 @@ baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append( '%s/../VideoReader'% baseScriptDir  )
 
 from Pipeline import Pipeline
-from TestNet import TestNet
+from CaffeNet import CaffeNet
 
 if __name__ == '__main__':
   if len(sys.argv) < 4:
@@ -18,8 +18,8 @@ if __name__ == '__main__':
   videoFileName = sys.argv[2]
   outputDir = sys.argv[3]
 
-  # pipeline = Pipeline(configFileName, videoFileName, outputDir)
-  # pipeline.run()
-  testNet = TestNet('/home/evan/Vision/temp/caffe_run/logo_video.prototxt', \
-    '/home/evan/Vision/temp/caffe_run/caffe_logo_train_iter_5000', [0,1])
-  testNet.run_net('/home/evan/Vision/temp/caffe_run/output/videoId_leveldb_0')
+  pipeline = Pipeline(configFileName, videoFileName, outputDir)
+  pipeline.run()
+  # testNet = CaffeNet('/home/evan/Vision/temp/caffe_run/logo_video.prototxt', \
+  #   '/home/evan/Vision/temp/caffe_run/caffe_logo_train_iter_5000', ["0","1"])
+  # testNet.run_net(2, '/home/evan/Vision/temp/caffe_run/outputTest/leveldb/lUA7i4K2Sq8_leveldb_0')

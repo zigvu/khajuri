@@ -23,6 +23,8 @@ class ConfigReader:
     self.sw_folders_patch = sw_folders['patch_output']
     self.sw_folders_annotation = sw_folders['annotation_output']
     self.sw_folders_leveldb = sw_folders['levedb_output']
+    self.sw_folders_video = sw_folders['video_output']
+    self.sw_folders_numpy = sw_folders['numpy_output']
 
     self.sw_frame_density = int(slidingWindow['frame_density'])
     self.sw_patchWidth = int(slidingWindow['output_width'])
@@ -40,8 +42,13 @@ class ConfigReader:
     self.ci_modelFile = caffeInput['model_file']
     self.ci_prototxtFile = caffeInput['prototxt_file']
     self.ci_numFramesPerLeveldb = caffeInput['num_frames_per_leveldb']
+    self.ci_numConcurrentLeveldbs = caffeInput['num_concurrent_leveldbs']
+    self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
+    self.ci_useGPU = caffeInput['use_gpu'] == True
+    self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
     self.ci_allClassIds = caffeInput['all_classes']
     self.ci_backgroundClassIds = caffeInput['background_classes']
+    self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds if x not in self.ci_backgroundClassIds]
 
     # Post processing
     postProcessing = config['post_processing']

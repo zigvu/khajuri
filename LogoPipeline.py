@@ -9,11 +9,15 @@ sys.path.append( '%s/VideoReader'% baseScriptDir  )
 for dir in glob.glob( '%s/plugins/*' % baseScriptDir  ):
   sys.path.append( dir )
 
-import Logo.LogoPipeline 
+import Logo.Pipeline 
 if __name__ == '__main__':
-  if len( sys.argv ) < 4:
-    print 'Usage %s <config.yaml> <video.file> <output.dir>' % sys.argv[ 0 ]
-  else:
-    logoPipeLine = Logo.LogoPipeline.LogoPipeline()
-    logoPipeLine.run()
+  if len(sys.argv) < 4:
+    print 'Usage %s <config.yaml> <videoFileName> <outputDir>' % sys.argv[ 0 ]
+    sys.exit(1)
 
+  configFileName = sys.argv[1]
+  videoFileName = sys.argv[2]
+  outputDir = sys.argv[3]
+
+  pipeline = Logo.Pipeline.Pipeline(configFileName, videoFileName, outputDir)
+  pipeline.run()

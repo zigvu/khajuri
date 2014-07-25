@@ -1,3 +1,6 @@
+from collections import OrderedDict
+import numpy as np
+
 from ScaleSpaceCombiner import ScaleSpaceCombiner
 from PeaksExtractor import PeaksExtractor
 
@@ -8,10 +11,7 @@ class FramePostProcessor(object):
     self.staticBoundingBoxes = staticBoundingBoxes
     self.configReader = configReader
     self.detectorThreshold = configReader.pp_detectorThreshold
-    # sort out class ids
-    self.allClassIds = self.jsonReaderWriter.getClassIds()
-    self.backgroundClassIds = configReader.ci_backgroundClassIds
-    self.nonBackgroundClassIds = [x for x in self.allClassIds if x not in self.backgroundClassIds]
+    self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
     # cache computation
     self.classPixelMaps = {}
 
@@ -53,3 +53,10 @@ class FramePostProcessor(object):
         'intensityMap': curationPixelMap}
     # save json
     self.jsonReaderWriter.saveState()
+
+  def saveLocalizations(self, filename):
+    """Save localization calculations to filename in npz format"""
+    localizationMaps = OrderedDict()
+    for classId in self.nonBackgroundClassIds:
+      localizationMaps[classId] = self.classPixelMaps[classId]['localizationMap']
+    np.savez_compressed(filename, **(localizationMaps))

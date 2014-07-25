@@ -44,3 +44,9 @@ VideoReader.so
 *.log
 *.json
 tags
+
+
+# Caffe specific
+VideoReader/caffe.pb.cpp
+VideoReader/include/caffe.pb.h
+VideoReader/VideoReader

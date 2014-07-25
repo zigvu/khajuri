@@ -68,6 +68,16 @@ class JSONReaderWriter( object ):
             '%s_frame_%s_scl_%s_idx_%s.png' % (self.videoId, self.frameId, scale, patchNum)),
           ('patch', OrderedDict([('x', x), ('y', y), ('width', width), ('height', height)])),
           ('leveldb_counter', leveldbCounter)]))
+
+  def addScores(self, leveldbCounter, scores):
+    setBreak = False
+    for scaleVal in self.myDict['scales']:
+      if setBreak: break
+      for patchVal in scaleVal['patches']:
+        if setBreak: break
+        if leveldbCounter == int(patchVal['leveldb_counter']):
+          patchVal['scores'] = scores
+          setBreak = True
           
   def initializeLocalizations( self ):
     if not 'localizations' in self.myDict.keys():
