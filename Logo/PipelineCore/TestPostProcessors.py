@@ -3,16 +3,17 @@ import os, errno
 import numpy as np
 from skimage.transform import resize
 
-from Rectangle import Rectangle
-from BoundingBoxes import BoundingBoxes
-from ConfigReader import ConfigReader
-from JSONReaderWriter import JSONReaderWriter
-from PixelMapper import PixelMapper
-from ImageManipulator import ImageManipulator
-from ScaleSpaceCombiner import ScaleSpaceCombiner
-from FramePostProcessor import FramePostProcessor
-from CurationManager import CurationManager
-from VideoWriter import VideoWriter
+from Logo.PipelineMath.Rectangle import Rectangle
+from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
+from Logo.PipelineMath.ScaleSpaceCombiner import ScaleSpaceCombiner
+from Logo.PipelineMath.FramePostProcessor import FramePostProcessor
+from Logo.PipelineMath.PixelMapper import PixelMapper
+
+from Logo.PipelineCore.ConfigReader import ConfigReader
+from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
+from Logo.PipelineCore.ImageManipulator import ImageManipulator
+from Logo.PipelineCore.CurationManager import CurationManager
+from Logo.PipelineCore.VideoWriter import VideoWriter
 
 class TestPostProcessors(object):
   def __init__(self, configFileName, imageDim):

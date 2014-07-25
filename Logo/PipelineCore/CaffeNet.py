@@ -1,10 +1,10 @@
-import os, shutil, re
+import os, shutil, re, time
 import json, math
 from collections import OrderedDict
 import logging
 
 import caffe
-from JSONReaderWriter import JSONReaderWriter
+from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 class CaffeNet( object ):
   def __init__(self, configReader, postProcessQueue):
@@ -73,8 +73,12 @@ class CaffeNet( object ):
     for jsonFile, jsonRW in jsonRWs.iteritems():
       jsonRW.saveState()
       self.postProcessQueue.put(jsonFile)
-    # Clean up by deleting levedb whose use is done
+    # Clean up by deleting levedb whose use is done 
+    # since large files, might need to do it twice
     shutil.rmtree(leveldbFolder, ignore_errors=True)
     os.remove(prototxtWithNewLeveldb)
+    time.sleep(5)
+    shutil.rmtree(leveldbFolder, ignore_errors=True)
+    time.sleep(5)
     # Finally, return success
     return True

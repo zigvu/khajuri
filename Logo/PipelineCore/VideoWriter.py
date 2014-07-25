@@ -1,8 +1,6 @@
 import cv2
 import cv2.cv as cv
 
-from ImageManipulator import ImageManipulator
-
 class VideoWriter( object ):
   def __init__(self, videoFileName, fps, imageDim):
     """Initialize writer"""

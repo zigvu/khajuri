@@ -3,8 +3,8 @@
 import glob, sys
 import os, errno
 
-from Rectangle import Rectangle
-from TestPostProcessors import TestPostProcessors
+from Logo.PipelineMath import Rectangle
+from Logo.PipelineCore import TestPostProcessors
 
 if __name__ == '__main__':
   if len(sys.argv) < 6:

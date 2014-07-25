@@ -5,10 +5,12 @@ import numpy as np
 import logging
 
 import VideoReader
-from JSONReaderWriter import JSONReaderWriter
-from ImageManipulator import ImageManipulator
-from VideoWriter import VideoWriter
-from Rectangle import Rectangle
+
+from Logo.PipelineMath.Rectangle import Rectangle
+
+from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
+from Logo.PipelineCore.ImageManipulator import ImageManipulator
+from Logo.PipelineCore.VideoWriter import VideoWriter
 
 class VideoHeatMapper(object):
   def __init__(self, configReader, videoFileName, videoOutputFolder, videoHeatMapperQueue):
@@ -19,7 +21,7 @@ class VideoHeatMapper(object):
     self.videoHeatMapperQueue = videoHeatMapperQueue
     self.startFrameNumber = configReader.ci_videoFrameNumberStart
     self.frameStep = configReader.sw_frame_density
-    self.backgroundClassIds = configReader.ci_nonBackgroundClassIds
+    self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
     self.videoHeatMaps = OrderedDict()
     self.numpyDictQueue = PriorityQueue()
     self.sleeptime = 30
@@ -42,7 +44,7 @@ class VideoHeatMapper(object):
     # Create as many videos as non background classes
     videoBaseName = os.path.basename(self.videoFileName).split('.')[0]
     videoExt = os.path.basename(self.videoFileName).split('.')[-1]
-    for classId in self.backgroundClassIds:
+    for classId in self.nonBackgroundClassIds:
       outVideoFileName = os.path.join(self.videoOutputFolder, \
         "%s_%s.%s" % (videoBaseName, str(classId), videoExt))
       self.videoHeatMaps[classId] = VideoWriter(outVideoFileName, fps, imageDim)
@@ -63,13 +65,18 @@ class VideoHeatMapper(object):
         # Loop until we have the right json file and localization
         jsonReaderWriter = None
         while jsonReaderWriter is None:
+          logging.debug("Step frame: %d, Qnpy size: %d, heatQ: %d" % (\
+            currentFrameNum, self.numpyDictQueue.qsize(), self.videoHeatMapperQueue.qsize()))
           try:
             numpyDict = self.numpyDictQueue.get_nowait()
+            logging.debug("Read numpyDict %d" % numpyDict[0])
             if numpyDict[0] == currentFrameNum:
+              logging.debug("Got jsonReaderWriter for frame %d" % currentFrameNum)
               jsonFileName = numpyDict[1][0]
               numpyFileName = numpyDict[1][1]
               jsonReaderWriter = JSONReaderWriter(jsonFileName)
               lclzPixelMaps = np.load(numpyFileName)
+              break
             else:
               # Put dict back in to queue
               self.numpyDictQueue.put(numpyDict)
@@ -81,7 +88,7 @@ class VideoHeatMapper(object):
       # now, write to video
       imageFileName = os.path.join(self.videoOutputFolder, "temp_%d.png" % currentFrameNum)
       videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
-      for classId in self.backgroundClassIds:
+      for classId in self.nonBackgroundClassIds:
         imgLclz = ImageManipulator(imageFileName)
         imgLclz.addPixelMap(lclzPixelMaps[classId])
         for lclzPatch in jsonReaderWriter.getLocalizations(classId):
@@ -104,20 +111,32 @@ class VideoHeatMapper(object):
         pass
       # increment frame number
       currentFrameNum += 1
+    logging.debug("Saving heatmap videos")
     # Once video is done, save all files
-    for classId in self.backgroundClassIds:
+    for classId in self.nonBackgroundClassIds:
       self.videoHeatMaps[classId].save()
-    # HACK: quite video reader gracefully
+    # HACK: quit video reader gracefully
     currentFrameNum = videoFrameReader.totalFrames
     while not videoFrameReader.eof or currentFrameNum <= videoFrameReader.totalFrames:
       videoFrameReader.seekToFrameWithFrameNumber(currentFrameNum)
       currentFrameNum += 1
+    # When all work is done, only then consume the last item
+    self.videoHeatMapperQueue.get()
+    self.videoHeatMapperQueue.task_done()
+    logging.info("Finished creating heatmap videos")
 
   def addHeatmapToNumpyDictQueue(self):
     """Add to numpyDictQueue until videoHeatMapperQueue is empty"""
     while True:
       try:
-        self.numpyDictQueue.put(self.videoHeatMapperQueue.get_nowait())
-        self.videoHeatMapperQueue.task_done()
+        numpyDict = self.videoHeatMapperQueue.get_nowait()
+        if numpyDict is None:
+          # in case we are end of producer, put it back in queue and
+          # wait for the video writer to clear it
+          self.videoHeatMapperQueue.put(numpyDict)
+          self.videoHeatMapperQueue.task_done()
+        else:
+          self.numpyDictQueue.put(numpyDict)
+          self.videoHeatMapperQueue.task_done()
       except:
         break

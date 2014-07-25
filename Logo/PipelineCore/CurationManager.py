@@ -1,7 +1,7 @@
 import glob, os
 from operator import itemgetter
 
-from JSONReaderWriter import JSONReaderWriter
+from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 class CurationManager(object):
   def __init__(self, inputJSONFolder, configReader):

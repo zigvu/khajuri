@@ -1,8 +1,8 @@
 import math
 import numpy as np
 
-from PixelMapper import PixelMapper
-from Rectangle import Rectangle
+from Logo.PipelineMath.Rectangle import Rectangle
+from Logo.PipelineMath.PixelMapper import PixelMapper
 
 class ScaleSpaceCombiner(object):
   def __init__(self, staticBoundingBoxes, jsonReaderWriter):

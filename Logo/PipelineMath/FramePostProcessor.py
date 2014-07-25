@@ -1,8 +1,8 @@
 from collections import OrderedDict
 import numpy as np
 
-from ScaleSpaceCombiner import ScaleSpaceCombiner
-from PeaksExtractor import PeaksExtractor
+from Logo.PipelineMath.ScaleSpaceCombiner import ScaleSpaceCombiner
+from Logo.PipelineMath.PeaksExtractor import PeaksExtractor
 
 class FramePostProcessor(object):
   def __init__(self, jsonReaderWriter, staticBoundingBoxes, configReader):

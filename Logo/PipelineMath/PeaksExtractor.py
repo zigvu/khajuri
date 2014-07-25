@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.ndimage as ndimage
 
-from Rectangle import Rectangle
+from Logo.PipelineMath.Rectangle import Rectangle
 
 class PeaksExtractor(object):
   def __init__(self, pixelMap, configReader, imageDim):

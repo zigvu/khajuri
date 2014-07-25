@@ -1,7 +1,7 @@
 # TODO: Consolidate and clean these settings
 
 # in increasing level of severity: DEBUG, INFO, ERROR
-log_level:                                  INFO
+log_level:                                  DEBUG
 
 # Sliding window configurations
 sliding_window:
@@ -13,7 +13,7 @@ sliding_window:
     levedb_output:                            leveldb
     video_output:                             videos
     numpy_output:                             numpy
-  frame_density:                              5
+  frame_density:                              25
   # Dimension of patches
   output_width:                               256
   output_height:                              256
@@ -23,17 +23,15 @@ sliding_window:
     - 0.4
     - 0.6
     - 0.8
-    - 1.0
-    - 1.2
-    - 1.4
+
 
 # Caffe input
 caffe_input:
   model_file:                                 "/mnt/data/logo/caffe_logo_train_iter_5000"
   prototxt_file:                              "/mnt/data/logo/logo_video.prototxt"
   # number of frames to put in one leveldb - ensure no more than 3.5GB
-  num_frames_per_leveldb:                    100
-  num_concurrent_leveldbs:                   10
+  num_frames_per_leveldb:                    4
+  num_concurrent_leveldbs:                   2
   video_frame_number_start:                  1
   use_gpu:                                   false
   save_video_heatmap:                        true

@@ -1,5 +1,6 @@
 import numpy as np
-from Rectangle import Rectangle
+
+from Logo.PipelineMath.Rectangle import Rectangle
 
 class BoundingBoxes( object ):
   def __init__( self, imageDim, xstepSize, ystepSize, patchDim ):
