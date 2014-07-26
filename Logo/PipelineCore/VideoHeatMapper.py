@@ -21,9 +21,7 @@ class VideoHeatMapper(object):
     self.videoHeatMapperQueue = videoHeatMapperQueue
     self.startFrameNumber = configReader.ci_videoFrameNumberStart
     self.frameStep = configReader.sw_frame_density
-    #self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
-    #TODO: change
-    self.nonBackgroundClassIds = configReader.ci_allClassIds
+    self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
     self.videoHeatMaps = OrderedDict()
     self.numpyDictQueue = PriorityQueue()
     self.sleeptime = 30
@@ -48,7 +46,7 @@ class VideoHeatMapper(object):
     videoExt = os.path.basename(self.videoFileName).split('.')[-1]
     for classId in self.nonBackgroundClassIds:
       outVideoFileName = os.path.join(self.videoOutputFolder, \
-        "%s_%s.%s" % (videoBaseName, str(classId), videoExt))
+        "%s_%s.avi" % (videoBaseName, str(classId)))
       logging.debug("Videos to create: %s" % outVideoFileName)
       self.videoHeatMaps[classId] = VideoWriter(outVideoFileName, fps, imageDim)
 
@@ -68,7 +66,7 @@ class VideoHeatMapper(object):
         # Loop until we have the right json file and localization
         jsonReaderWriter = None
         while jsonReaderWriter is None:
-          logging.debug("Frame: %d, NpyQ size: %d, HeatQ: %d" % (\
+          logging.debug("Queue at frame: %d, NpyQ size: %d, HeatQ: %d" % (\
             currentFrameNum, self.numpyDictQueue.qsize(), self.videoHeatMapperQueue.qsize()))
           try:
             numpyDict = self.numpyDictQueue.get_nowait()

@@ -14,5 +14,5 @@ class VideoWriter( object ):
 
   def save(self):
     """Close write buffer and save the video"""
-    #cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
     self.writer.release()
