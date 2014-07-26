@@ -21,7 +21,9 @@ class VideoHeatMapper(object):
     self.videoHeatMapperQueue = videoHeatMapperQueue
     self.startFrameNumber = configReader.ci_videoFrameNumberStart
     self.frameStep = configReader.sw_frame_density
-    self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
+    #self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
+    #TODO: change
+    self.nonBackgroundClassIds = configReader.ci_allClassIds
     self.videoHeatMaps = OrderedDict()
     self.numpyDictQueue = PriorityQueue()
     self.sleeptime = 30

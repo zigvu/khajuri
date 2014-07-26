@@ -53,6 +53,7 @@ class FramePostProcessor(object):
         'intensityMap': curationPixelMap}
     # save json
     self.jsonReaderWriter.saveState()
+    return True
 
   def saveLocalizations(self, filename):
     """Save localization calculations to filename in npz format"""

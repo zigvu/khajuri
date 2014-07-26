@@ -48,15 +48,15 @@ def framePostProcessorRun(sharedDict, postProcessQueue, videoHeatMapperQueue):
     logging.debug("Start post processing of file %s" % jsonFileName)
     jsonReaderWriter = JSONReaderWriter(jsonFileName)
     framePostProcessor = FramePostProcessor(jsonReaderWriter, staticBoundingBoxes, configReader)
-    framePostProcessor.run()
-    # if dumping video heatmap, then put in queue
-    if configReader.ci_saveVideoHeatmap:
-      frameNumber = jsonReaderWriter.getFrameNumber()
-      numpyFileName = os.path.join(numpyFolder, "%d.npz" % frameNumber)
-      framePostProcessor.saveLocalizations(numpyFileName)
-      videoHeatMapperQueue.put((frameNumber, [jsonFileName, numpyFileName]))
-    logging.debug("Done post processing of file %s" % jsonFileName)
-    postProcessQueue.task_done()
+    if framePostProcessor.run():
+      # if dumping video heatmap, then put in queue
+      if configReader.ci_saveVideoHeatmap:
+        frameNumber = jsonReaderWriter.getFrameNumber()
+        numpyFileName = os.path.join(numpyFolder, "%d.npz" % frameNumber)
+        framePostProcessor.saveLocalizations(numpyFileName)
+        videoHeatMapperQueue.put((frameNumber, [jsonFileName, numpyFileName]))
+      logging.debug("Done post processing of file %s" % jsonFileName)
+      postProcessQueue.task_done()
 
 def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
   """Process for running caffe on a leveldb folder"""
