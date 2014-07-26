@@ -119,9 +119,10 @@ class VideoHeatMapper(object):
     while not videoFrameReader.eof or currentFrameNum <= videoFrameReader.totalFrames:
       videoFrameReader.seekToFrameWithFrameNumber(currentFrameNum)
       currentFrameNum += 1
-    # When all work is done, only then consume the last item
-    self.videoHeatMapperQueue.get()
-    self.videoHeatMapperQueue.task_done()
+    # When all work is done, only then consume the last items
+    while self.videoHeatMapperQueue.qsize() > 0:
+      self.videoHeatMapperQueue.get()
+      self.videoHeatMapperQueue.task_done()
     logging.info("Finished creating heatmap videos")
 
   def addHeatmapToNumpyDictQueue(self):
