@@ -47,6 +47,7 @@ class VideoHeatMapper(object):
     for classId in self.nonBackgroundClassIds:
       outVideoFileName = os.path.join(self.videoOutputFolder, \
         "%s_%s.%s" % (videoBaseName, str(classId), videoExt))
+      logging.debug("Videos to create: %s" % outVideoFileName)
       self.videoHeatMaps[classId] = VideoWriter(outVideoFileName, fps, imageDim)
 
     # Initialize values
@@ -65,13 +66,11 @@ class VideoHeatMapper(object):
         # Loop until we have the right json file and localization
         jsonReaderWriter = None
         while jsonReaderWriter is None:
-          logging.debug("Step frame: %d, Qnpy size: %d, heatQ: %d" % (\
+          logging.debug("Frame: %d, NpyQ size: %d, HeatQ: %d" % (\
             currentFrameNum, self.numpyDictQueue.qsize(), self.videoHeatMapperQueue.qsize()))
           try:
             numpyDict = self.numpyDictQueue.get_nowait()
-            logging.debug("Read numpyDict %d" % numpyDict[0])
             if numpyDict[0] == currentFrameNum:
-              logging.debug("Got jsonReaderWriter for frame %d" % currentFrameNum)
               jsonFileName = numpyDict[1][0]
               numpyFileName = numpyDict[1][1]
               jsonReaderWriter = JSONReaderWriter(jsonFileName)
@@ -130,7 +129,7 @@ class VideoHeatMapper(object):
     while True:
       try:
         numpyDict = self.videoHeatMapperQueue.get_nowait()
-        if numpyDict is None:
+        if numpyDict is "PoisonPill":
           # in case we are end of producer, put it back in queue and
           # wait for the video writer to clear it
           self.videoHeatMapperQueue.put(numpyDict)

@@ -41,11 +41,11 @@ def framePostProcessorRun(sharedDict, postProcessQueue, videoHeatMapperQueue):
     if jsonFileName is None:
       if configReader.ci_saveVideoHeatmap:
         # put poison pill
-        videoHeatMapperQueue.put(None)
+        videoHeatMapperQueue.put("PoisonPill")
       postProcessQueue.task_done()
       # poison pill means done with json post processing
       break
-    logging.debug("Post processing of file %s" % jsonFileName)
+    logging.debug("Start post processing of file %s" % jsonFileName)
     jsonReaderWriter = JSONReaderWriter(jsonFileName)
     framePostProcessor = FramePostProcessor(jsonReaderWriter, staticBoundingBoxes, configReader)
     framePostProcessor.run()
@@ -55,6 +55,7 @@ def framePostProcessorRun(sharedDict, postProcessQueue, videoHeatMapperQueue):
       numpyFileName = os.path.join(numpyFolder, "%d.npz" % frameNumber)
       framePostProcessor.saveLocalizations(numpyFileName)
       videoHeatMapperQueue.put((frameNumber, [jsonFileName, numpyFileName]))
+    logging.debug("Done post processing of file %s" % jsonFileName)
     postProcessQueue.task_done()
 
 def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
