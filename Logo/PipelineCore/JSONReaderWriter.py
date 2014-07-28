@@ -17,6 +17,12 @@ class JSONReaderWriter( object ):
   def getFrameNumber( self ):
     return self.myDict[ 'frame_number' ]
 
+  def getFrameWidth( self ):
+    return self.myDict[ 'frame_width' ]
+
+  def getFrameHeight( self ):
+    return self.myDict[ 'frame_height' ]
+
   def getScalingFactors( self ):
     return self.scalingFactors
 
@@ -48,13 +54,15 @@ class JSONReaderWriter( object ):
     return self.myDict['scales'][ self.scalingFactors.index( scale ) ]['patches']\
         [patchId]['scores'][classId]
 
-  def initializeJSON(self, videoId, frameId, scales):
+  def initializeJSON(self, videoId, frameId, imageDim, scales):
     self.videoId = videoId
     self.frameId = frameId
     self.myDict = OrderedDict()
     self.myDict[ 'annotation_filename' ] = '%s_frame_%s.json' % ( videoId, frameId )
     self.myDict[ 'frame_filename' ] = '%s_frame_%s.png' % ( videoId, frameId )
     self.myDict[ 'frame_number' ] = frameId
+    self.myDict[ 'frame_width' ] = imageDim.width
+    self.myDict[ 'frame_height' ] = imageDim.height
     self.myDict[ 'scales' ] = []
     for scale in scales:
       self.myDict[ 'scales' ].append(OrderedDict(\

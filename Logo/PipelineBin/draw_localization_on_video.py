@@ -1,18 +1,15 @@
 #!/usr/bin/python
 
-import sys, os, glob, time
+import sys, os, glob
 from collections import OrderedDict
-from Queue import PriorityQueue
-import numpy as np
 import logging
 
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append( '%s/../../VideoReader'% baseScriptDir  )
 
-import VideoReader
-
 from Logo.PipelineMath.Rectangle import Rectangle
 
+from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
@@ -29,6 +26,7 @@ if __name__ == '__main__':
   outputFolder = sys.argv[4]
 
   configReader = ConfigReader(configFileName)
+  ConfigReader.mkdir_p(outputFolder)
   # Logging levels
   logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
     level=configReader.log_level)
@@ -36,10 +34,9 @@ if __name__ == '__main__':
   # Set up
   logging.info("Setting up video %s" % videoFileName)
 
-  videoBaseName = os.path.basename(videoFileName).split('.')[0]
-  videoExt = os.path.basename(videoFileName).split('.')[-1]
-  outVideoFileName = os.path.join(outputFolder, "%s_localization.%s" % (videoBaseName, videoExt))
-  ConfigReader.mkdir_p(outputFolder)
+  videoFrameReader = VideoFrameReader(videoFileName)
+  fps = videoFrameReader.getFPS()
+  imageDim = videoFrameReader.getImageDim()
 
   # Read all JSONs
   frameIndex = {}
@@ -51,26 +48,16 @@ if __name__ == '__main__':
     frameIndex[frameNumber] = jsonFileName
   logging.info("Total of %d json indexed" % len(frameIndex.keys()))
 
-  # Load video - since no expilicit synchronization exists to check if
-  # VideoReader is ready, wait for 10 seconds
-  videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
-  videoFrameReader.generateFrames()
-  time.sleep(10)
-
-  # Get frame dimensions and create bounding boxes
-  frame = videoFrameReader.getFrameWithFrameNumber(1)
-  while not frame:
-    frame = videoFrameReader.getFrameWithFrameNumber(1)
-  imageDim = Rectangle.rectangle_from_dimensions(frame.width, frame.height)
-  fps = videoFrameReader.fps
-
+  # Set up output video
+  videoBaseName = os.path.basename(videoFileName).split('.')[0]
+  outVideoFileName = os.path.join(outputFolder, "%s_localization.avi" % (videoBaseName))
   videoWriter = VideoWriter(outVideoFileName, fps, imageDim)
+
+  # Go through video frame by frame
   currentFrameNum = configReader.ci_videoFrameNumberStart # frame number being extracted
   jsonReaderWriter = None
-  while (not videoFrameReader.eof) or (currentFrameNum <= videoFrameReader.totalFrames):
-    frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
-    while not frame:
-      frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
+  frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
+  while frame != None:
     logging.debug("Adding frame %d to video" % currentFrameNum)
     if currentFrameNum in frameIndex.keys():
       jsonReaderWriter = JSONReaderWriter(frameIndex[currentFrameNum])
@@ -98,12 +85,10 @@ if __name__ == '__main__':
     os.remove(imageFileName)
     # increment frame number
     currentFrameNum += 1
+    frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
 
-  # HACK: quit video reader gracefully
-  currentFrameNum = videoFrameReader.totalFrames
-  while not videoFrameReader.eof or currentFrameNum <= videoFrameReader.totalFrames:
-    videoFrameReader.seekToFrameWithFrameNumber(currentFrameNum)
-    currentFrameNum += 1
+  # Close video reader
+  videoFrameReader.close()
 
   # Save and exit
   videoWriter.save()

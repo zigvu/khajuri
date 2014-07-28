@@ -43,7 +43,6 @@ class VideoHeatMapper(object):
 
     # Create as many videos as non background classes
     videoBaseName = os.path.basename(self.videoFileName).split('.')[0]
-    videoExt = os.path.basename(self.videoFileName).split('.')[-1]
     for classId in self.nonBackgroundClassIds:
       outVideoFileName = os.path.join(self.videoOutputFolder, \
         "%s_%s.avi" % (videoBaseName, str(classId)))
@@ -68,9 +67,11 @@ class VideoHeatMapper(object):
         while jsonReaderWriter is None:
           logging.debug("Queue at frame: %d, NpyQ size: %d, HeatQ: %d" % (\
             currentFrameNum, self.numpyDictQueue.qsize(), self.videoHeatMapperQueue.qsize()))
-          try:
-            numpyDict = self.numpyDictQueue.get_nowait()
+          if self.numpyDictQueue.qsize() > 0:
+            numpyDict = self.numpyDictQueue.get()
+            logging.debug("NpyQ head numpyDict frame: %d" % (numpyDict[0]))
             if numpyDict[0] == currentFrameNum:
+              logging.debug("Use: NpyQ head numpyDict frame: %d" % (numpyDict[0]))
               jsonFileName = numpyDict[1][0]
               numpyFileName = numpyDict[1][1]
               jsonReaderWriter = JSONReaderWriter(jsonFileName)
@@ -78,10 +79,12 @@ class VideoHeatMapper(object):
               break
             else:
               # Put dict back in to queue
+              logging.debug("PutBack: NpyQ head numpyDict frame: %d" % (numpyDict[0]))
               self.numpyDictQueue.put(numpyDict)
               time.sleep(self.sleeptime)
               self.addHeatmapToNumpyDictQueue()
-          except:
+          else:
+            logging.debug("NpyQ empty - wait for new data")
             time.sleep(self.sleeptime)
             self.addHeatmapToNumpyDictQueue()
       # now, write to video
@@ -127,16 +130,14 @@ class VideoHeatMapper(object):
 
   def addHeatmapToNumpyDictQueue(self):
     """Add to numpyDictQueue until videoHeatMapperQueue is empty"""
-    while True:
-      try:
-        numpyDict = self.videoHeatMapperQueue.get_nowait()
-        if numpyDict is "PoisonPill":
-          # in case we are end of producer, put it back in queue and
-          # wait for the video writer to clear it
-          self.videoHeatMapperQueue.put(numpyDict)
-          self.videoHeatMapperQueue.task_done()
-        else:
-          self.numpyDictQueue.put(numpyDict)
-          self.videoHeatMapperQueue.task_done()
-      except:
+    while self.videoHeatMapperQueue.qsize() > 0:
+      numpyDict = self.videoHeatMapperQueue.get()
+      if numpyDict is "PoisonPill":
+        # in case we are end of producer, put it back in queue and
+        # wait for the video writer to clear it
+        self.videoHeatMapperQueue.put(numpyDict)
+        self.videoHeatMapperQueue.task_done()
         break
+      else:
+        self.numpyDictQueue.put(numpyDict)
+        self.videoHeatMapperQueue.task_done()

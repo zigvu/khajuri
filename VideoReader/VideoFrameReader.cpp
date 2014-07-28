@@ -81,6 +81,8 @@ VideoFrameReader::VideoFrameReader(
   data_ready = true;
   maxVideoFrameNumber = LLONG_MAX; // set to max possible for now
   eof = false;
+
+  ::google::InitGoogleLogging( "VideoFrameReader" );
 }
 
 void VideoFrameReader::startThreads(){

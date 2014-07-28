@@ -7,11 +7,10 @@ import caffe
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 class CaffeNet( object ):
-  def __init__(self, configReader, postProcessQueue):
+  def __init__(self, configReader):
     logging.debug("Initializing CaffeNet")
     self.prototxtFile = configReader.ci_prototxtFile
     self.modelFile = configReader.ci_modelFile
-    self.postProcessQueue = postProcessQueue
     self.classes = configReader.ci_allClassIds
     self.useGPU = configReader.ci_useGPU
 
@@ -57,7 +56,7 @@ class CaffeNet( object ):
       output = caffe_net.forward()
       probablities = output['prob']
       for k in range(0, output['label'].size):
-        patchCounter = k + i * output['label'].size
+        patchCounter = k + i * output['label'].size + 1
         printStr = "%d" % (patchCounter)
         scores = {}
         for j in range(0, numOfClasses):
@@ -72,7 +71,6 @@ class CaffeNet( object ):
     # Save and put json files in post processing queue
     for jsonFile, jsonRW in jsonRWs.iteritems():
       jsonRW.saveState()
-      self.postProcessQueue.put(jsonFile)
     # Clean up by deleting levedb whose use is done 
     # since large files, might need to do it twice
     shutil.rmtree(leveldbFolder, ignore_errors=True)

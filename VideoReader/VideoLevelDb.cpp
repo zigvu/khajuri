@@ -34,7 +34,7 @@ VideoLevelDb::~VideoLevelDb(){
 int VideoLevelDb::savePatch( int frameNum, float scale, int x, int y, int width, int height ) {
   if( vfr ) {
     VideoReader::Datum datum;
-    LOG(ERROR) << "Processed " << label << " files.";
+    // LOG(ERROR) << "Processed " << label << " files.";
     int retVal = -1;
     while ( retVal == -1 ) {
       retVal = vfr->savePatchFromFrameNumberToLevelDb(
@@ -43,9 +43,9 @@ int VideoLevelDb::savePatch( int frameNum, float scale, int x, int y, int width,
     if( datum.channels() == 0 ||
         datum.height() == 0 ||
         datum.width() == 0 ) {
-      LOG(ERROR) << "Datum details: channels : " << datum.channels()
-                 << " Datum height " << datum.height() 
-                 << " Datum width " << datum.width() ;
+      // LOG(ERROR) << "Datum details: channels : " << datum.channels()
+      //            << " Datum height " << datum.height() 
+      //            << " Datum width " << datum.width() ;
       CHECK( false ) << " Issue with " << label;
     }
 
@@ -54,7 +54,7 @@ int VideoLevelDb::savePatch( int frameNum, float scale, int x, int y, int width,
     batch->Put( boost::to_string( label ), value );
     label++;
     if( label % batchSize == 0 ) {
-      LOG(ERROR) << "Reached batch Size " << batchSize << " saving.";
+      // LOG(ERROR) << "Reached batch Size " << batchSize << " saving.";
       saveLevelDb();
       delete batch;
       batch = new leveldb::WriteBatch();
@@ -64,6 +64,6 @@ int VideoLevelDb::savePatch( int frameNum, float scale, int x, int y, int width,
 }
 
 void VideoLevelDb::saveLevelDb() {
-  LOG(ERROR) << "Saving current batch.";
+  // LOG(ERROR) << "Saving current batch.";
   db->Write(leveldb::WriteOptions(), batch);
 }

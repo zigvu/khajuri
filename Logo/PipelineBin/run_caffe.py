@@ -1,13 +1,9 @@
 #!/usr/bin/python
-import glob, sys
-import os
 
-# Add files to path
+import sys, os, glob
+
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append( '%s/Controller' % baseScriptDir )
-sys.path.append( '%s/VideoReader'% baseScriptDir  )
-for dir in glob.glob( '%s/plugins/*' % baseScriptDir  ):
-  sys.path.append( dir )
+sys.path.append( '%s/../../VideoReader'% baseScriptDir  )
 
 from Logo.PipelineThread.CaffeThread import CaffeThread
 
