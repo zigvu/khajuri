@@ -31,17 +31,23 @@ class CaffeNet( object ):
     if caffeBatchSize == -1:
       raise RuntimeError("Cannot determine the batch size in caffe prototxt file")
     # Read mapping and json output files
-    levelDbMappingFile = os.path.join(leveldbFolder, "leveldb_mapping.json")
-    levelDbMapping = json.load(open(levelDbMappingFile, "r"))
+    leveldbMappingFile = os.path.join(leveldbFolder, "leveldb_mapping.json")
+    leveldbMapping = json.load(open(leveldbMappingFile, "r"))
     jsonFiles = []
     jsonRWs = OrderedDict()
     maxPatchCounter = 0
-    for patchCounter, jsonFile in levelDbMapping.iteritems():
+    for patchCounter, jsonFile in leveldbMapping.iteritems():
       if maxPatchCounter < int(patchCounter):
         maxPatchCounter = int(patchCounter)
       if jsonFile not in jsonFiles:
         jsonFiles += [jsonFile]
         jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
+    # HACK: without reinitializing caffe_net twice, it won't give reproducible results
+    logging.debug("Initializing caffe_net")
+    caffe_net = caffe.Net(prototxtWithNewLeveldb, self.modelFile)
+    caffe_net.set_phase_test() 
+    caffe_net.set_mode_cpu()
+    logging.debug("Reinitializing caffe_net")
     # Run caffe net
     numOutputIteration = int(math.ceil(maxPatchCounter * 1.0 / caffeBatchSize))
     numOfClasses = len(self.classes)
@@ -51,32 +57,36 @@ class CaffeNet( object ):
       caffe_net.set_mode_gpu()
     else:
       caffe_net.set_mode_cpu()
+
     # Iterate until all patches in leveldb are evaluated
+    patchCounter = 0
     for i in range(0, numOutputIteration):
       output = caffe_net.forward()
       probablities = output['prob']
       for k in range(0, output['label'].size):
-        patchCounter = k + i * output['label'].size + 1
-        printStr = "%d" % (patchCounter)
+        printStr = ""
         scores = {}
         for j in range(0, numOfClasses):
-          scores[self.classes[j]] = probablities.item(numOfClasses * k + j)
+          scores[self.classes[j]] = probablities[k][j].item(0)
           printStr = "%s,%f" % (printStr, scores[self.classes[j]])
         # Note: if number of patches is not multiple of batch size, then caffe
         #  displays results for patches in the begining of leveldb
         if patchCounter <= maxPatchCounter:
+          curPatchNumber = int(output['label'].item(k))
+          printStr = "%s%s" % (leveldbMapping[str(curPatchNumber)], printStr)
           # Add scores to json
-          jsonRWs[levelDbMapping[str(patchCounter)]].addScores(patchCounter, scores)
-          logging.debug("%s" % printStr)
+          jsonRWs[leveldbMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
+          # logging.debug("%s" % printStr)
+        patchCounter += 1
+
     # Save and put json files in post processing queue
     for jsonFile, jsonRW in jsonRWs.iteritems():
       jsonRW.saveState()
+
     # Clean up by deleting levedb whose use is done 
     # since large files, might need to do it twice
     shutil.rmtree(leveldbFolder, ignore_errors=True)
     os.remove(prototxtWithNewLeveldb)
-    time.sleep(5)
     shutil.rmtree(leveldbFolder, ignore_errors=True)
-    time.sleep(5)
     # Finally, return success
     return True

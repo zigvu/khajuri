@@ -19,19 +19,19 @@ def caffeNetRun(sharedDict, leveldbQueue):
   configReader = ConfigReader(sharedDict['configFileName'])
   caffeNet = CaffeNet(configReader)
   while True:
-    levedbFolder = leveldbQueue.get()
-    if levedbFolder is None:
+    curLeveldbFolder = leveldbQueue.get()
+    if curLeveldbFolder is None:
       leveldbQueue.task_done()
       # poison pill means done with leveldb evaluation
       break
-    logging.info("Caffe working on leveldb %s" % levedbFolder)
-    if caffeNet.run_net(levedbFolder):
-      logging.info("Finished processing levedbFolder: %s" % levedbFolder)
+    logging.info("Caffe working on leveldb %s" % curLeveldbFolder)
+    if caffeNet.run_net(curLeveldbFolder):
+      logging.info("Finished processing curLeveldbFolder: %s" % curLeveldbFolder)
       leveldbQueue.task_done()
 
 class CaffeThread( object ):
   """Class responsible for starting and running caffe"""
-  def __init__(self, configFileName, videoFileName, outputDir):
+  def __init__(self, configFileName, videoFileName, leveldbFolder, jsonFolder):
     """Initialize values"""
     self.configFileName = configFileName
     self.configReader = ConfigReader(configFileName)
@@ -45,10 +45,10 @@ class CaffeThread( object ):
     self.startFrameNumber = self.configReader.ci_videoFrameNumberStart
 
     # Folder to save files
-    self.outputJsonDir = os.path.join(outputDir, self.configReader.sw_folders_annotation)
-    self.outputLeveldbDir = os.path.join(outputDir, self.configReader.sw_folders_leveldb)
-    ConfigReader.mkdir_p(self.outputJsonDir)
-    ConfigReader.mkdir_p(self.outputLeveldbDir)
+    self.leveldbFolder = leveldbFolder
+    self.jsonFolder = jsonFolder
+    ConfigReader.mkdir_p(self.leveldbFolder)
+    ConfigReader.mkdir_p(self.jsonFolder)
 
     # Video name prefix for all frames/patches:
     self.videoId = os.path.basename(videoFileName).split('.')[0]
@@ -92,7 +92,7 @@ class CaffeThread( object ):
     # Initialize variables
     currentFrameNum = self.startFrameNumber # frame number being extracted
     extractedFrameCounter = 0               # total number of extracted frames
-    levedbFolder = None                     # folder where to write leveldb
+    curLeveldbFolder = None                     # folder where to write leveldb
     videoLeveldb = None                     # levedb object from VideoReader
     leveldbMapping = None                   # mapping between patches in leveldb and corresponding jsons
     leveldbId = 0                           # number of leveldb created
@@ -108,19 +108,19 @@ class CaffeThread( object ):
           videoLeveldb.saveLevelDb()
           with open(leveldbMappingFile, "w") as f :
             json.dump(leveldbMapping, f, indent=2)
-          leveldbQueue.put(levedbFolder)
+          leveldbQueue.put(curLeveldbFolder)
         # Set up new levedb
         extractedFrameCounter = 0
         leveldbPatchCounter = 0
-        levedbFolder = os.path.join(self.outputLeveldbDir, "%s_leveldb_%d" % (self.videoId, leveldbId))
-        leveldbMappingFile = os.path.join(levedbFolder, "leveldb_mapping.json")
-        videoLeveldb = VideoReader.VideoLevelDb(levedbFolder)
+        curLeveldbFolder = os.path.join(self.leveldbFolder, "%s_leveldb_%d" % (self.videoId, leveldbId))
+        leveldbMappingFile = os.path.join(curLeveldbFolder, "leveldb_mapping.json")
+        videoLeveldb = VideoReader.VideoLevelDb(curLeveldbFolder)
         videoLeveldb.setVideoFrameReader(videoFrameReader)
         leveldbMapping = OrderedDict()
         leveldbId += 1
         #logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/videoFrameReader.totalFrames)))
       # Start json annotation file
-      jsonName = os.path.join(self.outputJsonDir, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
+      jsonName = os.path.join(self.jsonFolder, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
       jsonAnnotation = JSONReaderWriter(jsonName, create_new=True)
       jsonAnnotation.initializeJSON(self.videoId, currentFrameNum, imageDim, self.scales)
       # Put patch into leveldb
@@ -148,9 +148,9 @@ class CaffeThread( object ):
       videoLeveldb.saveLevelDb()
       with open(leveldbMappingFile, "w") as f :
         json.dump(leveldbMapping, f, indent=2)
-      leveldbQueue.put(levedbFolder)
+      leveldbQueue.put(curLeveldbFolder)
 
-    # HACK: work around so that VideoLevelDb releases lock on levedbFolder
+    # HACK: work around so that VideoLevelDb releases lock on curLeveldbFolder
     videoLeveldb = None
     # HACK: quit video reader gracefully
     currentFrameNum = videoFrameReader.totalFrames

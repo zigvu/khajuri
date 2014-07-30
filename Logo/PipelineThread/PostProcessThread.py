@@ -1,14 +1,13 @@
-import sys, os, glob
+import sys, os, glob, time
 from collections import OrderedDict
+import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 import logging
-import numpy as np
 
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 from Logo.PipelineMath.FramePostProcessor import FramePostProcessor
 
-from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
@@ -45,14 +44,19 @@ def framePostProcessorRun(sharedDict, postProcessQueue):
 
 class PostProcessThread( object ):
   """Class responsible for post-processing caffe results"""
-  def __init__(self, configFileName, videoFileName, jsonFolder, outputFolder):
+  def __init__(self, configFileName, videoFileName, jsonFolder, numpyFolder):
     """Initialize values"""
     self.configFileName = configFileName
     self.videoFileName = videoFileName
     self.jsonFolder = jsonFolder
-    self.outputFolder = outputFolder
+    self.numpyFolder = numpyFolder
 
     self.configReader = ConfigReader(configFileName)
+
+    self.updateStatusSleepTime = 30
+
+    if self.configReader.ci_saveVideoHeatmap:
+      ConfigReader.mkdir_p(numpyFolder)
 
     # Logging levels
     logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
@@ -62,9 +66,6 @@ class PostProcessThread( object ):
     """Run the video post processing"""
     logging.info("Setting up post-processing for video %s" % self.videoFileName)
 
-
-    numpyFolder = os.path.join(self.outputFolder, self.configReader.sw_folders_numpy)
-    ConfigReader.mkdir_p(numpyFolder)
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
     tempJSONReaderWriter = JSONReaderWriter(jsonFiles[0])
 
@@ -80,7 +81,7 @@ class PostProcessThread( object ):
     sharedManager = Manager()
     sharedDict = sharedManager.dict()
     sharedDict['configFileName'] = self.configFileName
-    sharedDict['numpyFolder'] = numpyFolder
+    sharedDict['numpyFolder'] = self.numpyFolder
     sharedDict['image_width'] = tempJSONReaderWriter.getFrameWidth()
     sharedDict['image_height'] = tempJSONReaderWriter.getFrameHeight()
 
@@ -98,7 +99,13 @@ class PostProcessThread( object ):
       logging.debug("Putting JSON file in queue: %s" % os.path.basename(jsonFileName))
       postProcessQueue.put(jsonFileName)
 
-    logging.info("Put all JSON files in queue - waiting for threads to join")
+    logging.info("Done putting all JSON files in queue - waiting for threads to join")
+
+    while postProcessQueue.qsize() > 1:
+      logging.info("Post processing %d percent done" % (int(100 - \
+        100.0 * postProcessQueue.qsize()/len(jsonFiles))))
+      time.sleep(self.updateStatusSleepTime)
+
     for i in xrange(num_consumers):
       postProcessQueue.put(None)
     postProcessQueue.join()
@@ -118,73 +125,5 @@ class PostProcessThread( object ):
       # this access will raise KeyError if localization not computed
       localizationSanityCheck = jsonReaderWriter.getLocalizations(\
         self.configReader.ci_nonBackgroundClassIds[0])
-    logging.debug("Verified: all localizations got created")
-
-    # If creating heatmap video
-    if self.configReader.ci_saveVideoHeatmap:
-      logging.info("Creating heat map videos")
-
-      videoFrameReader = VideoFrameReader(self.videoFileName)
-      fps = videoFrameReader.getFPS()
-      imageDim = videoFrameReader.getImageDim()
-
-      # Create as many output videos as non background classes
-      self.videoOutputFolder = os.path.join(self.outputFolder, self.configReader.sw_folders_video)
-      ConfigReader.mkdir_p(self.videoOutputFolder)
-      videoBaseName = os.path.basename(self.videoFileName).split('.')[0]
-      videoHeatMaps = OrderedDict()
-      for classId in self.configReader.ci_nonBackgroundClassIds:
-        outVideoFileName = os.path.join(self.videoOutputFolder, \
-          "%s_%s.avi" % (videoBaseName, str(classId)))
-        logging.debug("Videos to create: %s" % outVideoFileName)
-        videoHeatMaps[classId] = VideoWriter(outVideoFileName, fps, imageDim)
-
-      # Go through video frame by frame
-      currentFrameNum = self.configReader.ci_videoFrameNumberStart # frame number being extracted
-      jsonReaderWriter = None
-      lclzPixelMaps = None
-      frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
-      while frame != None:
-        logging.debug("Adding frame %d to video" % currentFrameNum)
-        if currentFrameNum in frameIndex.keys():
-          jsonReaderWriter = JSONReaderWriter(frameIndex[currentFrameNum])
-          numpyFileName = os.path.join(numpyFolder, "%d.npz" % currentFrameNum)
-          lclzPixelMaps = np.load(numpyFileName)
-
-        # Save each frame
-        imageFileName = os.path.join(self.videoOutputFolder, "temp_%d.png" % currentFrameNum)
-        videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
-
-        # Add heatmap and bounding boxes    
-        for classId in self.configReader.ci_nonBackgroundClassIds:
-          imgLclz = ImageManipulator(imageFileName)
-          imgLclz.addPixelMap(lclzPixelMaps[classId])
-          for lclzPatch in jsonReaderWriter.getLocalizations(classId):
-            bbox = Rectangle.rectangle_from_json(lclzPatch['bbox'])
-            score = float(lclzPatch['score'])
-            label = str(classId) + (": %.2f" % score)
-            imgLclz.addLabeledBbox(bbox, label)
-          # also add frame number label - indicate if scores from this frame
-          bbox = Rectangle.rectangle_from_endpoints(1,1,250,35)
-          label = "Frame: %d" % currentFrameNum
-          if currentFrameNum in frameIndex.keys():
-            label = "Frame: %d*" % currentFrameNum
-          imgLclz.addLabeledBbox(bbox, label)
-          videoHeatMaps[classId].addFrame(imgLclz)
-
-        os.remove(imageFileName)
-        # increment frame number
-        currentFrameNum += 1
-        frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
-
-      # Close video reader
-      videoFrameReader.close()
-
-      logging.debug("Saving heatmap videos")
-      # Once video is done, save all files
-      for classId in self.configReader.ci_nonBackgroundClassIds:
-        videoHeatMaps[classId].save()
-      logging.info("Finished creating video")
-
-    # Done
-    logging.info("All post-processing tasks done successfully")
+    
+    logging.info("All post-processing tasks complete")

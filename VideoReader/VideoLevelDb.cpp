@@ -59,6 +59,7 @@ int VideoLevelDb::savePatch( int frameNum, float scale, int x, int y, int width,
       delete batch;
       batch = new leveldb::WriteBatch();
     }
+    return label - 1;
   }
   return label;
 }
