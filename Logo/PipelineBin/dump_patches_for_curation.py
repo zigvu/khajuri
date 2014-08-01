@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
   videoFrameReader = VideoReader.VideoFrameReader( 40, 40, videoFileName )
   videoFrameReader.generateFrames()
-  time.sleep( 1 )
+  time.sleep( 10 )
   curationManager = CurationManager(jsonFolder, configReader)
   for frameNumber in curationManager.getFrameNumbers():
     logging.debug("Working on frame number %d" % frameNumber)

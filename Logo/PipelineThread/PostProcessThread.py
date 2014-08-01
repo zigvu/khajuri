@@ -44,10 +44,9 @@ def framePostProcessorRun(sharedDict, postProcessQueue):
 
 class PostProcessThread( object ):
   """Class responsible for post-processing caffe results"""
-  def __init__(self, configFileName, videoFileName, jsonFolder, numpyFolder):
+  def __init__(self, configFileName, jsonFolder, numpyFolder):
     """Initialize values"""
     self.configFileName = configFileName
-    self.videoFileName = videoFileName
     self.jsonFolder = jsonFolder
     self.numpyFolder = numpyFolder
 
@@ -64,7 +63,7 @@ class PostProcessThread( object ):
 
   def run( self ):
     """Run the video post processing"""
-    logging.info("Setting up post-processing for video %s" % self.videoFileName)
+    logging.info("Setting up post-processing")
 
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
     tempJSONReaderWriter = JSONReaderWriter(jsonFiles[0])
@@ -87,8 +86,8 @@ class PostProcessThread( object ):
 
     # Start threads
     framePostProcesses = []
-    #num_consumers = multiprocessing.cpu_count()
-    num_consumers = 1
+    num_consumers = multiprocessing.cpu_count()
+    #num_consumers = 1
     for i in xrange(num_consumers):
       framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue))
       framePostProcesses += [framePostProcess]
@@ -99,7 +98,7 @@ class PostProcessThread( object ):
       logging.debug("Putting JSON file in queue: %s" % os.path.basename(jsonFileName))
       postProcessQueue.put(jsonFileName)
 
-    logging.info("Done putting all JSON files in queue - waiting for threads to join")
+    logging.info("Done putting %d JSON files in queue - waiting for threads to join" % len(jsonFiles))
 
     while postProcessQueue.qsize() > 1:
       logging.info("Post processing %d percent done" % (int(100 - \

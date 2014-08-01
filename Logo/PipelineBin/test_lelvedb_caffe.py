@@ -31,7 +31,9 @@ if __name__ == '__main__':
 
   configReader = ConfigReader(configFileName)
   videoId = os.path.basename(videoFileName).split('.')[0]
+  patchFolder = os.path.join(outputFolder, configReader.sw_folders_patch)
   ConfigReader.mkdir_p(outputFolder)
+  ConfigReader.mkdir_p(patchFolder)
 
   # Logging levels
   logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
@@ -70,20 +72,26 @@ if __name__ == '__main__':
     if currentFrameNum == extractFrameNumber:
       logging.debug("Extracting frame %d" % currentFrameNum)
       # Start json annotation file
-      jsonName = os.path.join(outputFolder, "%s_frame_%s.json" % (videoId, currentFrameNum))
-      jsonAnnotation = JSONReaderWriter(jsonName, create_new=True)
+      jsonFileName = os.path.join(outputFolder, "%s_frame_%s.json" % (videoId, currentFrameNum))
+      jsonAnnotation = JSONReaderWriter(jsonFileName, create_new=True)
       jsonAnnotation.initializeJSON(videoId, currentFrameNum, imageDim, configReader.sw_scales)
+      frameFileName = os.path.join(outputFolder, jsonAnnotation.getFrameFileName())
+      videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), frameFileName)
       # Put patch into leveldb
       for scale in configReader.sw_scales:
         patchNum = 0
         for box in staticBoundingBoxes.getBoundingBoxes(scale):
+          patchFileName = '%s_frame_%s_scl_%s_idx_%s.png' % (\
+            videoId, currentFrameNum, scale, patchNum)
           # Generate leveldb patch and add to json
           leveldbPatchCounter = videoLeveldb.savePatch(currentFrameNum, scale, \
             box[0], box[1], box[2], box[3])
+          videoFrameReader.patchFromFrameNumber(int(currentFrameNum), \
+            os.path.join(patchFolder, patchFileName), scale, \
+            box[0], box[1], box[2], box [3])
           jsonAnnotation.addPatch(scale, patchNum, leveldbPatchCounter, \
             box[0], box[1], box[2], box [3])
-          leveldbMapping[leveldbPatchCounter] = '%s_frame_%s_scl_%s_idx_%s.png' % (\
-            videoId, currentFrameNum, scale, patchNum)
+          leveldbMapping[leveldbPatchCounter] = patchFileName
           # Increment counters
           patchNum += 1
       # Save annotation file
@@ -114,15 +122,25 @@ if __name__ == '__main__':
       if "batch_size:" in line:
         caffeBatchSize = int(line.strip(" \n").split("batch_size: ")[1])
       fwrite.write("%s" % line)
+
+  # Read mapping
+  maxPatchCounter = 0
+  for patchCounter, jsonFile in leveldbMapping.iteritems():
+    if maxPatchCounter < int(patchCounter):
+      maxPatchCounter = int(patchCounter)
+
   # HACK: without reinitializing caffe_net twice, it won't give reproducible results
-  logging.debug("Initializing caffe_net")
-  caffe_net = caffe.Net(prototxtWithNewLeveldb, modelFile)
-  caffe_net.set_phase_test() 
-  caffe_net.set_mode_cpu()
-  logging.debug("Reinitializing caffe_net")
+  # Seems to happen in CPU runs:
+  if not configReader.ci_useGPU:
+    logging.debug("Initializing caffe_net")
+    caffe_net = caffe.Net(prototxtWithNewLeveldb, modelFile)
+    caffe_net.set_phase_test() 
+    caffe_net.set_mode_cpu()
+    logging.debug("Reinitializing caffe_net")
+
   # Run caffe net
-  maxPatchCounter = leveldbPatchCounter
-  numOutputIteration = int(math.ceil(leveldbPatchCounter * 1.0 / caffeBatchSize))
+  # counter for iteration starts at 0, so increment 1 to maxPatchCounter
+  numOutputIteration = int(math.ceil((maxPatchCounter + 1) * 1.0 / caffeBatchSize))
   numOfClasses = len(configReader.ci_allClassIds)
   caffe_net = caffe.Net(prototxtWithNewLeveldb, modelFile)
   caffe_net.set_phase_test()
@@ -130,6 +148,7 @@ if __name__ == '__main__':
     caffe_net.set_mode_gpu()
   else:
     caffe_net.set_mode_cpu()
+
   # Iterate until all patches in leveldb are evaluated
   patchCounter = 0
   for i in range(0, numOutputIteration):
@@ -152,6 +171,10 @@ if __name__ == '__main__':
 
   # Save annotation file
   jsonAnnotation.saveState()
+  # Save file to CSV as well
+  csvFileName = os.path.join(outputFolder, "%s_frame_%s.csv" % (videoId, \
+    str(jsonAnnotation.getFrameNumber())))
+  jsonAnnotation.saveToCSV(csvFileName)
   
   # HACK: work around so that VideoLevelDb releases lock on curLeveldbFolder
   videoLeveldb = None

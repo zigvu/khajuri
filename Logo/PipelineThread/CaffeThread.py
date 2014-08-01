@@ -49,6 +49,7 @@ class CaffeThread( object ):
     self.jsonFolder = jsonFolder
     ConfigReader.mkdir_p(self.leveldbFolder)
     ConfigReader.mkdir_p(self.jsonFolder)
+    self.leveldbFolderSize = self.configReader.ci_maxLeveldbSizeMB
 
     # Video name prefix for all frames/patches:
     self.videoId = os.path.basename(videoFileName).split('.')[0]
@@ -76,6 +77,10 @@ class CaffeThread( object ):
       self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
     staticBoundingBoxes = BoundingBoxes(imageDim, \
       self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+
+    fps = videoFrameReader.fps
+    lengthInMicroSeconds = videoFrameReader.lengthInMicroSeconds
+    totalNumOfFrames = int(fps * lengthInMicroSeconds / 1000000.0)
 
     # Share state with other processes - since objects need ot be pickled
     # only put primitives where possible
@@ -109,6 +114,13 @@ class CaffeThread( object ):
           with open(leveldbMappingFile, "w") as f :
             json.dump(leveldbMapping, f, indent=2)
           leveldbQueue.put(curLeveldbFolder)
+        # If leveldb folder is full, wait until dump
+        if self.leveldbFolderSize > 0:
+          leveldbFolderSize = ConfigReader.dir_size(self.leveldbFolder)
+          while leveldbFolderSize >= self.leveldbFolderSize:
+            logging.info("Waiting for leveldb folder to empty")
+            time.sleep(5)
+            leveldbFolderSize = ConfigReader.dir_size(self.leveldbFolder)
         # Set up new levedb
         extractedFrameCounter = 0
         leveldbPatchCounter = 0
@@ -118,7 +130,7 @@ class CaffeThread( object ):
         videoLeveldb.setVideoFrameReader(videoFrameReader)
         leveldbMapping = OrderedDict()
         leveldbId += 1
-        #logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/videoFrameReader.totalFrames)))
+        logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/totalNumOfFrames)))
       # Start json annotation file
       jsonName = os.path.join(self.jsonFolder, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
       jsonAnnotation = JSONReaderWriter(jsonName, create_new=True)
@@ -137,9 +149,9 @@ class CaffeThread( object ):
           patchNum += 1
       # Save annotation file
       jsonAnnotation.saveState()
+      logging.debug("Finished working on frame %d" % currentFrameNum)
       currentFrameNum += self.frameStep
       extractedFrameCounter += 1
-      logging.debug("Finished working on frame %d" % currentFrameNum)
     # end while
 
     # For the last leveldb group, save and put in queue

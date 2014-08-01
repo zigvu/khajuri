@@ -42,14 +42,19 @@ class CaffeNet( object ):
       if jsonFile not in jsonFiles:
         jsonFiles += [jsonFile]
         jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
+
     # HACK: without reinitializing caffe_net twice, it won't give reproducible results
-    logging.debug("Initializing caffe_net")
-    caffe_net = caffe.Net(prototxtWithNewLeveldb, self.modelFile)
-    caffe_net.set_phase_test() 
-    caffe_net.set_mode_cpu()
-    logging.debug("Reinitializing caffe_net")
+    # Seems to happen in CPU runs:
+    if not self.useGPU:
+      logging.debug("Initializing caffe_net")
+      caffe_net = caffe.Net(prototxtWithNewLeveldb, self.modelFile)
+      caffe_net.set_phase_test() 
+      caffe_net.set_mode_cpu()
+      logging.debug("Reinitializing caffe_net")
+
     # Run caffe net
-    numOutputIteration = int(math.ceil(maxPatchCounter * 1.0 / caffeBatchSize))
+    # counter for iteration starts at 0, so increment 1 to maxPatchCounter
+    numOutputIteration = int(math.ceil((maxPatchCounter + 1) * 1.0 / caffeBatchSize))
     numOfClasses = len(self.classes)
     caffe_net = caffe.Net(prototxtWithNewLeveldb, self.modelFile)
     caffe_net.set_phase_test()

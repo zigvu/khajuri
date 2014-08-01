@@ -56,10 +56,25 @@ class VideoHeatmapThread( object ):
       logging.debug("Videos to create: %s" % outVideoFileName)
       videoHeatMaps[classId] = VideoWriter(outVideoFileName, fps, imageDim)
 
-    # Go through video frame by frame
-    currentFrameNum = self.configReader.ci_videoFrameNumberStart # frame number being extracted
+    # pre-fill video with frames that didn't get evaluated
+    for currentFrameNum in range(0, self.configReader.ci_videoFrameNumberStart):
+      frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
+      if frame != None:
+        # Save each frame
+        imageFileName = os.path.join(self.videoOutputFolder, "temp_%d.png" % currentFrameNum)
+        videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
+        for classId in self.configReader.ci_nonBackgroundClassIds:
+          imgLclz = ImageManipulator(imageFileName)
+          bbox = Rectangle.rectangle_from_endpoints(1,1,250,35)
+          label = "Frame: %d" % currentFrameNum
+          imgLclz.addLabeledBbox(bbox, label)
+          videoHeatMaps[classId].addFrame(imgLclz)
+        os.remove(imageFileName)
+
+    # Go through evaluated video frame by frame
     jsonReaderWriter = None
     lclzPixelMaps = None
+    currentFrameNum = self.configReader.ci_videoFrameNumberStart
     frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
     while frame != None:
       logging.debug("Adding frame %d to video" % currentFrameNum)

@@ -78,14 +78,12 @@ class JSONReaderWriter( object ):
           ('leveldb_counter', leveldbCounter)]))
 
   def addScores(self, leveldbCounter, scores):
-    setBreak = False
     for scaleVal in self.myDict['scales']:
-      if setBreak: break
       for patchVal in scaleVal['patches']:
-        if setBreak: break
         if leveldbCounter == int(patchVal['leveldb_counter']):
           patchVal['scores'] = scores
-          setBreak = True
+          return True
+    return False
           
   def initializeLocalizations( self ):
     if not 'localizations' in self.myDict.keys():
@@ -116,3 +114,16 @@ class JSONReaderWriter( object ):
   def saveState( self ):
     with open( self.fileName, "w" ) as f :
       json.dump( self.myDict, f, indent=2 )
+
+  def saveToCSV( self, csvFileName ):
+    with open( csvFileName, "w" ) as f :
+      topLineLabel = "Filename"
+      for classId in self.getClassIds():
+        topLineLabel = topLineLabel + ",Class_" + str(classId)
+      f.write(topLineLabel + "\n")
+      for obj in self.myDict[ 'scales' ]:
+        for patch in obj['patches']:
+          printStr = patch[ 'patch_filename' ]
+          for classId in self.getClassIds():
+            printStr = printStr + "," + repr(patch[ 'scores' ][ classId ])
+          f.write(printStr + "\n")

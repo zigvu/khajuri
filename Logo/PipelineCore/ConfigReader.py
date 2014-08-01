@@ -21,7 +21,7 @@ class ConfigReader:
     sw_folders = slidingWindow['folders']
     self.sw_folders_frame = sw_folders['frame_output']
     self.sw_folders_patch = sw_folders['patch_output']
-    self.sw_folders_annotation = sw_folders['annotation_output']
+    self.sw_folders_json = sw_folders['json_output']
     self.sw_folders_leveldb = sw_folders['levedb_output']
     self.sw_folders_video = sw_folders['video_output']
     self.sw_folders_numpy = sw_folders['numpy_output']
@@ -43,6 +43,7 @@ class ConfigReader:
     self.ci_prototxtFile = caffeInput['prototxt_file']
     self.ci_numFramesPerLeveldb = caffeInput['num_frames_per_leveldb']
     self.ci_numConcurrentLeveldbs = caffeInput['num_concurrent_leveldbs']
+    self.ci_maxLeveldbSizeMB = caffeInput['max_leveldb_size_mb']
     self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
     self.ci_useGPU = caffeInput['use_gpu'] == True
     self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
@@ -71,10 +72,25 @@ class ConfigReader:
     self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 
   @staticmethod
-  def mkdir_p(path):
+  def mkdir_p(start_path):
     """Util to make path"""
     try:
-      os.makedirs(path)
+      os.makedirs(start_path)
     except OSError as exc: # Python >2.5
-      if exc.errno == errno.EEXIST and os.path.isdir(path):
+      if exc.errno == errno.EEXIST and os.path.isdir(start_path):
         pass
+
+  @staticmethod
+  def dir_size(start_path):
+    """Util to get total size of path in MB"""
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(start_path):
+      for f in filenames:
+        fp = os.path.join(dirpath, f)
+        if os.path.exists(fp):
+          try:
+            total_size += os.path.getsize(fp)
+          except:
+            continue
+    # convert to MB
+    return int(total_size * 1.0 / 10000000)

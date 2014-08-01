@@ -9,16 +9,39 @@ sys.path.append( '%s/VideoReader'% baseScriptDir  )
 for dir in glob.glob( '%s/plugins/*' % baseScriptDir  ):
   sys.path.append( dir )
 
+from Logo.PipelineCore.ConfigReader import ConfigReader
+
 from Logo.PipelineThread.CaffeThread import CaffeThread
+from Logo.PipelineThread.PostProcessThread import PostProcessThread
+from Logo.PipelineThread.VideoHeatmapThread import VideoHeatmapThread
 
 if __name__ == '__main__':
-  if len(sys.argv) < 4:
-    print 'Usage %s <config.yaml> <videoFileName> <outputDir>' % sys.argv[ 0 ]
+  if len(sys.argv) < 6:
+    print 'Usage %s <config.yaml> <videoFileName> <outputFolder> <prototxtFile> <modelFile>' % sys.argv[ 0 ]
     sys.exit(1)
 
   configFileName = sys.argv[1]
   videoFileName = sys.argv[2]
-  outputDir = sys.argv[3]
+  outputFolder = sys.argv[3]
+  prototxtFile = sys.argv[4]
+  modelFile = sys.argv[5]
 
-  caffeThread = CaffeThread(configFileName, videoFileName, outputDir)
+  configReader = ConfigReader(configFileName)
+  leveldbFolder = os.path.join(outputFolder, configReader.sw_folders_leveldb)
+  jsonFolder = os.path.join(outputFolder, configReader.sw_folders_json)
+  numpyFolder = os.path.join(outputFolder, configReader.sw_folders_numpy)
+  videoOutputFolder = os.path.join(outputFolder, configReader.sw_folders_video)
+
+  # Run caffe
+  caffeThread = CaffeThread(configFileName, videoFileName, leveldbFolder, jsonFolder)
   caffeThread.run()
+
+  # Post process frames
+  postProcessThread = PostProcessThread(configFileName, jsonFolder, numpyFolder)
+  postProcessThread.run()
+
+  # Create heatmap video if required
+  if configReader.ci_saveVideoHeatmap:
+	  videoHeatmapThread = VideoHeatmapThread(configFileName, \
+	    videoFileName, jsonFolder, numpyFolder, videoOutputFolder)
+	  videoHeatmapThread.run()

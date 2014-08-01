@@ -47,7 +47,23 @@ class VideoLocalizationThread( object ):
     outVideoFileName = os.path.join(self.videoOutputFolder, "%s_localization.avi" % (videoBaseName))
     videoWriter = VideoWriter(outVideoFileName, fps, imageDim)
 
-    # Go through video frame by frame
+    # pre-fill video with frames that didn't get evaluated
+    for currentFrameNum in range(0, self.configReader.ci_videoFrameNumberStart):
+      frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
+      if frame != None:
+        # Save each frame
+        imageFileName = os.path.join(self.videoOutputFolder, "temp_%d.png" % currentFrameNum)
+        videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
+        imgLclz = ImageManipulator(imageFileName)
+        # also add frame number label 
+        bbox = Rectangle.rectangle_from_endpoints(1,1,250,35)
+        label = "Frame: %d" % currentFrameNum
+        imgLclz.addLabeledBbox(bbox, label)
+        # Add to video and remove temp file
+        videoWriter.addFrame(imgLclz)
+        os.remove(imageFileName)
+
+    # Go through evaluated video frame by frame
     currentFrameNum = self.configReader.ci_videoFrameNumberStart # frame number being extracted
     jsonReaderWriter = None
     frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
