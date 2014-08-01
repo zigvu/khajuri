@@ -82,7 +82,7 @@ VideoFrameReader::VideoFrameReader(
   maxVideoFrameNumber = LLONG_MAX; // set to max possible for now
   eof = false;
 
-  ::google::InitGoogleLogging( "VideoFrameReader" );
+  ::google::InitGoogleLogging( "VideoFrameReader" );    
 }
 
 void VideoFrameReader::startThreads(){
@@ -313,6 +313,8 @@ int VideoFrameReader::getTotalFrames(){
 
 
 VideoFrameReader::~VideoFrameReader() {
+  google::ShutdownGoogleLogging();
+
   // clear out any remaining frames from list
   videoFrameList.clear_and_dispose(DeleteFrameDisposer());
 
