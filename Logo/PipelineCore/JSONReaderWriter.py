@@ -118,12 +118,13 @@ class JSONReaderWriter( object ):
   def saveToCSV( self, csvFileName ):
     with open( csvFileName, "w" ) as f :
       topLineLabel = "Filename"
-      for classId in self.getClassIds():
+      classIds = self.getClassIds()
+      for classId in classIds:
         topLineLabel = topLineLabel + ",Class_" + str(classId)
       f.write(topLineLabel + "\n")
       for obj in self.myDict[ 'scales' ]:
         for patch in obj['patches']:
           printStr = patch[ 'patch_filename' ]
-          for classId in self.getClassIds():
+          for classId in classIds:
             printStr = printStr + "," + repr(patch[ 'scores' ][ classId ])
           f.write(printStr + "\n")

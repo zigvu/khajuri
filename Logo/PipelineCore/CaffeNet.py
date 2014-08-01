@@ -9,7 +9,7 @@ from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 class CaffeNet( object ):
   def __init__(self, configReader):
     logging.debug("Initializing CaffeNet")
-    self.prototxtFile = configReader.ci_prototxtFile
+    self.prototxtFile = configReader.ci_video_prototxtFile
     self.modelFile = configReader.ci_modelFile
     self.classes = configReader.ci_allClassIds
     self.useGPU = configReader.ci_useGPU

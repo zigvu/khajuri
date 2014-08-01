@@ -18,22 +18,23 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 if __name__ == '__main__':
-  if len(sys.argv) < 7:
-    print 'Usage %s <config.yaml> <videoFileName> <extractFrameNumber> <outputFolder> <prototxtFile> <modelFile>' % sys.argv[ 0 ]
+  if len(sys.argv) < 5:
+    print 'Usage %s <config.yaml> <videoFileName> <extractFrameNumber> <outputFolder>' % sys.argv[ 0 ]
     sys.exit(1)
 
   configFileName = sys.argv[1]
   videoFileName = sys.argv[2]
   extractFrameNumber = int(sys.argv[3])
   outputFolder = sys.argv[4]
-  prototxtFile = sys.argv[5]
-  modelFile = sys.argv[6]
 
   configReader = ConfigReader(configFileName)
   videoId = os.path.basename(videoFileName).split('.')[0]
   patchFolder = os.path.join(outputFolder, configReader.sw_folders_patch)
   ConfigReader.mkdir_p(outputFolder)
   ConfigReader.mkdir_p(patchFolder)
+
+  prototxtFile = configReader.ci_video_prototxtFile
+  modelFile = configReader.ci_modelFile
 
   # Logging levels
   logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 

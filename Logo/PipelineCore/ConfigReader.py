@@ -40,7 +40,8 @@ class ConfigReader:
     # Caffe input
     caffeInput = config['caffe_input']
     self.ci_modelFile = caffeInput['model_file']
-    self.ci_prototxtFile = caffeInput['prototxt_file']
+    self.ci_video_prototxtFile = caffeInput['video_prototxt_file']
+    self.ci_deploy_prototxtFile = caffeInput['deploy_prototxt_file']
     self.ci_numFramesPerLeveldb = caffeInput['num_frames_per_leveldb']
     self.ci_numConcurrentLeveldbs = caffeInput['num_concurrent_leveldbs']
     self.ci_maxLeveldbSizeMB = caffeInput['max_leveldb_size_mb']
