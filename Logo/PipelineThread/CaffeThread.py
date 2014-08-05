@@ -113,6 +113,8 @@ class CaffeThread( object ):
           videoLeveldb.saveLevelDb()
           with open(leveldbMappingFile, "w") as f :
             json.dump(leveldbMapping, f, indent=2)
+          # sleep some time so that file handles get cleared
+          time.sleep(5)
           leveldbQueue.put(curLeveldbFolder)
         # If leveldb folder is full, wait until dump
         if self.leveldbFolderSize > 0:
