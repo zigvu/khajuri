@@ -86,7 +86,7 @@ class PostProcessThread( object ):
 
     # Start threads
     framePostProcesses = []
-    num_consumers = multiprocessing.cpu_count()
+    num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
     #num_consumers = 1
     for i in xrange(num_consumers):
       framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue))

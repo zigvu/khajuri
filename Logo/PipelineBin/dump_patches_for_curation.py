@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, os, time, 
+import sys, os, time
 import logging
 
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
@@ -48,7 +48,9 @@ if __name__ == "__main__":
     # Get the patches from the frame file
     for curationPatch in curationManager.getCurationPatches(frameNumber):
       bbox = Rectangle.rectangle_from_json(curationPatch['bbox'])
-      patchFileName = os.path.join(outputFolder, curationPatch['patch_filename'])
+      patchFolderName = os.path.join(outputFolder, curationPatch['patch_foldername'])
+      ConfigReader.mkdir_p(patchFolderName)
+      patchFileName = os.path.join(patchFolderName, curationPatch['patch_filename'])
       imageManipulator = ImageManipulator(frameFileName)
       imageManipulator.extract_patch(bbox, patchFileName, \
         configReader.sw_patchWidth, configReader.sw_patchHeight)

@@ -16,6 +16,9 @@ class ConfigReader:
     if config['log_level'] == 'ERROR':
       self.log_level = logging.ERROR
 
+    # CPU count
+    self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])
+
     # Sliding window creation:
     slidingWindow = config['sliding_window']
     sw_folders = slidingWindow['folders']

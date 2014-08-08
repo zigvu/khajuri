@@ -2,6 +2,11 @@
 # in increasing level of severity: DEBUG, INFO, ERROR
 log_level:                                  DEBUG
 
+# Count to multiply with the number of cores available in machine
+# if using fraction, will round down to nearest integer after multiplication
+# Example: 16 core machine and 1.4 factor = 22 threads to run in parallel
+multiple_of_cpu_count:                        1.0
+
 # Sliding window configurations
 sliding_window:
   is_test:                                    false
