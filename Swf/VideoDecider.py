@@ -34,12 +34,24 @@ class VideoDecider(swf.Decider):
 
             if last_event_type == 'WorkflowExecutionStarted':
                 logging.info( 'Detecting workflow has started...Scheduling Tasks' )
-                decisions.schedule_activity_task('%s-%i' % ('VideoActivity', time.time()),
-                   'VideoTestActivity', self.version, task_list=config[ 'task_list'], input=input )
+                decisions.schedule_activity_task('%s-%i' % ('PreProcessingActivity', time.time()),
+                   'PreProcessingActivity', self.version, task_list=config[ 'task_list'], input=input )
             elif last_event_type == 'ActivityTaskCompleted':
-                result = last_event['activityTaskCompletedEventAttributes']['result']
-                logging.info( 'Done...%s' % result )
-                decisions.complete_workflow_execution()
+                last_event_attrs = last_event['activityTaskCompletedEventAttributes']
+                completed_activity_id = last_event_attrs['scheduledEventId'] - 1
+                activity_data = history['events'][completed_activity_id]
+                activity_attrs = activity_data['activityTaskScheduledEventAttributes']
+                activity_name = activity_attrs['activityType']['name']
+                result = last_event['activityTaskCompletedEventAttributes'].get('result')
+
+                # Take the decision.
+                if activity_name == 'PreProcessingActivity':
+                    logging.info( "Schedule Post Process" )
+                    decisions.schedule_activity_task('%s-%i' % ('PostProcessingActivity', time.time()),
+                        'PostProcessingActivity', self.version, task_list='postprocessing', input=result)
+                if activity_name == 'PostProcessingActivity':
+                    logging.info( "Done with workflow" )
+                    decisions.complete_workflow_execution()
             elif last_event_type == 'ActivityTaskFailed':
                 logging.info( 'Task Failed, mark workflow as failed' )
                 reason = last_event['activityTaskFailedEventAttributes'].get('reason')
@@ -50,8 +62,8 @@ class VideoDecider(swf.Decider):
                 if timeoutType == 'SCHEDULE_TO_START':
                   # Reschedule
                   logging.info( 'Rescheduling task for timeout( SCHEDULE_TO_START )..with input %s' % input )
-                  decisions.schedule_activity_task('%s-%i' % ('VideoActivity', time.time()),
-                     'VideoTestActivity', self.version, task_list='VideoTaskList',input=input )
+                  decisions.schedule_activity_task('%s-%i' % ('PreProcessingActivity', time.time()),
+                     'PreProcessingActivity', self.version, task_list=config[ 'task_list'],input=input )
                 else:
                   logging.info( 'Task timedout, mark workflow as failed' )
                   reason = last_event['activityTaskTimedOutEventAttributes'].get('reason')
