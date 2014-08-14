@@ -54,9 +54,8 @@ class FramePostProcessor(object):
     self.jsonReaderWriter.saveState()
     return True
 
-  def saveLocalizations(self, filename):
-    """Save localization calculations to filename in npz format"""
-    localizationMaps = OrderedDict()
+  def saveLocalizations(self, numpyFileBaseName):
+    """Save localization calculations to different files in npy format"""
     for classId in self.nonBackgroundClassIds:
-      localizationMaps[classId] = self.classPixelMaps[classId]['localizationMap']
-    np.savez_compressed(filename, **(localizationMaps))
+      clsFilename = "%s_%s.npy" % (numpyFileBaseName, str(classId))
+      np.save(clsFilename, self.classPixelMaps[classId]['localizationMap'])

@@ -73,15 +73,18 @@ class VideoHeatmapThread( object ):
 
     # Go through evaluated video frame by frame
     jsonReaderWriter = None
-    lclzPixelMaps = None
+    lclzPixelMaps = {}
     currentFrameNum = self.configReader.ci_videoFrameNumberStart
     frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
     while frame != None:
       logging.debug("Adding frame %d to video" % currentFrameNum)
       if currentFrameNum in frameIndex.keys():
         jsonReaderWriter = JSONReaderWriter(frameIndex[currentFrameNum])
-        numpyFileName = os.path.join(self.numpyFolder, "%d.npz" % currentFrameNum)
-        lclzPixelMaps = np.load(numpyFileName)
+        numpyFileBaseName = os.path.join(self.numpyFolder, "%d" % currentFrameNum)
+        lclzPixelMaps = {}
+        for classId in self.configReader.ci_nonBackgroundClassIds:
+          clsFilename = "%s_%s.npy" % (numpyFileBaseName, str(classId))
+          lclzPixelMaps[classId] = np.load(clsFilename)
 
       # Save each frame
       imageFileName = os.path.join(self.videoOutputFolder, "temp_%d.png" % currentFrameNum)

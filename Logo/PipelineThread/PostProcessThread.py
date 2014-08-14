@@ -37,8 +37,8 @@ def framePostProcessorRun(sharedDict, postProcessQueue):
       # if dumping video heatmap, then save heatmap
       if configReader.ci_saveVideoHeatmap:
         frameNumber = jsonReaderWriter.getFrameNumber()
-        numpyFileName = os.path.join(numpyFolder, "%d.npz" % frameNumber)
-        framePostProcessor.saveLocalizations(numpyFileName)
+        numpyFileBaseName = os.path.join(numpyFolder, "%d" % frameNumber)
+        framePostProcessor.saveLocalizations(numpyFileBaseName)
       postProcessQueue.task_done()
       logging.debug("Done post processing of file %s" % jsonFileName)
 
