@@ -22,13 +22,13 @@ class FramePostProcessor(object):
     self.jsonReaderWriter.initializeCurations()
     # TODO TODO TODO TODO TODO TODO TODO TODO TODO 
     # TODO: update jsonReaderWriter with re-normalized scores
-    # combine detection scores in scale space
-    scaleSpaceCombiner = ScaleSpaceCombiner(self.staticBoundingBoxes, self.jsonReaderWriter)
     # for each class except background classes, get localization and curation bboxes
     for classId in self.nonBackgroundClassIds:
+      # combine detection scores in scale space
+      scaleSpaceCombiner = ScaleSpaceCombiner(classId, self.staticBoundingBoxes, self.jsonReaderWriter)
       # ---------------- BEGIN: localization ---------------- 
       # get best pixelMap - result of averaging and maxPooling
-      localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap(classId)
+      localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
       # extract all detected bboxes above threshold 
       localizationPeaks = PeaksExtractor(localizationPixelMap, \
         self.configReader, self.staticBoundingBoxes.imageDim)
@@ -39,7 +39,7 @@ class FramePostProcessor(object):
       # ---------------- END: localization ---------------- 
       # ---------------- BEGIN: curation ---------------- 
       # get best pixelMap - result of maxPooling only
-      curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap(classId)
+      curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
       # extract all curation bboxes and associated intensity
       curationPeaks = PeaksExtractor(curationPixelMap, \
         self.configReader, self.staticBoundingBoxes.imageDim)
@@ -49,8 +49,7 @@ class FramePostProcessor(object):
         self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'])
       # ---------------- END: curation ---------------- 
       # caching
-      self.classPixelMaps[classId] = {'localizationMap': localizationPixelMap, \
-        'intensityMap': curationPixelMap}
+      self.classPixelMaps[classId] = {'localizationMap': localizationPixelMap}
     # save json
     self.jsonReaderWriter.saveState()
     return True

@@ -5,25 +5,25 @@ from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.PixelMapper import PixelMapper
 
 class ScaleSpaceCombiner(object):
-  def __init__(self, staticBoundingBoxes, jsonReaderWriter):
+  def __init__(self, classId, staticBoundingBoxes, jsonReaderWriter):
     """Initialize class"""
-    self.pixelMapper = PixelMapper(staticBoundingBoxes, jsonReaderWriter)
+    self.classId = classId
+    self.pixelMapper = PixelMapper(classId, staticBoundingBoxes, jsonReaderWriter)
     # infer scaling factors
     self.allScalingFactors = None
     self.originalScalingFactors = np.unique(np.sort(jsonReaderWriter.getScalingFactors()).copy())
-    self.classIds = jsonReaderWriter.getClassIds()
     self.allScalingFactors, self.inferredScalingFactors = self.getAllScalingFactors()
 
-  def getBestInferredPixelMap(self, classId):
+  def getBestInferredPixelMap(self):
     """From among the inferred scales, select best pixelMap based on 
     (a) localization and then (b) rescaled by intensity at the highest localization
     Returns pixelMap"""
     # first, find best localization
     maxLocalizationScale = self.inferredScalingFactors[0]
-    maxLocalizationMap = self.pixelMapper.getLocalizationMap(classId, maxLocalizationScale)
+    maxLocalizationMap = self.pixelMapper.getLocalizationMap(maxLocalizationScale)
     maxPixelLocalization = 1E-10
     for inferredScale in self.inferredScalingFactors:
-      curLocalizationMap = self.pixelMapper.getLocalizationMap(classId, inferredScale)
+      curLocalizationMap = self.pixelMapper.getLocalizationMap(inferredScale)
       curMaxPixelValue = np.max(curLocalizationMap)
       if curMaxPixelValue > maxPixelLocalization:
         maxPixelLocalization = curMaxPixelValue
@@ -31,20 +31,20 @@ class ScaleSpaceCombiner(object):
         maxLocalizationMap = curLocalizationMap
     localizationPixelMask = maxLocalizationMap >= maxPixelLocalization
     # now, re-calculate intensity
-    intensityAtScale = self.pixelMapper.getIntensityMap(classId, maxLocalizationScale)
+    intensityAtScale = self.pixelMapper.getIntensityMap(maxLocalizationScale)
     maxPixelIntensity = np.max(intensityAtScale * localizationPixelMask)
     rescalingFactor = maxPixelIntensity / maxPixelLocalization
     rescaledLocalizationMap = maxLocalizationMap * rescalingFactor
     return rescaledLocalizationMap
 
-  def getBestIntensityPixelMap(self, classId):
+  def getBestIntensityPixelMap(self):
     """From among all scales, select pixelMap with highest intensity
     Returns pixelMap"""
     maxIntensityScale = self.allScalingFactors[0]
-    maxIntensityMap = self.pixelMapper.getIntensityMap(classId, maxIntensityScale)
+    maxIntensityMap = self.pixelMapper.getIntensityMap(maxIntensityScale)
     maxPixelIntensity = 1E-10
     for scale in self.allScalingFactors:
-      curIntensityMap = self.pixelMapper.getIntensityMap(classId, scale)
+      curIntensityMap = self.pixelMapper.getIntensityMap(scale)
       curMaxPixelValue = np.max(curIntensityMap)
       if curMaxPixelValue > maxPixelIntensity:
         maxPixelIntensity = curMaxPixelValue
@@ -62,11 +62,10 @@ class ScaleSpaceCombiner(object):
     for idx, scl in enumerate(self.originalScalingFactors):
       if idx == (len(self.originalScalingFactors) - 1):
         break
-      for classId in self.classIds:
-        scale1 = round(self.originalScalingFactors[idx], 1)
-        scale2 = round(self.originalScalingFactors[idx + 1], 1)
-        scale = round((scale1 + scale2)/2, 1)
-        inferredScalingFactors = np.unique(np.append(inferredScalingFactors, [scale]))
-        self.pixelMapper.inferIntermediateScales(classId, scale, scale1, scale2)
+      scale1 = round(self.originalScalingFactors[idx], 1)
+      scale2 = round(self.originalScalingFactors[idx + 1], 1)
+      scale = round((scale1 + scale2)/2, 1)
+      inferredScalingFactors = np.unique(np.append(inferredScalingFactors, [scale]))
+      self.pixelMapper.inferIntermediateScales(scale, scale1, scale2)
     allScalingFactors = np.unique(np.append(inferredScalingFactors, self.originalScalingFactors))
     return allScalingFactors, inferredScalingFactors
