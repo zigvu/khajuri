@@ -4,6 +4,7 @@ from collections import OrderedDict
 import logging
 
 import caffe
+from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 class CaffeNet( object ):
@@ -90,8 +91,9 @@ class CaffeNet( object ):
 
     # Clean up by deleting levedb whose use is done 
     # since large files, might need to do it twice
-    shutil.rmtree(leveldbFolder, ignore_errors=True)
-    os.remove(prototxtWithNewLeveldb)
-    shutil.rmtree(leveldbFolder, ignore_errors=True)
-    # Finally, return success
-    return True
+    ConfigReader.rm_rf(leveldbFolder)
+    ConfigReader.rm_rf(prototxtWithNewLeveldb)
+    ConfigReader.rm_rf(leveldbFolder)
+
+    # Finally, return jsonFiles which were processed
+    return jsonFiles

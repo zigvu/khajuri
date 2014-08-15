@@ -45,6 +45,7 @@ caffe_input:
   video_frame_number_start:                  1
   use_gpu:                                   true
   save_video_heatmap:                        true
+  run_caffe_postprocess_in_parallel:         false
   all_classes:
     - '0'
     - '1'

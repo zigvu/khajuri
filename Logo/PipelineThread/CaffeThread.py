@@ -13,7 +13,9 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.CaffeNet import CaffeNet
 
-def caffeNetRun(sharedDict, leveldbQueue):
+from Logo.PipelineTrhead.PostProcessThread import framePostProcessorRun
+
+def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
   """Process for running caffe on a leveldb folder"""
   logging.info("Caffe thread started")
   configReader = ConfigReader(sharedDict['configFileName'])
@@ -25,13 +27,20 @@ def caffeNetRun(sharedDict, leveldbQueue):
       # poison pill means done with leveldb evaluation
       break
     logging.info("Caffe working on leveldb %s" % curLeveldbFolder)
-    if caffeNet.run_net(curLeveldbFolder):
+    jsonFiles = caffeNet.run_net(curLeveldbFolder)
+    if len(jsonFiles) > 0:
       logging.info("Finished processing curLeveldbFolder: %s" % curLeveldbFolder)
+      # Running post-processor in parallel, enqueu json files
+      if configReader.ci_runCaffePostProcessInParallel:
+        logging.info("Enqueue JSON files for post-processing: %d" % len(jsonFiles))
+        for jsonFile in jsonFiles:
+          logging.debug("Putting JSON file in queue: %s" % os.path.basename(jsonFile))
+          postProcessQueue.put(jsonFile)
       leveldbQueue.task_done()
 
 class CaffeThread( object ):
   """Class responsible for starting and running caffe"""
-  def __init__(self, configFileName, videoFileName, leveldbFolder, jsonFolder):
+  def __init__(self, configFileName, videoFileName, leveldbFolder, jsonFolder, numpyFolder):
     """Initialize values"""
     self.configFileName = configFileName
     self.configReader = ConfigReader(configFileName)
@@ -43,12 +52,16 @@ class CaffeThread( object ):
     self.numFramesPerLeveldb = self.configReader.ci_numFramesPerLeveldb
     self.numConcurrentLeveldbs = self.configReader.ci_numConcurrentLeveldbs
     self.startFrameNumber = self.configReader.ci_videoFrameNumberStart
+    self.runPostProcessor = self.configReader.ci_runCaffePostProcessInParallel
 
     # Folder to save files
     self.leveldbFolder = leveldbFolder
     self.jsonFolder = jsonFolder
+    self.numpyFolder = numpyFolder
+    ConfigReader.rm_rf(self.leveldbFolder)
     ConfigReader.mkdir_p(self.leveldbFolder)
     ConfigReader.mkdir_p(self.jsonFolder)
+    ConfigReader.mkdir_p(self.numpyFolder)
     self.leveldbFolderSize = self.configReader.ci_maxLeveldbSizeMB
 
     # Video name prefix for all frames/patches:
@@ -61,6 +74,8 @@ class CaffeThread( object ):
   def run( self ):
     """Run the video through caffe"""
     logging.info("Setting up caffe run for video %s" % self.videoFileName)
+    if self.runPostProcessor:
+      logging.info("Setting up post-processing to run in parallel")
 
     # Load video - since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
@@ -88,10 +103,25 @@ class CaffeThread( object ):
     sharedDict = sharedManager.dict()
     sharedDict['configFileName'] = self.configFileName
 
-    # Setup producer/consumer queues - since objects need to be pickled
-    # only put primitives where possible
+    # Post processing: Setup
+    postProcessQueue = JoinableQueue()
+    framePostProcesses = []
+    num_consumers = 0
+    if self.runPostProcessor:
+      sharedDict['numpyFolder'] = self.numpyFolder
+      sharedDict['image_width'] = frame.width
+      sharedDict['image_height'] = frame.height
+      # Start threads
+      num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
+      #num_consumers = 1
+      for i in xrange(num_consumers):
+        framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue))
+        framePostProcesses += [framePostProcess]
+        framePostProcess.start()
+
+    # Caffe: Setup producer/consumer queues
     leveldbQueue = JoinableQueue(self.numConcurrentLeveldbs)
-    caffeNetProcess = Process(target=caffeNetRun, args=(sharedDict, leveldbQueue))
+    caffeNetProcess = Process(target=caffeNetRun, args=(sharedDict, leveldbQueue, postProcessQueue))
     caffeNetProcess.start()
 
     # Initialize variables
@@ -179,3 +209,21 @@ class CaffeThread( object ):
     logging.debug("Caffe queue joined")
     caffeNetProcess.join()
     logging.debug("Caffe process joined")
+
+    # Join post-processing threads
+    if self.runPostProcessor:
+      logging.info("Waiting for post-processes to complete")
+      for i in xrange(num_consumers):
+        postProcessQueue.put(None)
+      postProcessQueue.join()
+      logging.debug("Post-processing queue joined")
+      for framePostProcess in framePostProcesses:
+        framePostProcess.join()
+      logging.debug("Post-processing process joined")
+
+      # Verification
+      logging.debug("Verifying all localizations got created")
+      PostProcessThread.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
+      
+      logging.info("All post-processing tasks complete")
+

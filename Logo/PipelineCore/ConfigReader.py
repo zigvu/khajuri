@@ -1,4 +1,4 @@
-import os, errno
+import os, errno, shutil
 import yaml, json
 import scipy.ndimage as ndimage
 import logging
@@ -51,6 +51,7 @@ class ConfigReader:
     self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
     self.ci_useGPU = caffeInput['use_gpu'] == True
     self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
+    self.ci_runCaffePostProcessInParallel = caffeInput['run_caffe_postprocess_in_parallel'] == True
     self.ci_allClassIds = caffeInput['all_classes']
     self.ci_backgroundClassIds = caffeInput['background_classes']
     self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds if x not in self.ci_backgroundClassIds]
@@ -83,6 +84,18 @@ class ConfigReader:
     except OSError as exc: # Python >2.5
       if exc.errno == errno.EEXIST and os.path.isdir(start_path):
         pass
+
+  @staticmethod
+  def rm_rf(start_path):
+    """Util to delete path"""
+    try:
+      if os.path.isdir(start_path):
+        shutil.rmtree(start_path, ignore_errors=True)
+      elif os.path.exists(start_path):
+        os.remove(start_path)
+    except:
+      # do nothing
+      pass
 
   @staticmethod
   def dir_size(start_path):
