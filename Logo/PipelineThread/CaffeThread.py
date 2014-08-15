@@ -1,4 +1,5 @@
 import os, time
+import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 from collections import OrderedDict
 import json
@@ -13,7 +14,8 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.CaffeNet import CaffeNet
 
-from Logo.PipelineTrhead.PostProcessThread import framePostProcessorRun
+from Logo.PipelineThread.PostProcessThread import PostProcessThread
+from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
 
 def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
   """Process for running caffe on a leveldb folder"""
