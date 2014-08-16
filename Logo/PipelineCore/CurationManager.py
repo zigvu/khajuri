@@ -81,8 +81,7 @@ class CurationManager(object):
       frameNumber = reader.getFrameNumber()
       frameNumbers += [frameNumber]
       frameFileName = reader.getFrameFileName()
-      baseFrameFileName = os.path.splitext(os.path.basename(frameFileName))[0]
-      baseFrameFileExt = os.path.splitext(os.path.basename(frameFileName))[1]
+      baseFrameFileName = os.path.basename(frameFileName)
       localizationBboxes[frameNumber] = {}
       for classId in classIds:
         # Read curations from JSON
@@ -90,7 +89,7 @@ class CurationManager(object):
         for idx, curation in enumerate(curations):
           bbox = curation['bbox']
           score = float(curation['score'])
-          patchFileName = baseFrameFileName + ("_cur_%d_%.2f" % (idx, score)) + baseFrameFileExt
+          patchFileName = ("%.4f_cur_%d_cls_%s_" % (score, idx, str(classId))) + baseFrameFileName
           curationBboxes[classId] += [{'frame_number': frameNumber, \
             'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
             'frame_filename': frameFileName,'set_number': None}]
@@ -100,7 +99,7 @@ class CurationManager(object):
         for idx, localization in enumerate(localizations):
           bbox = localization['bbox']
           score = float(localization['score'])
-          patchFileName = baseFrameFileName + ("_loc_%d_%.2f" % (idx, score)) + baseFrameFileExt
+          patchFileName = ("%.4f_loc_%d_cls_%s_" % (score, idx, str(classId))) + baseFrameFileName
           localizationBboxes[frameNumber][classId] += [{'frame_number': frameNumber, \
             'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
             'frame_filename': frameFileName}]        

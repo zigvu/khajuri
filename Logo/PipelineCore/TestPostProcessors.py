@@ -86,12 +86,12 @@ class TestPostProcessors(object):
     framePostProcessor = FramePostProcessor(jsonReaderWriter, self.staticBoundingBoxes, self.configReader)
     framePostProcessor.run()
     # also output heatmap
-    scaleSpaceCombiner =  ScaleSpaceCombiner(self.staticBoundingBoxes, jsonReaderWriter)
     for classId in jsonReaderWriter.getClassIds():
       if classId in self.configReader.ci_backgroundClassIds:
         continue
+      scaleSpaceCombiner =  ScaleSpaceCombiner(classId, self.staticBoundingBoxes, jsonReaderWriter)
       # test PeaksExtractor.getPeakBboxes
-      lclzPixelMap = scaleSpaceCombiner.getBestInferredPixelMap(classId)
+      lclzPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
       outputFileLclz = baseFileName + "_cls_" + str(classId) + "_lclz" + baseFileExt
       outputFileLclz = os.path.join(outputFolder, outputFileLclz)
       imgLclz = ImageManipulator(imageFileName)
@@ -103,7 +103,7 @@ class TestPostProcessors(object):
         imgLclz.addLabeledBbox(bbox, label)
       imgLclz.saveImage(outputFileLclz)
       # test PeaksExtractor.getPatchesForCuration
-      intnPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap(classId)
+      intnPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
       outputFileIntn = baseFileName + "_cls_" + str(classId) + "_curation" + baseFileExt
       outputFileIntn = os.path.join(outputFolder, outputFileIntn)
       imgIntn = ImageManipulator(imageFileName)
@@ -122,19 +122,19 @@ class TestPostProcessors(object):
     baseFileName = os.path.splitext(os.path.basename(imageFileName))[0]
     baseFileExt = os.path.splitext(os.path.basename(imageFileName))[1]
 
-    scaleSpaceCombiner =  ScaleSpaceCombiner(self.staticBoundingBoxes, jsonReaderWriter)
     for classId in jsonReaderWriter.getClassIds():
       if classId in self.configReader.ci_backgroundClassIds:
         continue
+      scaleSpaceCombiner =  ScaleSpaceCombiner(classId, self.staticBoundingBoxes, jsonReaderWriter)
       # test getBestInferredPixelMap
-      lclzPixelMap = scaleSpaceCombiner.getBestInferredPixelMap(classId)
+      lclzPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
       outputFileLclz = baseFileName + "_cls_" + str(classId) + "_bestInferred_lclz" + baseFileExt
       outputFileLclz = os.path.join(outputFolder, outputFileLclz)
       imgLclz = ImageManipulator(imageFileName)
       imgLclz.addPixelMap(lclzPixelMap)
       imgLclz.saveImage(outputFileLclz)
       # test getBestIntensityPixelMap
-      intnPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap(classId)
+      intnPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
       outputFileIntn = baseFileName + "_cls_" + str(classId) + "_bestInferred_intn" + baseFileExt
       outputFileIntn = os.path.join(outputFolder, outputFileIntn)
       imgIntn = ImageManipulator(imageFileName)
@@ -147,28 +147,29 @@ class TestPostProcessors(object):
     imageFileName = os.path.join(imageFolder, jsonReaderWriter.getFrameFileName())
     baseFileName = os.path.splitext(os.path.basename(imageFileName))[0]
     baseFileExt = os.path.splitext(os.path.basename(imageFileName))[1]
-    # since pixelMapper doesn't originally have inferred scales, use ScaleSpaceCombiner
-    scaleSpaceCombiner =  ScaleSpaceCombiner(self.staticBoundingBoxes, jsonReaderWriter)
-    pixelMapper = scaleSpaceCombiner.pixelMapper
-    for pm in pixelMapper.pixelMaps:
-      classId = pm['classId']
-      scale = pm['scale']
+    classIds = jsonReaderWriter.getClassIds()
+    for classId in classIds:
       if classId in self.configReader.ci_backgroundClassIds:
         continue
-      # test localization
-      localizationMap = pm['localizationMap']
-      outputFileLclz = baseFileName + "_cls_" + str(classId) + "_scl_" + str(scale) + "_lclz" + baseFileExt
-      outputFileLclz = os.path.join(outputFolder, outputFileLclz)
-      imgLclz = ImageManipulator(imageFileName)
-      imgLclz.addPixelMap(localizationMap)
-      imgLclz.saveImage(outputFileLclz)
-      # test intensity
-      intensityMap = pm['intensityMap']
-      outputFileIntn = baseFileName + "_cls_" + str(classId) + "_scl_" + str(scale) + "_intn" + baseFileExt
-      outputFileIntn = os.path.join(outputFolder, outputFileIntn)
-      imgIntn = ImageManipulator(imageFileName)
-      imgIntn.addPixelMap(intensityMap)
-      imgIntn.saveImage(outputFileIntn)
+      # since pixelMapper doesn't originally have inferred scales, use ScaleSpaceCombiner
+      scaleSpaceCombiner =  ScaleSpaceCombiner(classId, self.staticBoundingBoxes, jsonReaderWriter)
+      pixelMapper = scaleSpaceCombiner.pixelMapper
+      for pm in pixelMapper.pixelMaps:
+        scale = pm['scale']
+        # test localization
+        localizationMap = pm['localizationMap']
+        outputFileLclz = baseFileName + "_cls_" + str(classId) + "_scl_" + str(scale) + "_lclz" + baseFileExt
+        outputFileLclz = os.path.join(outputFolder, outputFileLclz)
+        imgLclz = ImageManipulator(imageFileName)
+        imgLclz.addPixelMap(localizationMap)
+        imgLclz.saveImage(outputFileLclz)
+        # test intensity
+        intensityMap = pm['intensityMap']
+        outputFileIntn = baseFileName + "_cls_" + str(classId) + "_scl_" + str(scale) + "_intn" + baseFileExt
+        outputFileIntn = os.path.join(outputFolder, outputFileIntn)
+        imgIntn = ImageManipulator(imageFileName)
+        imgIntn.addPixelMap(intensityMap)
+        imgIntn.saveImage(outputFileIntn)
 
   def test_slidingWindows(self):
     """Test sliding window pixel calculations"""
