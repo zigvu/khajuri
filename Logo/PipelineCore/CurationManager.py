@@ -89,7 +89,7 @@ class CurationManager(object):
         for idx, curation in enumerate(curations):
           bbox = curation['bbox']
           score = float(curation['score'])
-          patchFileName = ("%.4f_cur_%d_cls_%s_" % (score, idx, str(classId))) + baseFrameFileName
+          patchFileName = ("%.4f_cls_%s_cur_%d_" % (score, str(classId), idx)) + baseFrameFileName
           curationBboxes[classId] += [{'frame_number': frameNumber, \
             'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
             'frame_filename': frameFileName,'set_number': None}]
@@ -99,7 +99,8 @@ class CurationManager(object):
         for idx, localization in enumerate(localizations):
           bbox = localization['bbox']
           score = float(localization['score'])
-          patchFileName = ("%.4f_loc_%d_cls_%s_" % (score, idx, str(classId))) + baseFrameFileName
+          #patchFileName = ("%.4f_loc_%d_cls_%s_" % (score, idx, str(classId))) + baseFrameFileName
+          patchFileName = ("%.4f_cls_%s_loc_%d_" % (score, str(classId), idx)) + baseFrameFileName
           localizationBboxes[frameNumber][classId] += [{'frame_number': frameNumber, \
             'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
             'frame_filename': frameFileName}]        
