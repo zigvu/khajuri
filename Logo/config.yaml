@@ -44,6 +44,9 @@ caffe_input:
   max_leveldb_size_mb:                       10000
   video_frame_number_start:                  1
   use_gpu:                                   true
+  gpu_devices:                               
+    - 0
+    - 1
   save_video_heatmap:                        true
   run_caffe_postprocess_in_parallel:         false
   all_classes:
