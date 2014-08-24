@@ -8,12 +8,13 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 class CaffeNet( object ):
-  def __init__(self, configReader):
+  def __init__(self, configReader, deviceId):
     logging.debug("Initializing CaffeNet")
     self.prototxtFile = configReader.ci_video_prototxtFile
     self.modelFile = configReader.ci_modelFile
     self.classes = configReader.ci_allClassIds
     self.useGPU = configReader.ci_useGPU
+    self.deviceId = deviceId
 
   def run_net(self, leveldbFolder):
     caffeBatchSize = -1
@@ -61,6 +62,7 @@ class CaffeNet( object ):
     caffe_net.set_phase_test()
     if self.useGPU:
       caffe_net.set_mode_gpu()
+      caffe_net.set_device( self.deviceId )
     else:
       caffe_net.set_mode_cpu()
 

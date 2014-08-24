@@ -17,18 +17,18 @@ from Logo.PipelineCore.CaffeNet import CaffeNet
 from Logo.PipelineThread.PostProcessThread import PostProcessThread
 from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
 
-def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
+def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
   """Process for running caffe on a leveldb folder"""
   logging.info("Caffe thread started")
   configReader = ConfigReader(sharedDict['configFileName'])
-  caffeNet = CaffeNet(configReader)
+  caffeNet = CaffeNet(configReader, deviceId)
   while True:
     curLeveldbFolder = leveldbQueue.get()
     if curLeveldbFolder is None:
       leveldbQueue.task_done()
       # poison pill means done with leveldb evaluation
       break
-    logging.info("Caffe working on leveldb %s" % curLeveldbFolder)
+    logging.info("Caffe working on leveldb %s on device %s" % ( curLeveldbFolder, deviceId ) )
     jsonFiles = caffeNet.run_net(curLeveldbFolder)
     if len(jsonFiles) > 0:
       logging.info("Finished processing curLeveldbFolder: %s" % curLeveldbFolder)
@@ -72,6 +72,9 @@ class CaffeThread( object ):
     # Logging levels
     logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
       level=self.configReader.log_level)
+
+    # More than 1 GPU Available?
+    self.gpu_devices = self.configReader.ci_gpu_devices
 
   def run( self ):
     """Run the video through caffe"""
@@ -124,8 +127,11 @@ class CaffeThread( object ):
 
     # Caffe: Setup producer/consumer queues
     leveldbQueue = JoinableQueue(self.numConcurrentLeveldbs)
-    caffeNetProcess = Process(target=caffeNetRun, args=(sharedDict, leveldbQueue, postProcessQueue))
-    caffeNetProcess.start()
+    caffeNetProcesses = []
+    for gpuDevice in self.gpu_devices:
+      caffeNetProcess = Process(target=caffeNetRun, args=(sharedDict, leveldbQueue, postProcessQueue, gpuDevice))
+      caffeNetProcess.start()
+      caffeNetProcesses.append( caffeNetProcess )
 
     # Initialize variables
     currentFrameNum = self.startFrameNumber # frame number being extracted
@@ -207,10 +213,12 @@ class CaffeThread( object ):
 
     # Put poison pills and wait to join all threads
     logging.info("Done with all patch extraction. Waiting for caffe thread to join")
-    leveldbQueue.put(None)
+    for caffeNetProcess in caffeNetProcesses:
+      leveldbQueue.put(None)
     leveldbQueue.join()
     logging.debug("Caffe queue joined")
-    caffeNetProcess.join()
+    for caffeNetProcess in caffeNetProcesses:
+      caffeNetProcess.join()
     logging.debug("Caffe process joined")
 
     # Join post-processing threads

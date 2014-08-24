@@ -50,6 +50,7 @@ class ConfigReader:
     self.ci_maxLeveldbSizeMB = caffeInput['max_leveldb_size_mb']
     self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
     self.ci_useGPU = caffeInput['use_gpu'] == True
+    self.ci_gpu_devices = caffeInput['gpu_devices']
     self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
     self.ci_runCaffePostProcessInParallel = caffeInput['run_caffe_postprocess_in_parallel'] == True
     self.ci_allClassIds = caffeInput['all_classes']
