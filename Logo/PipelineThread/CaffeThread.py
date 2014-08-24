@@ -1,4 +1,4 @@
-import os, time
+import os, time, sys
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 from collections import OrderedDict
@@ -75,6 +75,7 @@ class CaffeThread( object ):
 
   def run( self ):
     """Run the video through caffe"""
+    startTime = time.time()
     logging.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
       logging.info("Setting up post-processing to run in parallel")
@@ -228,4 +229,5 @@ class CaffeThread( object ):
       PostProcessThread.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
       
       logging.info("All post-processing tasks complete")
-
+    endTime = time.time()
+    logging.info( 'It took CaffeThread %s seconds to complete' % ( endTime - startTime ) )

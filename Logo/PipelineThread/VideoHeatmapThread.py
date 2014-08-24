@@ -1,4 +1,4 @@
-import sys, os, glob
+import sys, os, glob, time
 from collections import OrderedDict
 import logging
 import numpy as np
@@ -29,6 +29,7 @@ class VideoHeatmapThread( object ):
 
   def run( self ):
     """Run the video through caffe"""
+    startTime = time.time()
     logging.info("Setting up heatmap drawing for video %s" % self.videoFileName)
 
     # Read all JSONs
@@ -120,3 +121,5 @@ class VideoHeatmapThread( object ):
     for classId in self.configReader.ci_nonBackgroundClassIds:
       videoHeatMaps[classId].save()
     logging.info("Finished creating videos")
+    endTime = time.time()
+    logging.info( 'It took VideoHeatmapThread %s seconds to complete' % ( endTime - startTime ) )
