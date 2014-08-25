@@ -66,7 +66,7 @@ void VideoFrame::savePng( char*fileName, SwsContext *sws_ctx ) {
   cv::imwrite( fileName, m );
 }
 
-void VideoFrame::saveCroppedFrameToDatum( float scale, int x, int y, 
+void VideoFrame::saveCroppedFrameToDatum( double scale, int x, int y, 
     int width, int height, int label, VideoReader::Datum *datum ) {
   if( scaledFrames.find( scale ) == scaledFrames.end() ) {
     int w = pFrame->width, h = pFrame->height;
@@ -96,7 +96,7 @@ void VideoFrame::saveCroppedFrameToDatum( float scale, int x, int y,
   }
 }
 
-void VideoFrame::saveCroppedFrame( char *fileName, SwsContext *sws_ctx, float scale, int x, int y, int width, int height ){
+void VideoFrame::saveCroppedFrame( char *fileName, SwsContext *sws_ctx, double scale, int x, int y, int width, int height ){
   if( scaledFrames.find( scale ) == scaledFrames.end() ) {
     int w = pFrame->width, h = pFrame->height;
     cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
@@ -138,7 +138,7 @@ VideoFrame::~VideoFrame(){
   if(pFrame){ av_free(pFrame); }
   if(dst){ av_free(dst); }
   if(buffer){ av_free(buffer); }
-  for (std::map<float,cv::Mat *>::iterator it=scaledFrames.begin(); it!=scaledFrames.end(); ++it) {
+  for (std::map<double,cv::Mat *>::iterator it=scaledFrames.begin(); it!=scaledFrames.end(); ++it) {
     delete it->second;
   }
 }
