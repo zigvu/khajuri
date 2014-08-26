@@ -1,4 +1,4 @@
-import os, glob, time
+import os, glob
 import logging
 
 from Logo.PipelineMath.Rectangle import Rectangle
