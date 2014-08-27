@@ -21,8 +21,20 @@ sliding_window:
   # Dimension of patches
   output_width:                               256
   output_height:                              256
-  x_stride:                                   128
-  y_stride:                                   128
+  x_stride:
+    - 64
+    - 64
+    - 96
+    - 96
+    - 128
+    - 128
+  y_stride:
+    - 64
+    - 64
+    - 96
+    - 96
+    - 128
+    - 128
   scaling:
     - 0.4
     - 0.6

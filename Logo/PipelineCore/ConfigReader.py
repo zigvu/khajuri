@@ -32,14 +32,23 @@ class ConfigReader:
     self.sw_frame_density = int(slidingWindow['frame_density'])
     self.sw_patchWidth = int(slidingWindow['output_width'])
     self.sw_patchHeight = int(slidingWindow['output_height'])
-    self.sw_xStride = int(slidingWindow['x_stride'])
-    self.sw_yStride = int(slidingWindow['y_stride'])
-    
+
     self.sw_scales = []
     sw_temp_scales = slidingWindow['scaling']
+    # Check length
+    assert len( slidingWindow['x_stride'] ) == len( sw_temp_scales ),\
+        "Stride scale array and image arrays do not match"
+    assert len( slidingWindow['y_stride'] ) == len( sw_temp_scales ),\
+        "Stride scale array and image arrays do not match"
+    i = 0 
+    self.sw_xStride = {}
+    self.sw_yStride = {}
     for sw_scale in sw_temp_scales:
       self.sw_scales = self.sw_scales + [float(sw_scale)]
-
+      self.sw_xStride[ float(sw_scale) ] = slidingWindow['x_stride'][ i ] 
+      self.sw_yStride[ float(sw_scale) ] = slidingWindow['y_stride'][ i ] 
+      i += 1
+      
     # Caffe input
     caffeInput = config['caffe_input']
     self.ci_modelFile = caffeInput['model_file']

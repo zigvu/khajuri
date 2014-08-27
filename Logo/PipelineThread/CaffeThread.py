@@ -103,6 +103,9 @@ class CaffeThread( object ):
     lengthInMicroSeconds = videoFrameReader.lengthInMicroSeconds
     totalNumOfFrames = int(fps * lengthInMicroSeconds / 1000000.0)
 
+    self.frameStep = int( round ( ( 1.0 * fps )/self.frameStep ) ) 
+    logging.info( "Frame Step will be %s, as fps is: %s" % ( self.frameStep, fps ) )
+
     # Share state with other processes - since objects need ot be pickled
     # only put primitives where possible
     sharedManager = Manager()
