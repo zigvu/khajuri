@@ -64,7 +64,7 @@ class BoundingBoxes( object ):
       rStart = slw[1]
       rEnd = slw[1] + slw[3]
       cStart = slw[0]
-      cEnd = slw[0] + slw[3]
+      cEnd = slw[0] + slw[2]
       #print "(" + str(slw[0]) + "," + str(slw[1]) + " : " + str(slw[2]) + "," + str(slw[3]) + ")"  
       pixelCount[rStart:rEnd, cStart:cEnd] += 1
     if pixelCount.min() <= 0:
