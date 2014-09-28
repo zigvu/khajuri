@@ -29,6 +29,7 @@ class VideoFrameReader {
       char * videoFileToOpen);
     ~VideoFrameReader();
     void startThreads();
+    void startLogger();
     void joinThreads();
     void videoFrameBufferProducer();
     void videoFrameBufferConsumer(int numberOfFramesToConsume);

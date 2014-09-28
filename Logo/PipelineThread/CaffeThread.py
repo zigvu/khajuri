@@ -16,6 +16,7 @@ from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.CaffeNet import CaffeNet
 
 from Logo.PipelineThread.PostProcessThread import PostProcessThread
+from Logo.PipelineThread.VideoReaderThread import VideoReaderThread
 from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
 
 def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
