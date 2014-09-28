@@ -38,9 +38,9 @@ class VideoFrame : public list_base_hook<>{
 		int64_t getFrameNumber();
 		void saveFrame(char *fileNamePrefix, SwsContext *sws_ctx);
 		void savePng(char *fileNamePrefix, SwsContext *sws_ctx);
-    void saveCroppedFrame( char *fileNamePrefix, SwsContext *sws_ctx, float scale, int x, int y, int width, int height );
+    void saveCroppedFrame( char *fileNamePrefix, SwsContext *sws_ctx, double scale, int x, int y, int width, int height );
 		AVFrame * getPFrame(SwsContext *sws_ctx);
-    void saveCroppedFrameToDatum( float scale, int x, int y, int width, int height, int label, VideoReader::Datum *datum );
+    void saveCroppedFrameToDatum( double scale, int x, int y, int width, int height, int label, VideoReader::Datum *datum );
 
 	private:
     IplImage *iplImage;
@@ -53,5 +53,5 @@ class VideoFrame : public list_base_hook<>{
 
 	  int64_t videoFrameNumber;
 	  double videoFrameTimeStamp;
-    std::map< float, cv::Mat *> scaledFrames;
+    std::map< double, cv::Mat *> scaledFrames;
 };

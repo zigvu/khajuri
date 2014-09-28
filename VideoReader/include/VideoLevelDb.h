@@ -9,7 +9,7 @@ class VideoLevelDb {
 	public:
 		VideoLevelDb( std::string fileName );
 		~VideoLevelDb();
-    int savePatch( int frameNum, float scale, int x, int y, int width, int height );
+    int savePatch( int frameNum, double scale, int x, int y, int width, int height );
     void saveLevelDb();
 		void setVideoFrameReader( VideoFrameReader *videoFrameReader );
 

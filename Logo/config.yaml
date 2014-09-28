@@ -25,17 +25,16 @@ sliding_window:
   y_stride:                                   128
   scaling:
     - 0.4
-    - 0.6
-    - 0.8
+    - 0.7
     - 1.0
-    - 1.2
-    - 1.4
+    - 1.3
+    - 1.6
 
 # Caffe input
 caffe_input:
-  model_file:                                 "/mnt/data/logo/caffe_logo_train_iter_5000"
-  video_prototxt_file:                        "/mnt/data/logo/logo_video.prototxt"
-  deploy_prototxt_file:                       "/mnt/data/logo/logo_deploy.prototxt"
+  model_file:                                 "/mnt/data/multiClass-10_wc14/training/0_seed/networkModels/caffe_logo_train_iter_5000"
+  video_prototxt_file:                        "/mnt/data/multiClass-10_wc14/training/0_seed/prototxt/logo_video.prototxt"
+  deploy_prototxt_file:                       "/mnt/data/multiClass-10_wc14/training/0_seed/prototxt/logo_deploy.prototxt"
   # number of frames to put in one leveldb
   num_frames_per_leveldb:                    50
   num_concurrent_leveldbs:                   2

@@ -5,10 +5,10 @@ from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.PixelMapper import PixelMapper
 
 class ScaleSpaceCombiner(object):
-  def __init__(self, classId, staticBoundingBoxes, jsonReaderWriter):
+  def __init__(self, classId, staticBoundingBoxes, jsonReaderWriter, allCellBoundariesDict):
     """Initialize class"""
     self.classId = classId
-    self.pixelMapper = PixelMapper(classId, staticBoundingBoxes, jsonReaderWriter)
+    self.pixelMapper = PixelMapper(classId, staticBoundingBoxes, jsonReaderWriter, allCellBoundariesDict)
     # infer scaling factors
     self.allScalingFactors = None
     self.originalScalingFactors = np.unique(np.sort(jsonReaderWriter.getScalingFactors()).copy())
@@ -24,17 +24,18 @@ class ScaleSpaceCombiner(object):
     maxPixelLocalization = 1E-10
     for inferredScale in self.inferredScalingFactors:
       curLocalizationMap = self.pixelMapper.getLocalizationMap(inferredScale)
-      curMaxPixelValue = np.max(curLocalizationMap)
+      curMaxPixelValue = np.max(curLocalizationMap.cellValues)
       if curMaxPixelValue > maxPixelLocalization:
         maxPixelLocalization = curMaxPixelValue
         maxLocalizationScale = inferredScale
         maxLocalizationMap = curLocalizationMap
-    localizationPixelMask = maxLocalizationMap >= maxPixelLocalization
+    localizationPixelMask = maxLocalizationMap.cellValues >= maxPixelLocalization
     # now, re-calculate intensity
     intensityAtScale = self.pixelMapper.getIntensityMap(maxLocalizationScale)
-    maxPixelIntensity = np.max(intensityAtScale * localizationPixelMask)
+    maxPixelIntensity = np.max(intensityAtScale.cellValues * localizationPixelMask)
     rescalingFactor = maxPixelIntensity / maxPixelLocalization
-    rescaledLocalizationMap = maxLocalizationMap * rescalingFactor
+    rescaledLocalizationMap = maxLocalizationMap.copy()
+    rescaledLocalizationMap.cellValues = maxLocalizationMap.cellValues * rescalingFactor
     return rescaledLocalizationMap
 
   def getBestIntensityPixelMap(self):

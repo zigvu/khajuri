@@ -48,7 +48,7 @@ class BoundingBoxes( object ):
     self.cachedBoundingBoxes[scaleFactor] = boundingBoxes
     return boundingBoxes
 
-  def pixelMapToRemoveDoubleCounting(self, scaleFactor):
+  def pixelMapToRemoveDoubleCounting1(self, scaleFactor):
     """Get pixel count as window is slid over the image
     Remove double counting artifacts but no guarantees on border/corner cases
     Return pixelMap with per-pixel weights to rescale detection scores"""
@@ -78,4 +78,3 @@ class BoundingBoxes( object ):
     pixelMap = scaleInverse / pixelCount
     self.cachedPixelMaps[scaleFactor] = pixelMap
     return pixelMap
-

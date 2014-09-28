@@ -1,6 +1,23 @@
-import math
+import math, os
 import logging
 import numpy as np
+from shapely.geometry import box
+from multiprocessing import Process, Manager
+from Queue import Queue, Empty
+import multiprocessing
+import time
+
+def setupNeighbor( neighbors, cellBoundaries, cb ):
+  centralBox = box( cb[ 'x0' ] + 1, cb[ 'y0' ] + 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
+  boxes = []
+  for neighbor in cellBoundaries:
+    if neighbor == cb:
+      continue
+    neighborBox = box( neighbor[ 'x0' ] + 1, neighbor[ 'y0' ] + 1,
+        neighbor[ 'x3' ] + 1, neighbor[ 'y3' ] + 1 )
+    if neighborBox.intersects( centralBox ):
+      boxes.append( neighbor )
+  neighbors[ ( cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] ) ] = boxes
 
 class PixelMap(object):
   def __init__(self, allCellBoundariesDict, scaleFactor):
@@ -57,7 +74,6 @@ class PixelMap(object):
       rEnd = cb["y3"]
       cBegin = cb["x0"]
       cEnd = cb["x3"]
-      #print "{x0: %d, y0: %d, x3: %d, y3: %d}" % (cBegin, rBegin, cEnd, rEnd) # For testing
       pixelCount[rBegin:rEnd, cBegin:cEnd] = self.cellValues[cb["idx"]]
     return pixelCount
 
@@ -66,40 +82,26 @@ class PixelMap(object):
 
   def addScore(self, x0, y0, x3, y3, score):
     """Add scores to cells"""
-    self.scoreOperation(x0, y0, x3, y3, score, "add")
+    cells = self.cellSlidingWindows[ (x0, y0, x3, y3 ) ]
+    self.cellValues[np.array( cells )] += score
 
   def addScore_average(self, x0, y0, x3, y3, score):
     """Average score with existing cell values"""
-    self.scoreOperation(x0, y0, x3, y3, score, "addAvg")
+    cells = self.cellSlidingWindows[ (x0, y0, x3, y3 ) ]
+    self.cellValues[np.array( cells )] += score
+    self.cellValues[np.array( cells )] /= 2
 
   def addScore_max(self, x0, y0, x3, y3, score):
     """Store max of score and existing cell values in cells"""
-    self.scoreOperation(x0, y0, x3, y3, score, "addMax")
+    cells = self.cellSlidingWindows[ (x0, y0, x3, y3 ) ]
+    myCells = self.cellValues[np.array( cells )]
+    mask = myCells < score
+    myCells[ mask ] = score
+    self.cellValues[np.array( cells )] = myCells
 
   # ********************
   # Helper functions
-
-  def scoreOperation(self, x0, y0, x3, y3, score, meth):
-    """Given score of specified patch in sliding window, stores the
-    value in all relevant patches using the method used"""
-    scoreChanged = False
-    for slw in self.cellSlidingWindows:
-      if ((slw["x0"] == x0) and (slw["y0"] == y0) and \
-        (slw["x3"] == x3) and (slw["y3"] == y3)):
-        for cellIds in slw["cell_idx"]:
-          if (meth == "add"):
-            self.cellValues[cellIds] += score
-          elif (meth == "addAvg"):
-            self.cellValues[cellIds] = (self.cellValues[cellIds] + score)/2
-          elif (meth == "addMax"):
-            self.cellValues[cellIds] = np.max(self.cellValues[cellIds], score)
-          else:
-            raise RuntimeError("Unknown score operation")
-        scoreChanged = True
-        break
-    if not scoreChanged:
-      raise RuntimeError("Bounding box coordinates not found")
-
+  # ********************
   def setScale(self, scaleFactor):
     """Set scale of this PixelMap object"""
     self.cellBoundariesDict = self.allCellBoundariesDict['scales'][scaleFactor]
@@ -179,6 +181,8 @@ class PixelMap(object):
     # -------------------------------------------------------------
     # Part (b) : Divide cells which are dissected by sliding window boundaries
     # relabel first - start with new primes
+    print 'Unique before relabel: %s' % len(np.unique(smallestPixelCount))
+    counter = 0 
     primesForCells = PixelMap.generatePrimes()
     uniqueValues = np.unique(smallestPixelCount)
     relabelPixelCount = np.zeros(np.shape(smallestPixelCount))
@@ -186,7 +190,10 @@ class PixelMap(object):
       cb = np.where(smallestPixelCount == uniqueValue)
       rBegin = np.min(cb[0]) ; rEnd = np.max(cb[0]) + 1
       cBegin = np.min(cb[1]) ; cEnd = np.max(cb[1]) + 1
-      relabelPixelCount[rBegin:rEnd, cBegin:cEnd] = next(primesForCells)
+      relabelPixelCount[rBegin:rEnd, cBegin:cEnd] = counter
+      counter += 10
+
+    print 'Unique after relabel: %s' % len(np.unique(relabelPixelCount))
     # for each axis, dissect cells in boundaries
     rAxisLines = np.unique(rAxisLines)
     for rLine in rAxisLines:
@@ -196,8 +203,10 @@ class PixelMap(object):
           cb = np.where(relabelPixelCount == uniqueValue)
           rBegin = np.min(cb[0]) ; rEnd = np.max(cb[0]) + 1
           cBegin = np.min(cb[1]) ; cEnd = np.max(cb[1]) + 1
-          relabelPixelCount[rBegin:rLine, cBegin:cEnd] = next(primesForCells)
-          relabelPixelCount[rLine:rEnd, cBegin:cEnd] = next(primesForCells)
+          relabelPixelCount[rBegin:rLine, cBegin:cEnd] = counter
+          counter += 10
+          relabelPixelCount[rLine:rEnd, cBegin:cEnd] = counter
+          counter += 10
     cAxisLines = np.unique(cAxisLines)
     for cLine in cAxisLines:
       if (cLine > 0) and (cLine < smallestScaleRect.width):
@@ -206,8 +215,10 @@ class PixelMap(object):
           cb = np.where(relabelPixelCount == uniqueValue)
           rBegin = np.min(cb[0]) ; rEnd = np.max(cb[0]) + 1
           cBegin = np.min(cb[1]) ; cEnd = np.max(cb[1]) + 1
-          relabelPixelCount[rBegin:rEnd, cBegin:cLine] = next(primesForCells)
-          relabelPixelCount[rBegin:rEnd, cLine:cEnd] = next(primesForCells)
+          relabelPixelCount[rBegin:rEnd, cBegin:cLine] = counter
+          counter += 10
+          relabelPixelCount[rBegin:rEnd, cLine:cEnd] = counter
+          counter += 10
 
     finalPixelCount = relabelPixelCount
     # DEBUG : START : comment when not in debug mode
@@ -256,7 +267,7 @@ class PixelMap(object):
       # DEBUG : END : comment when not in debug mode
 
       # map cell counter idx to original sliding windows      
-      cellSlidingWindows = []
+      cellSlidingWindows = {}
       for slw in slidingWindows:
         rStart = slw[1] ; rEnd = slw[1] + slw[3]
         cStart = slw[0] ; cEnd = slw[0] + slw[2]
@@ -266,23 +277,55 @@ class PixelMap(object):
           # if the origin of cb is in this sliding window, collect it in
           if ((cb["x0"] >= cStart) and (cb["x0"] < cEnd) and (cb["y0"] >= rStart) and (cb["y0"] < rEnd)):
             cellIdxs += [cb["idx"]]
-        cellSlidingWindows += [{"x0": cStart, "y0": rStart, "x3": cEnd, "y3": rEnd, "cell_idx": cellIdxs}]
+        cellSlidingWindows[ ( cStart, rStart, cEnd, rEnd ) ] = cellIdxs
+      # Neighbors
+      print 'Starting Neighor Calc'
+      neighbors = PixelMap.setupNeighbors( cellBoundaries )
 
       # save data to dictionary
       allCellBoundaries["scales"][scaleFactor] = {\
         "cell_boundaries": cellBoundaries, \
         "sw_mapping": cellSlidingWindows, \
         "max_cell_counter": (cellCounter - 1), \
-        "width": rect.width, "height": rect.height}
+        "width": rect.width, "height": rect.height,
+        "neighbors" : neighbors }
       # print progress
       print "Scale %0.2f, unique: %d" % (scaleFactor, len(uniqueValues))
       logging.info("Finished working on scale %.2f. Unique values: %d" % (scaleFactor, len(uniqueValues)))
+
     # error check: we shouldn't have different max_cell_counter
     maxCellCounter = allCellBoundaries["scales"][smallestScale]["max_cell_counter"]
     for scaleFactor in allCellBoundaries["scales"]:
       if allCellBoundaries["scales"][scaleFactor]["max_cell_counter"] != maxCellCounter:
         raise RuntimeError("Cell boundaries across scales are different")
+
     return allCellBoundaries
+
+  @staticmethod
+  def setupNeighbors( cellBoundaries ):
+    activeProcess = Queue()
+    manager = Manager()
+    neighbors = manager.dict()
+    for cb in cellBoundaries:
+      while len( multiprocessing.active_children()) >= multiprocessing.cpu_count():
+        try:
+          for i in range( multiprocessing.cpu_count() / 3 ):
+              q = activeProcess.get(False)
+              if q:
+                q.join()
+        except Empty:
+          break
+      p = Process( target=setupNeighbor, args=( neighbors, cellBoundaries, cb ) )
+      p.start()
+      activeProcess.put( p )
+    while activeProcess.qsize() > 0:
+      try:
+         q = activeProcess.get(False)
+         if q:
+           q.join()
+      except Empty:
+        break
+    return neighbors.copy()
 
 
   @staticmethod
@@ -302,7 +345,6 @@ class PixelMap(object):
         # no longer need D[q], free memory
         del D[q]
       q += 1
-
 
   @staticmethod
   def simpleZoom(inputArray, newWidth, newHeight):

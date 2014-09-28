@@ -1,5 +1,5 @@
 import glob, sys
-import os, errno, math
+import os, errno, mat
 import numpy as np
 from skimage.transform import resize
 import matplotlib.pyplot as plt
@@ -199,7 +199,7 @@ class TestPostProcessors(object):
 
   def test_pixelMap(self, outputFolder, allCellBoundariesDict = None):
     """Test PixelMap.py"""
-    scales = [0.4, 0.6, 0.8, 1.0, 1.2, 1.4]
+    scales = [0.4, 1.0, 1.4]
     if allCellBoundariesDict == None:
       allCellBoundariesDict = PixelMap.getCellBoundaries(self.staticBoundingBoxes, scales)
 

@@ -5,13 +5,14 @@ from Logo.PipelineMath.ScaleSpaceCombiner import ScaleSpaceCombiner
 from Logo.PipelineMath.PeaksExtractor import PeaksExtractor
 
 class FramePostProcessor(object):
-  def __init__(self, jsonReaderWriter, staticBoundingBoxes, configReader):
+  def __init__(self, jsonReaderWriter, staticBoundingBoxes, configReader, allCellBoundariesDict):
     """Initialize values"""
     self.jsonReaderWriter = jsonReaderWriter
     self.staticBoundingBoxes = staticBoundingBoxes
     self.configReader = configReader
     self.detectorThreshold = configReader.pp_detectorThreshold
     self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
+    self.allCellBoundariesDict = allCellBoundariesDict
     # cache computation
     self.classPixelMaps = {}
 
@@ -25,7 +26,8 @@ class FramePostProcessor(object):
     # for each class except background classes, get localization and curation bboxes
     for classId in self.nonBackgroundClassIds:
       # combine detection scores in scale space
-      scaleSpaceCombiner = ScaleSpaceCombiner(classId, self.staticBoundingBoxes, self.jsonReaderWriter)
+      scaleSpaceCombiner = ScaleSpaceCombiner(classId, self.staticBoundingBoxes,\
+          self.jsonReaderWriter, self.allCellBoundariesDict )
       # ---------------- BEGIN: localization ---------------- 
       # get best pixelMap - result of averaging and maxPooling
       localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
