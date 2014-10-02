@@ -5,6 +5,7 @@ from threading import Thread
 from collections import OrderedDict
 import json
 import logging
+import threading
 
 import VideoReader
 
@@ -58,16 +59,28 @@ class VideoReaderThread( Thread ):
 
     # Video name prefix for all frames/patches:
     self.videoId = os.path.basename(videoFileName).split('.')[0]
+    self.gpu_devices = self.configReader.ci_gpu_devices
  
   def run( self ):
     """ Spawn as many processes as there are GPUs"""
-    p = Process( target=startVideoReaderProcess, args={self} )
-    p.start()
+    logging.info( 'Starting VideoFrameReader...' )
+    videoFrameReaderProcess = []
+    numOfGpus = len( self.gpu_devices )
+    for i in range( numOfGpus ):
+      p = Process( target=startVideoReaderProcess, 
+          args=(self, self.startFrameNumber + ( i * self.frameStep ),
+            self.frameStep * numOfGpus) )
+      p.start()
+      logging.info( 'Starting VideoFrameReader Process %s' % p)
+      videoFrameReaderProcess.append( p )
 
-def startVideoReaderProcess( self ):
+    for p in videoFrameReaderProcess:
+      p.join()
+
+def startVideoReaderProcess( self, frameStart, frameStep ):
   """ Run the VideoReader Thread """
   # Initialize variables
-  currentFrameNum = self.startFrameNumber # frame number being extracted
+  currentFrameNum = frameStart # frame number being extracted
   extractedFrameCounter = 0               # total number of extracted frames
   curLeveldbFolder = None                 # folder where to write leveldb
   videoLeveldb = None                     # levedb object from VideoReader
@@ -88,12 +101,10 @@ def startVideoReaderProcess( self ):
     if ((extractedFrameCounter %  self.numFramesPerLeveldb) == 0):
       # If ready, save leveldb and put in queue for CaffeNet
       if videoLeveldb != None:
-        logging.info("Saving leveldb ID: %d" % (leveldbId))
+        logging.info("Saving leveldb ID: %d, extractedFrameCounter: %s, self.numFramesPerLeveldb: %s" % (leveldbId, extractedFrameCounter, self.numFramesPerLeveldb))
         videoLeveldb.saveLevelDb()
         with open(leveldbMappingFile, "w") as f :
           json.dump(leveldbMapping, f, indent=2)
-        # sleep some time so that file handles get cleared
-        time.sleep(5)
         self.leveldbQueue.put(curLeveldbFolder)
       # If leveldb folder is full, wait until dump
       if self.leveldbFolderSize > 0:
@@ -105,7 +116,7 @@ def startVideoReaderProcess( self ):
       # Set up new levedb
       extractedFrameCounter = 0
       leveldbPatchCounter = 0
-      curLeveldbFolder = os.path.join(self.leveldbFolder, "%s_leveldb_%d" % (self.videoId, leveldbId))
+      curLeveldbFolder = os.path.join(self.leveldbFolder, "%s_leveldb_%s_%d" % (self.videoId, os.getpid(), leveldbId))
       leveldbMappingFile = os.path.join(curLeveldbFolder, "leveldb_mapping.json")
       videoLeveldb = VideoReader.VideoLevelDb(curLeveldbFolder)
       videoLeveldb.setVideoFrameReader(videoFrameReader)
@@ -130,8 +141,7 @@ def startVideoReaderProcess( self ):
         patchNum += 1
     # Save annotation file
     jsonAnnotation.saveState()
-    logging.debug("Finished working on frame %d" % currentFrameNum)
-    currentFrameNum += self.frameStep
+    currentFrameNum += frameStep
     extractedFrameCounter += 1
   # end while
 
@@ -153,5 +163,5 @@ def startVideoReaderProcess( self ):
 
   # Put poison pills and wait to join all threads
   logging.info("Done with all patch extraction. Waiting for caffe thread to join")
-  self.leveldbQueue.put(None)
-  self.leveldbQueue.join()
+  for i in self.gpu_devices:
+    self.leveldbQueue.put(None)

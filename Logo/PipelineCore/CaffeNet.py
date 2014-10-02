@@ -15,8 +15,10 @@ class CaffeNet( object ):
     self.classes = configReader.ci_allClassIds
     self.useGPU = configReader.ci_useGPU
     self.deviceId = deviceId
+    self.numOfGPUs = len( configReader.ci_gpu_devices )
 
   def run_net(self, leveldbFolder):
+    logging.info( 'Run net started' )
     caffeBatchSize = -1
     # Create new prototxt file to point to right leveldb
     prototxtWithNewLeveldb = os.path.join(os.path.dirname(leveldbFolder), \
@@ -98,4 +100,5 @@ class CaffeNet( object ):
     ConfigReader.rm_rf(leveldbFolder)
 
     # Finally, return jsonFiles which were processed
+    logging.info( 'Run net done.' )
     return jsonFiles

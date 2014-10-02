@@ -31,6 +31,8 @@ def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
       # poison pill means done with leveldb evaluation
       break
     logging.info("Caffe working on leveldb %s on device %s" % ( curLeveldbFolder, deviceId ) )
+    # sleep some time so that file handles get cleared
+    time.sleep(5)
     jsonFiles = caffeNet.run_net(curLeveldbFolder)
     if len(jsonFiles) > 0:
       logging.info("Finished processing curLeveldbFolder: %s" % curLeveldbFolder)
@@ -63,9 +65,8 @@ class CaffeThread( object ):
     ConfigReader.mkdir_p(self.jsonFolder)
     ConfigReader.mkdir_p(self.numpyFolder)
 
-
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
+    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
       level=self.configReader.log_level)
 
     # More than 1 GPU Available?
@@ -118,6 +119,7 @@ class CaffeThread( object ):
     for caffeNetProcess in caffeNetProcesses:
       caffeNetProcess.join()
     videoReaderThread.join()
+    leveldbQueue.join()
     logging.debug("Caffe process joined")
 
     # Join post-processing threads
