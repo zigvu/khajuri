@@ -75,7 +75,9 @@ class VideoReaderThread( Thread ):
       videoFrameReaderProcess.append( p )
 
     for p in videoFrameReaderProcess:
+      logging.info( 'Waiting for all VideoFrameReader Processes to complete...')
       p.join()
+    logging.info( 'Done with all processors for VideoFrameReader.' )
 
 def startVideoReaderProcess( self, frameStart, frameStep ):
   """ Run the VideoReader Thread """
@@ -163,5 +165,4 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
 
   # Put poison pills and wait to join all threads
   logging.info("Done with all patch extraction. Waiting for caffe thread to join")
-  for i in self.gpu_devices:
-    self.leveldbQueue.put(None)
+  self.leveldbQueue.put(None)
