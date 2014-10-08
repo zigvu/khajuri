@@ -68,7 +68,7 @@ class VideoReaderThread( Thread ):
     self.patchDimension = Rectangle.rectangle_from_dimensions(\
       self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
     self.staticBoundingBoxes = BoundingBoxes(self.imageDim, \
-      self.configReader.sw_xStride, self.configReader.sw_xStride, self.patchDimension)
+      self.configReader.sw_xStride, self.configReader.sw_yStride, self.patchDimension)
 
     self.fps = self.videoFrameReader.fps
     self.lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
