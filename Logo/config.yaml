@@ -78,6 +78,6 @@ post_processing:
 
 # Curation
 curation:
-  # total patches per class = num_of_sets * num_of_patch_per_set
+  # total patches/frames per class = num_of_sets * num_of_items_per_set
   num_of_sets:                                5
-  num_of_patch_per_set:                       100
+  num_of_items_per_set:                       100

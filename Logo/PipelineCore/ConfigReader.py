@@ -73,7 +73,7 @@ class ConfigReader:
     # Curation
     curation = config['curation']
     self.cr_curationNumOfSets = curation['num_of_sets']
-    self.cr_curationNumOfPatchPerSet = curation['num_of_patch_per_set']
+    self.cr_curationNumOfItemsPerSet = curation['num_of_items_per_set']
 
     # PeaksExtractor config - not exposed to config.yaml
     # Connectedness of labeled example - have a full matrix structure
