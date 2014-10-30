@@ -65,6 +65,7 @@ class PostProcessThread( object ):
 
   def run( self ):
     """Run the video post processing"""
+    startTime = time.time()
     logging.info("Setting up post-processing")
 
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
@@ -137,6 +138,8 @@ class PostProcessThread( object ):
     
     logging.info("All post-processing tasks complete")
 
+    endTime = time.time()
+    logging.info( 'It took PostProcessThread %s seconds to complete' % ( endTime - startTime ) )
 
   @staticmethod
   def verifyLocalizations(jsonFolder, classId):

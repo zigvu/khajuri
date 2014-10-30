@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, os, glob, time
+import sys, os, glob
 
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append( '%s/../../VideoReader'% baseScriptDir  )
@@ -12,14 +12,10 @@ if __name__ == '__main__':
     print 'Usage %s <config.yaml> <videoFileName> <leveldbFolder> <jsonFolder> <numpyFolder>' % sys.argv[ 0 ]
     sys.exit(1)
 
-  startTime = time.time()
   configFileName = sys.argv[1]
   videoFileName = sys.argv[2]
   leveldbFolder = sys.argv[3]
   jsonFolder = sys.argv[4]
   numpyFolder = sys.argv[5]
-
   caffeThread = CaffeThread(configFileName, videoFileName, leveldbFolder, jsonFolder, numpyFolder)
   caffeThread.run()
-  endTime = time.time()
-  print 'It took %s %s seconds to complete' % ( sys.argv[0], endTime - startTime )

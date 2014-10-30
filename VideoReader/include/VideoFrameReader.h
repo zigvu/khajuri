@@ -30,6 +30,7 @@ class VideoFrameReader {
     ~VideoFrameReader();
     void startLogger();
     void startThreads();
+    void startLogger();
     void joinThreads();
     void videoFrameBufferProducer();
     void videoFrameBufferConsumer(int numberOfFramesToConsume);

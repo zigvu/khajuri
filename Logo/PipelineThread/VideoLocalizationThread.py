@@ -1,4 +1,4 @@
-import os, glob
+import os, glob, time
 import logging
 
 from Logo.PipelineMath.Rectangle import Rectangle
@@ -26,6 +26,7 @@ class VideoLocalizationThread( object ):
 
   def run( self ):
     """Run the video through caffe"""
+    startTime = time.time()
     logging.info("Setting up localization drawing for video %s" % self.videoFileName)
 
     videoFrameReader = VideoFrameReader(self.videoFileName)
@@ -103,3 +104,5 @@ class VideoLocalizationThread( object ):
     # Save and exit
     videoWriter.save()
     logging.info("Finished creating video")
+    endTime = time.time()
+    logging.info( 'It took VideoLocalizationThread %s seconds to complete' % ( endTime - startTime ) )

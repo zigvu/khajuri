@@ -29,19 +29,19 @@ class BoundingBoxes( object ):
       y = 0
       while y + self.patchSizeHeight <= height:
         boundingBoxes.append( ( x, y, self.patchSizeWidth, self.patchSizeHeight ) )
-        y += self.ystepSize
-      if y - self.ystepSize + self.patchSizeHeight != height:
+        y += self.ystepSize[ scaleFactor ]
+      if y - self.ystepSize[ scaleFactor ] + self.patchSizeHeight != height:
         boundingBoxes.append(( x, int( height - self.patchSizeHeight), self.patchSizeWidth, self.patchSizeHeight ) )
-      x += self.xstepSize
+      x += self.xstepSize[ scaleFactor ]
 
-    if x - self.xstepSize + self.patchSizeWidth != width:
+    if x - self.xstepSize[ scaleFactor ] + self.patchSizeWidth != width:
       y = 0
       while y + self.patchSizeHeight <= height:
         boundingBoxes.append( ( int( width - self.patchSizeWidth ), y, self.patchSizeWidth, self.patchSizeHeight ) )
-        y += self.ystepSize
+        y += self.ystepSize[ scaleFactor ]
 
-    if x - self.xstepSize + self.patchSizeWidth != width\
-        and y - self.ystepSize + self.patchSizeHeight != height:
+    if x - self.xstepSize[ scaleFactor ] + self.patchSizeWidth != width\
+        and y - self.ystepSize[ scaleFactor ] + self.patchSizeHeight != height:
       boundingBoxes.append( ( int( width - self.patchSizeWidth ), 
                               int( height - self.patchSizeHeight ), 
                               self.patchSizeWidth, self.patchSizeHeight ) )

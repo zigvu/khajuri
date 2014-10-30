@@ -84,6 +84,10 @@ VideoFrameReader::VideoFrameReader(
 
 }
 
+void VideoFrameReader::startLogger() {
+    ::google::InitGoogleLogging( "VideoFrameReader" );    
+}
+
 void VideoFrameReader::startThreads(){
   DEBUG("%s\n", "Thread: Producer: Starting thread");
   producerThread = boost::thread(&VideoFrameReader::videoFrameBufferProducer, this);

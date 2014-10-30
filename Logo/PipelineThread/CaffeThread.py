@@ -1,4 +1,4 @@
-import os, time
+import os, time, sys
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 from threading import Thread
@@ -16,22 +16,29 @@ from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.CaffeNet import CaffeNet
 
 from Logo.PipelineThread.PostProcessThread import PostProcessThread
+from Logo.PipelineThread.VideoReaderThread import VideoReaderThread
 from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
 from Logo.PipelineMath.PixelMap import PixelMap
 
-def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
+def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
   """Process for running caffe on a leveldb folder"""
   logging.info("Caffe thread started")
   configReader = ConfigReader(sharedDict['configFileName'])
-  caffeNet = CaffeNet(configReader)
+  caffeNet = CaffeNet(configReader, deviceId)
   while True:
     curLeveldbFolder = leveldbQueue.get()
     if curLeveldbFolder is None:
       leveldbQueue.task_done()
       # poison pill means done with leveldb evaluation
       break
+<<<<<<< HEAD
     logging.info("Caffe working on leveldb %s" % curLeveldbFolder)
     time.sleep( 1 )
+=======
+    logging.info("Caffe working on leveldb %s on device %s" % ( curLeveldbFolder, deviceId ) )
+    # sleep some time so that file handles get cleared
+    time.sleep(5)
+>>>>>>> Development
     jsonFiles = caffeNet.run_net(curLeveldbFolder)
     if len(jsonFiles) > 0:
       logging.info("Finished processing curLeveldbFolder: %s" % curLeveldbFolder)
@@ -201,14 +208,21 @@ class CaffeThread( object ):
     ConfigReader.mkdir_p(self.leveldbFolder)
     ConfigReader.mkdir_p(self.jsonFolder)
     ConfigReader.mkdir_p(self.numpyFolder)
+<<<<<<< HEAD
 
+=======
+>>>>>>> Development
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
+    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
       level=self.configReader.log_level)
+
+    # More than 1 GPU Available?
+    self.gpu_devices = self.configReader.ci_gpu_devices
 
   def run( self ):
     """Run the video through caffe"""
+    startTime = time.time()
     logging.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
       logging.info("Setting up post-processing to run in parallel")
@@ -237,6 +251,7 @@ class CaffeThread( object ):
       sharedDict['numpyFolder'] = self.numpyFolder
       sharedDict['image_width'] = videoReaderThread.frame.width
       sharedDict['image_height'] = videoReaderThread.frame.height
+<<<<<<< HEAD
       scales = self.configReader.sw_scales
       imageDim = Rectangle.rectangle_from_dimensions(\
           sharedDict['image_width'], sharedDict['image_height'])
@@ -252,6 +267,8 @@ class CaffeThread( object ):
         allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
         pickle.dump( allCellBoundariesDict, open ( "save.p", "wb" ) )
 
+=======
+>>>>>>> Development
       # Start threads
       num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
       #num_consumers = 1
@@ -259,13 +276,26 @@ class CaffeThread( object ):
         framePostProcess = Thread(target=framePostProcessorRun, args=(sharedDict, postProcessQueue, allCellBoundariesDict))
         framePostProcesses += [framePostProcess]
         framePostProcess.start()
+    caffeNetProcesses = []
+    for gpuDevice in self.gpu_devices:
+      caffeNetProcess = Process(target=caffeNetRun, args=(sharedDict, leveldbQueue, postProcessQueue, gpuDevice))
+      caffeNetProcess.start()
+      caffeNetProcesses.append( caffeNetProcess )
 
+<<<<<<< HEAD
     caffeNetProcess = Thread(target=caffeNetRun, args=(sharedDict, leveldbQueue, postProcessQueue))
     caffeNetProcess.start()
 
     logging.debug("Caffe queue joined")
     caffeNetProcess.join()
     videoReaderThread.join()
+=======
+    logging.debug("Caffe queue joined")
+    for caffeNetProcess in caffeNetProcesses:
+      caffeNetProcess.join()
+    videoReaderThread.join()
+    leveldbQueue.join()
+>>>>>>> Development
     logging.debug("Caffe process joined")
 
     # Join post-processing threads
@@ -284,3 +314,8 @@ class CaffeThread( object ):
       PostProcessThread.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
       
       logging.info("All post-processing tasks complete")
+<<<<<<< HEAD
+=======
+    endTime = time.time()
+    logging.info( 'It took CaffeThread %s seconds to complete' % ( endTime - startTime ) )
+>>>>>>> Development

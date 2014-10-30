@@ -31,7 +31,7 @@ if __name__ == '__main__':
   videoOutputFolder = os.path.join(outputFolder, configReader.sw_folders_video)
 
   # Run caffe
-  caffeThread = CaffeThread(configFileName, videoFileName, leveldbFolder, jsonFolder)
+  caffeThread = CaffeThread(configFileName, videoFileName, leveldbFolder, jsonFolder, numpyFolder )
   caffeThread.run()
 
   # Post process frames
