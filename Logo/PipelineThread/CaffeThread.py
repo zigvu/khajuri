@@ -3,7 +3,7 @@ import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 from threading import Thread
 from collections import OrderedDict
-import json
+import json, pickle
 import logging
 
 import VideoReader
@@ -17,6 +17,7 @@ from Logo.PipelineCore.CaffeNet import CaffeNet
 
 from Logo.PipelineThread.PostProcessThread import PostProcessThread
 from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
+from Logo.PipelineMath.PixelMap import PixelMap
 
 def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
   """Process for running caffe on a leveldb folder"""
@@ -30,6 +31,7 @@ def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue):
       # poison pill means done with leveldb evaluation
       break
     logging.info("Caffe working on leveldb %s" % curLeveldbFolder)
+    time.sleep( 1 )
     jsonFiles = caffeNet.run_net(curLeveldbFolder)
     if len(jsonFiles) > 0:
       logging.info("Finished processing curLeveldbFolder: %s" % curLeveldbFolder)
@@ -58,7 +60,7 @@ class VideoReaderThread( Thread ):
 
     # Load video - since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
-    time.sleep(10)
+    time.sleep(1)
 
     # Get frame dimensions and create bounding boxes
     self.frame = self.videoFrameReader.getFrameWithFrameNumber(1)
@@ -102,7 +104,7 @@ def startVideoReaderProcess( self ):
 
   # Load video - since no expilicit synchronization exists to check if
   # VideoReader is ready, wait for 10 seconds
-  time.sleep(10)
+  time.sleep(1)
   
   # Main loop to go through video
   logging.info("Start patch extraction")
@@ -116,14 +118,14 @@ def startVideoReaderProcess( self ):
         with open(leveldbMappingFile, "w") as f :
           json.dump(leveldbMapping, f, indent=2)
         # sleep some time so that file handles get cleared
-        time.sleep(5)
+        time.sleep(1)
         self.leveldbQueue.put(curLeveldbFolder)
       # If leveldb folder is full, wait until dump
       if self.leveldbFolderSize > 0:
         leveldbFolderSize = ConfigReader.dir_size(self.leveldbFolder)
         while leveldbFolderSize >= self.leveldbFolderSize:
           logging.info("Waiting for leveldb folder to empty")
-          time.sleep(5)
+          time.sleep(1)
           leveldbFolderSize = ConfigReader.dir_size(self.leveldbFolder)
       # Set up new levedb
       extractedFrameCounter = 0
@@ -230,15 +232,31 @@ class CaffeThread( object ):
     postProcessQueue = JoinableQueue()
     framePostProcesses = []
     num_consumers = 0
+
     if self.runPostProcessor:
       sharedDict['numpyFolder'] = self.numpyFolder
       sharedDict['image_width'] = videoReaderThread.frame.width
       sharedDict['image_height'] = videoReaderThread.frame.height
+      scales = self.configReader.sw_scales
+      imageDim = Rectangle.rectangle_from_dimensions(\
+          sharedDict['image_width'], sharedDict['image_height'])
+      patchDimension = Rectangle.rectangle_from_dimensions(\
+          self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
+      staticBoundingBoxes = BoundingBoxes(imageDim, \
+          self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+      #allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
+      if os.path.exists( "save.p" ):
+        allCellBoundariesDict = pickle.load( open( "save.p", "rb" ) )
+      else:
+        scales = configReader.sw_scales
+        allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
+        pickle.dump( allCellBoundariesDict, open ( "save.p", "wb" ) )
+
       # Start threads
       num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
       #num_consumers = 1
       for i in xrange(num_consumers):
-        framePostProcess = Thread(target=framePostProcessorRun, args=(sharedDict, postProcessQueue))
+        framePostProcess = Thread(target=framePostProcessorRun, args=(sharedDict, postProcessQueue, allCellBoundariesDict))
         framePostProcesses += [framePostProcess]
         framePostProcess.start()
 

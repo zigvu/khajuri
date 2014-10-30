@@ -31,8 +31,9 @@ class FramePostProcessor(object):
       # ---------------- BEGIN: localization ---------------- 
       # get best pixelMap - result of averaging and maxPooling
       localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
+      localizationPixelMap.setScale( 1.0 )
       # extract all detected bboxes above threshold 
-      localizationPeaks = PeaksExtractor(localizationPixelMap, \
+      localizationPeaks = PeaksExtractor(localizationPixelMap.toNumpyArray(), \
         self.configReader, self.staticBoundingBoxes.imageDim)
       localizationPatches = localizationPeaks.getPeakBboxes(self.detectorThreshold)
       # save inferred localization patches to json
@@ -42,8 +43,9 @@ class FramePostProcessor(object):
       # ---------------- BEGIN: curation ---------------- 
       # get best pixelMap - result of maxPooling only
       curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
+      curationPixelMap.setScale( 1.0 )
       # extract all curation bboxes and associated intensity
-      curationPeaks = PeaksExtractor(curationPixelMap, \
+      curationPeaks = PeaksExtractor(curationPixelMap.toNumpyArray(), \
         self.configReader, self.staticBoundingBoxes.imageDim)
       curationPatches = curationPeaks.getPatchesForCuration()
       # save curation patches to json

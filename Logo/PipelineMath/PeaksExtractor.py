@@ -1,8 +1,8 @@
 import numpy as np
 import scipy.ndimage as ndimage
-import Queue
 
 from Logo.PipelineMath.Rectangle import Rectangle
+import matplotlib.pyplot as plt
 
 class PeaksExtractor(object):
   def __init__(self, pixelMap, configReader, imageDim):
@@ -28,63 +28,34 @@ class PeaksExtractor(object):
     subsumedBboxes = self.subsumeRectangles(candidateBboxes)
     return subsumedBboxes
 
-  def BFS( self, maxima, index, visitedCells, potentialCells ):
-    unvisitedCells = set()
-    cb = maxima.cellBoundaries[ index ]
-    unvisitedCells.add( ( cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] ) )
-    while len( unvisitedCells ) > 0:
-      cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] = unvisitedCells.pop()
-      if ( cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] ) in visitedCells:
-        continue
-      neighborCells = maxima.cellBoundariesDict[ 'neighbors' ][ ( cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] ) ]
-      for n in neighborCells:
-        if potentialCells[ n[ "idx" ] ] and \
-            ( n[ 'x0' ], n[ 'y0'], n[ 'x3' ], n[ 'y3' ] ) not in visitedCells:
-          unvisitedCells.add( ( n[ 'x0' ], n[ 'y0'], n[ 'x3' ], n[ 'y3' ], n[ 'idx' ] ) )
-      visitedCells.add(( cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] ) )
-    return visitedCells
-
   def getPeakBboxes(self, threshold):
     """Get bounding boxes for peaks above given threshold such that
     (a) if two peaks are not contiguous as determined by threshold and 
     binaryStructure, then two different bbox are returned
     (b) the intensity of the returned bbox is average for the whole box
     Returns an array of bounding box rectangles and associated average intensity"""
-    threshold = 0.005
     candidateBboxes = []
     # zero out all pixels below threshold
     maxima = self.pixelMap.copy()
-    diff = (maxima.cellValues > threshold)
-    maxima.cellValues[diff == 0] = 0
-    visitedCells = set( [] )
-    islands = []
-    for cb in maxima.cellBoundaries:
-      if ( cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] ) in visitedCells:
-        continue
-      value = maxima.cellValues[cb['idx']]
-      if value > 0:
-        cells = self.BFS( maxima, cb['idx'], visitedCells, diff )
-        islands.append( cells )
-
-    candidateBboxes = []
-    for island in islands:
-      x0List = set()
-      y0List = set()
-      x3List = set()
-      y3List = set()
-      indexList = set()
-      for x0, y0, x3, y3, index in island:
-        x0List.add( x0 )
-        y0List.add( y0 )
-        x3List.add( x3 )
-        y3List.add( y3 )
-        indexList.add( index )
-
-      bbox = Rectangle.rectangle_from_endpoints(min( x0List ), min( y0List ),
-          max( x3List ), max( y3List ) )
-      avg = np.average( maxima.cellValues[ np.array( list( indexList ) ) ] )
-      candidateBboxes += [{'bbox': bbox, 'intensity': avg }]
-
+    diff = (maxima > threshold)
+    maxima[diff == 0] = 0
+    # label each non-contiguous area with integer values
+    labeledArray, num_objects = ndimage.label(maxima, structure= self.binaryStructure)
+    # find center of each labeled non-contiguous area
+    xy = np.array(ndimage.center_of_mass(maxima, labeledArray, range(1, num_objects + 1)))
+    # find bounding boxes
+    for idx, coord in enumerate(xy):
+      # zero out all pixels that don't belong to this label
+      labelArea = labeledArray == (idx + 1)
+      # find end points of the array containing label
+      labelWhere = np.argwhere(labelArea)
+      (yStart, xStart), (yEnd, xEnd) = labelWhere.min(0), labelWhere.max(0) + 1
+      # create bbox based on the label
+      bbox = Rectangle.rectangle_from_endpoints(xStart, yStart, xEnd, yEnd)
+      # get the average intensity of the bbox
+      avgIntensity = np.average(self.pixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]])
+      candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity}]
+      #candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity, 'label': ("%.2f" % avgIntensity)}]
     return candidateBboxes
 
   def subsumeRectangles(self, candidateBboxes):

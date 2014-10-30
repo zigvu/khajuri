@@ -1,5 +1,5 @@
 import glob, sys
-import os, errno, mat
+import os, errno
 import numpy as np
 from skimage.transform import resize
 import matplotlib.pyplot as plt

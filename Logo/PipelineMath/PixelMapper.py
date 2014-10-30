@@ -33,7 +33,7 @@ class PixelMapper(object):
       # rescoring uses addition
       rescoringMap.addScore( cStart, rStart, cEnd, rEnd, 1 ) 
       # localization uses averaging
-      localizationMap.addScore_average( cStart, rStart, cEnd, rEnd, patchScore )
+      localizationMap.addScore( cStart, rStart, cEnd, rEnd, patchScore )
       # intensity uses max pooling
       intensityMap.addScore_max( cStart, rStart, cEnd, rEnd, patchScore )
     self.massageRescoringMap( rescoringMap )

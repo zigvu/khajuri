@@ -8,12 +8,12 @@ import multiprocessing
 import time
 
 def setupNeighbor( neighbors, cellBoundaries, cb ):
-  centralBox = box( cb[ 'x0' ] + 1, cb[ 'y0' ] + 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
+  centralBox = box( cb[ 'x0' ] - 1, cb[ 'y0' ] - 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
   boxes = []
   for neighbor in cellBoundaries:
     if neighbor == cb:
       continue
-    neighborBox = box( neighbor[ 'x0' ] + 1, neighbor[ 'y0' ] + 1,
+    neighborBox = box( neighbor[ 'x0' ] - 1, neighbor[ 'y0' ] - 1,
         neighbor[ 'x3' ] + 1, neighbor[ 'y3' ] + 1 )
     if neighborBox.intersects( centralBox ):
       boxes.append( neighbor )
@@ -68,13 +68,11 @@ class PixelMap(object):
 
   def toNumpyArray(self):
     """Converts this PixelMap to a numpy array"""
+    start = time.time()
     pixelCount = np.zeros((self.height, self.width))
     for cb in self.cellBoundaries:
-      rBegin = cb["y0"]
-      rEnd = cb["y3"]
-      cBegin = cb["x0"]
-      cEnd = cb["x3"]
-      pixelCount[rBegin:rEnd, cBegin:cEnd] = self.cellValues[cb["idx"]]
+      pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]] = self.cellValues[cb["idx"]]
+    end = time.time()
     return pixelCount
 
   # ********************
@@ -278,16 +276,13 @@ class PixelMap(object):
           if ((cb["x0"] >= cStart) and (cb["x0"] < cEnd) and (cb["y0"] >= rStart) and (cb["y0"] < rEnd)):
             cellIdxs += [cb["idx"]]
         cellSlidingWindows[ ( cStart, rStart, cEnd, rEnd ) ] = cellIdxs
-      # Neighbors
-      print 'Starting Neighor Calc'
       neighbors = PixelMap.setupNeighbors( cellBoundaries )
-
       # save data to dictionary
       allCellBoundaries["scales"][scaleFactor] = {\
         "cell_boundaries": cellBoundaries, \
         "sw_mapping": cellSlidingWindows, \
         "max_cell_counter": (cellCounter - 1), \
-        "width": rect.width, "height": rect.height,
+        "width": rect.width, "height": rect.height, \
         "neighbors" : neighbors }
       # print progress
       print "Scale %0.2f, unique: %d" % (scaleFactor, len(uniqueValues))

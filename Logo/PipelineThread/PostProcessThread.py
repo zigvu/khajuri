@@ -54,7 +54,7 @@ class PostProcessThread( object ):
 
     self.configReader = ConfigReader(configFileName)
 
-    self.updateStatusSleepTime = 30
+    self.updateStatusSleepTime = 1
 
     if self.configReader.ci_saveVideoHeatmap:
       ConfigReader.mkdir_p(numpyFolder)
@@ -86,16 +86,18 @@ class PostProcessThread( object ):
     sharedDict['image_width'] = tempJSONReaderWriter.getFrameWidth()
     sharedDict['image_height'] = tempJSONReaderWriter.getFrameHeight()
 
+    scales = self.configReader.sw_scales
+    imageDim = Rectangle.rectangle_from_dimensions(\
+        sharedDict['image_width'], sharedDict['image_height'])
+    patchDimension = Rectangle.rectangle_from_dimensions(\
+        self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
+    staticBoundingBoxes = BoundingBoxes(imageDim, \
+        self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+    #allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
     if os.path.exists( "save.p" ):
       allCellBoundariesDict = pickle.load( open( "save.p", "rb" ) )
     else:
-      scales = self.configReader.sw_scales
-      imageDim = Rectangle.rectangle_from_dimensions(\
-          sharedDict['image_width'], sharedDict['image_height'])
-      patchDimension = Rectangle.rectangle_from_dimensions(\
-          self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
-      staticBoundingBoxes = BoundingBoxes(imageDim, \
-          self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+      scales = configReader.sw_scales
       allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
       pickle.dump( allCellBoundariesDict, open ( "save.p", "wb" ) )
 
@@ -104,7 +106,7 @@ class PostProcessThread( object ):
     num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
     #num_consumers = 1
     for i in xrange(num_consumers):
-      framePostProcess = Thread(target=framePostProcessorRun, args=(sharedDict, postProcessQueue\
+      framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue\
           , allCellBoundariesDict ))
       framePostProcesses += [framePostProcess]
       framePostProcess.start()

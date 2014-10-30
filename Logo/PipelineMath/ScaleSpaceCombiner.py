@@ -46,7 +46,7 @@ class ScaleSpaceCombiner(object):
     maxPixelIntensity = 1E-10
     for scale in self.allScalingFactors:
       curIntensityMap = self.pixelMapper.getIntensityMap(scale)
-      curMaxPixelValue = np.max(curIntensityMap)
+      curMaxPixelValue = np.max(curIntensityMap.cellValues)
       if curMaxPixelValue > maxPixelIntensity:
         maxPixelIntensity = curMaxPixelValue
         maxIntensityScale = scale
