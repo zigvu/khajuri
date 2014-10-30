@@ -33,7 +33,7 @@ def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
       break
     logging.info("Caffe working on leveldb %s on device %s" % ( curLeveldbFolder, deviceId ) )
     # sleep some time so that file handles get cleared
-    time.sleep(1)
+    time.sleep(5)
     jsonFiles = caffeNet.run_net(curLeveldbFolder)
     if len(jsonFiles) > 0:
       logging.info("Finished processing curLeveldbFolder: %s" % curLeveldbFolder)
