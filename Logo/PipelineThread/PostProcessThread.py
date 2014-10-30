@@ -3,7 +3,6 @@ from collections import OrderedDict
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 import logging, pickle
-from threading import Thread
 
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
@@ -60,12 +59,11 @@ class PostProcessThread( object ):
       ConfigReader.mkdir_p(numpyFolder)
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
+    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
       level=self.configReader.log_level)
 
   def run( self ):
     """Run the video post processing"""
-    startTime = time.time()
     logging.info("Setting up post-processing")
 
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
@@ -94,15 +92,11 @@ class PostProcessThread( object ):
         self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
     staticBoundingBoxes = BoundingBoxes(imageDim, \
         self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
-    #allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
-    if os.path.exists( "save.p" ):
-      allCellBoundariesDict = pickle.load( open( "save.p", "rb" ) )
-    else:
-      scales = configReader.sw_scales
-      allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
-      pickle.dump( allCellBoundariesDict, open ( "save.p", "wb" ) )
+    scales = self.configReader.sw_scales
+    allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
 
     # Start threads
+    startTime = time.time()
     framePostProcesses = []
     num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
     #num_consumers = 1

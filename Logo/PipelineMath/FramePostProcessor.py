@@ -42,15 +42,16 @@ class FramePostProcessor(object):
       # ---------------- END: localization ---------------- 
       # ---------------- BEGIN: curation ---------------- 
       # get best pixelMap - result of maxPooling only
-      curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
-      curationPixelMap.setScale( 1.0 )
-      # extract all curation bboxes and associated intensity
-      curationPeaks = PeaksExtractor(curationPixelMap.toNumpyArray(), \
-        self.configReader, self.staticBoundingBoxes.imageDim)
-      curationPatches = curationPeaks.getPatchesForCuration()
-      # save curation patches to json
-      for cp in curationPatches:
-        self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'])
+      if self.configReader.ci_computeFrameCuration:
+        curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
+        curationPixelMap.setScale( 1.0 )
+        # extract all curation bboxes and associated intensity
+        curationPeaks = PeaksExtractor(curationPixelMap.toNumpyArray(), \
+          self.configReader, self.staticBoundingBoxes.imageDim)
+        curationPatches = curationPeaks.getPatchesForCuration()
+        # save curation patches to json
+        for cp in curationPatches:
+          self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'])
       # ---------------- END: curation ---------------- 
       # caching
       self.classPixelMaps[classId] = {'localizationMap': localizationPixelMap}

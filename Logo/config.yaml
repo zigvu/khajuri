@@ -22,17 +22,15 @@ sliding_window:
   output_width:                               256
   output_height:                              256
   x_stride:
-    - 64
-    - 64
-    - 96
-    - 96
+    - 128
+    - 128
+    - 128
     - 128
     - 128
   y_stride:
-    - 64
-    - 64
-    - 96
-    - 96
+    - 128
+    - 128
+    - 128
     - 128
     - 128
   scaling:
@@ -58,7 +56,8 @@ caffe_input:
   gpu_devices:                               
     - 0
     - 1
-  save_video_heatmap:                        true
+  save_video_heatmap:                        false
+  compute_frame_curation:                    false
   run_caffe_postprocess_in_parallel:         false
   all_classes:
     - '0'

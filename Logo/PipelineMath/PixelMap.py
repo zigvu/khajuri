@@ -107,6 +107,7 @@ class PixelMap(object):
     self.cellSlidingWindows = self.cellBoundariesDict["sw_mapping"]
     self.width = self.cellBoundariesDict["width"]
     self.height = self.cellBoundariesDict["height"]
+    self.scaleFactor = scaleFactor
 
   # ********************
   # Static methods to create cell boundaries
@@ -276,7 +277,8 @@ class PixelMap(object):
           if ((cb["x0"] >= cStart) and (cb["x0"] < cEnd) and (cb["y0"] >= rStart) and (cb["y0"] < rEnd)):
             cellIdxs += [cb["idx"]]
         cellSlidingWindows[ ( cStart, rStart, cEnd, rEnd ) ] = cellIdxs
-      neighbors = PixelMap.setupNeighbors( cellBoundaries )
+      #neighbors = PixelMap.setupNeighbors( cellBoundaries )
+      neighbors = []
       # save data to dictionary
       allCellBoundaries["scales"][scaleFactor] = {\
         "cell_boundaries": cellBoundaries, \
