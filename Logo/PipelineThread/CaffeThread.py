@@ -110,7 +110,7 @@ class CaffeThread( object ):
           self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
       staticBoundingBoxes = BoundingBoxes(imageDim, \
           self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
-      scales = configReader.sw_scales
+      scales = self.configReader.sw_scales
       allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
       # Start threads
       num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
