@@ -56,9 +56,9 @@ caffe_input:
   gpu_devices:                               
     - 0
     - 1
-  save_video_heatmap:                        false
+  save_video_heatmap:                        true
   compute_frame_curation:                    false
-  run_caffe_postprocess_in_parallel:         false
+  run_caffe_postprocess_in_parallel:         true
   all_classes:
     - '0'
     - '1'
@@ -79,3 +79,8 @@ curation:
   # total patches per class = num_of_sets * num_of_patch_per_set
   num_of_sets:                                5
   num_of_patch_per_set:                       100
+
+heatmap:
+  classes:
+   - '0'
+   - '6'

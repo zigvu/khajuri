@@ -63,4 +63,4 @@ class FramePostProcessor(object):
     """Save localization calculations to different files in npy format"""
     for classId in self.nonBackgroundClassIds:
       clsFilename = "%s_%s.npy" % (numpyFileBaseName, str(classId))
-      np.save(clsFilename, self.classPixelMaps[classId]['localizationMap'])
+      np.save(clsFilename, self.classPixelMaps[classId]['localizationMap'].cellValues)
