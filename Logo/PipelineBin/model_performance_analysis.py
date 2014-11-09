@@ -72,28 +72,29 @@ if __name__ == '__main__':
     if v >= scoreThreshold and clsA != clsB :
       patchListToExamine[ ( clsA, clsB ) ].append( { 'patch': k[0], 'score' : v } )
 
+  patchDumpJsonFile = os.path.join( outputFolder, "patches.json" )
   patchListToExamineForJson = {}
+  logging.info( 'Dumping patches into %s' % patchDumpJsonFile )
   for k, v in patchListToExamine.iteritems():
     if not v:
       continue
     patchListToExamineForJson[ "(%s,%s)" % k ] = v
-  patchDumpJsonFile = os.path.join( outputFolder, "patches.json" )
   json.dump( patchListToExamineForJson,  open( patchDumpJsonFile, 'w' ), indent=2 )
   
-  print 'Confusion Matrix:'
-  print 'Confusion Counts greater than %s:' % countThreshold
+  logging.info( 'Confusion Matrix:' )
+  logging.info( 'Confusion Counts greater than %s:' % countThreshold )
   for k, v in countHeatMap.iteritems():
     if k [ 0 ] == k[ 1]:
       continue
     if v >= countThreshold:
-      print '%50s:->%s' % ( k, v )
+      logging.info( '%50s:->%s' % ( k, v ) )
   
-  print 'ConfusionAvg Scores greater than %s:' % scoreThreshold
+  logging.info( 'ConfusionAvg Scores greater than %s:' % scoreThreshold )
   for k, v in avgScoreHeatMap.iteritems():
     if k [ 0 ] == k[ 1]:
       continue
     if v >= scoreThreshold:
-      print '%50s:->%s' % ( k, v )
+      logging.info( '%50s:->%s' % ( k, v ) )
    
   # CSV Output
   #  writer = csv.writer(open(os.path.join( outputFolder, 'confusion_count.csv' ), 'wb'))
