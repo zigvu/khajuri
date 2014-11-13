@@ -5,7 +5,7 @@ from shapely.geometry import box
 from multiprocessing import Process, Manager
 from Queue import Queue, Empty
 import multiprocessing
-import time
+import time, pickle
 
 def setupNeighbor( neighbors, cellBoundaries, cb ):
   centralBox = box( cb[ 'x0' ] - 1, cb[ 'y0' ] - 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
@@ -127,6 +127,14 @@ class PixelMap(object):
     at each scale. (c) Finally, these cells are mapped to sliding windows at each scale. This mapping
     dictionary is returned.
     Returns mapping dictionary"""
+    # Load existing one from File System if it exists
+    saveFile = "/tmp/savedBoundaries.p"
+    if os.path.exists( saveFile ):
+      allCellBoundaries = pickle.load( open( saveFile, "rb" ) )
+      if set( allCellBoundaries[ "scales" ].keys() ) == set(scales):
+        logging.info( "Using already computed boundaries from file at %s" % saveFile )
+        return allCellBoundaries
+
     # -------------------------------------------------------------
     # Part (a) : Create and combine cells at each scale
     # prime number generator for combination of cells across scales
@@ -296,6 +304,7 @@ class PixelMap(object):
       if allCellBoundaries["scales"][scaleFactor]["max_cell_counter"] != maxCellCounter:
         raise RuntimeError("Cell boundaries across scales are different")
 
+    pickle.dump( allCellBoundaries, open( saveFile, "wb" ) )
     return allCellBoundaries
 
   @staticmethod
