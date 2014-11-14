@@ -7,7 +7,7 @@ import json
 
 if __name__ == '__main__':
   if len( sys.argv ) < 6:
-    print 'Usage %s <csv_folder> <score_threshold> <count_threshold> <class_mapping> <output_folder>' % sys.argv[ 0 ]
+    print 'Usage %s <csv_folder> <score_threshold> <count_threshold> <class_mapping> <output_folder> [ <patchImageFolder> ]' % sys.argv[ 0 ]
     sys.exit( 1 )
   
   csvFolder = sys.argv[ 1 ]
@@ -15,6 +15,10 @@ if __name__ == '__main__':
   countThreshold = float( sys.argv[ 3 ] )
   classMappingFile = sys.argv[ 4 ]
   outputFolder = sys.argv[ 5 ]
+
+  patchImageFolder = None
+  if len( sys.argv ) == 7:
+    patchImageFolder = sys.argv[ 6 ]
   
   logging.basicConfig(
       format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s',
@@ -23,10 +27,18 @@ if __name__ == '__main__':
   logging.info( 'Using folder %s' % csvFolder )
   logging.info( 'Using score threshold %s' % scoreThreshold )
   logging.info( 'Using count threshold %s' % countThreshold )
-  
+  if patchImageFolder:
+   logging.info( 'Using Image Patch Folder: %s' % patchImageFolder )
+ 
   scores = {}
   imgByClass = {}
-  classMapping = json.load( open( classMappingFile, 'r' ) )
+  classMapping = {}
+  f = open( classMappingFile, 'r' )
+  content = f.read()
+  for l in content.split( '\n' ):
+    if l:
+      k, v = l.split()
+      classMapping[ v ] = k
   
   for f in glob.glob( os.path.join( csvFolder, '*.csv' ) ):
     logging.info( 'Reading file %s' % f )
@@ -62,6 +74,11 @@ if __name__ == '__main__':
       avgScoreHeatMap[ ( clsA, clsB ) ] = 0
       if clsA != clsB:
         patchListToExamine[ ( clsA, clsB ) ] = []
+
+  patchFileLocation = {}
+  if patchImageFolder:
+    for patchFile in glob.glob( os.path.join( patchImageFolder, "*", "*.png" ) ):
+        patchFileLocation[ os.path.basename( patchFile ) ] = patchFile
   
   for k, v in filteredScores.iteritems():
     clsA = imgByClass[ k[ 0 ] ]
@@ -71,6 +88,16 @@ if __name__ == '__main__':
     avgScoreHeatMap[ ( clsA, clsB ) ] /= 2
     if v >= scoreThreshold and clsA != clsB :
       patchListToExamine[ ( clsA, clsB ) ].append( { 'patch': k[0], 'score' : v } )
+      if patchImageFolder:
+        outputDir = os.path.join( outputFolder, "%s_%s"% ( clsA, clsB ) )
+        if not os.path.exists( outputDir ):
+          os.makedirs( outputDir )
+        inputPatchPath = os.path.join( patchImageFolder, clsA, k[ 0 ] )
+        if not os.path.exists( inputPatchPath ):
+          logging.info( 'Missing Patch %s' % inputPatchPath )
+        else:
+          logging.info( 'Copying Patch %s to %s' % ( inputPatchPath, os.path.join( outputDir, k[ 0 ] ) ) )
+          os.system( 'cp %s %s' % ( inputPatchPath, os.path.join( outputDir, k[ 0 ] ) ) )
 
   patchDumpJsonFile = os.path.join( outputFolder, "patches.json" )
   patchListToExamineForJson = {}
@@ -95,6 +122,8 @@ if __name__ == '__main__':
       continue
     if v >= scoreThreshold:
       logging.info( '%50s:->%s' % ( k, v ) )
+
+
    
   # CSV Output
   #  writer = csv.writer(open(os.path.join( outputFolder, 'confusion_count.csv' ), 'wb'))
