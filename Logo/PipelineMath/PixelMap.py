@@ -129,11 +129,25 @@ class PixelMap(object):
     Returns mapping dictionary"""
     # Load existing one from File System if it exists
     saveFile = "/tmp/savedBoundaries.p"
+    useSavedOne = False
     if os.path.exists( saveFile ):
       allCellBoundaries = pickle.load( open( saveFile, "rb" ) )
       if set( allCellBoundaries[ "scales" ].keys() ) == set(scales):
-        logging.info( "Using already computed boundaries from file at %s" % saveFile )
-        return allCellBoundaries
+        useSavedOne = True
+        for s in scales:
+          existingXStride =  allCellBoundaries[ "scales" ][s] [ "xStride" ]
+          existingYStride =  allCellBoundaries[ "scales" ][s] [ "yStride" ]
+          newXStride  = staticBoundingBoxes.xstepSize[ s ]
+          newYStride  = staticBoundingBoxes.ystepSize[ s ]
+          if existingXStride != newXStride or existingYStride != newYStride:
+            useSavedOne = False
+
+    if useSavedOne:
+      logging.info( "Using already computed boundaries from file at %s" % saveFile )
+      return allCellBoundaries
+    else:
+      logging.info( "Calculating new cellMap and saving to file %s" % saveFile)
+
 
     # -------------------------------------------------------------
     # Part (a) : Create and combine cells at each scale
@@ -293,7 +307,9 @@ class PixelMap(object):
         "sw_mapping": cellSlidingWindows, \
         "max_cell_counter": (cellCounter - 1), \
         "width": rect.width, "height": rect.height, \
-        "neighbors" : neighbors }
+        "neighbors" : neighbors,\
+        "xStride"  : staticBoundingBoxes.xstepSize [ scaleFactor ],
+        "yStride"  : staticBoundingBoxes.ystepSize [ scaleFactor ]}
       # print progress
       print "Scale %0.2f, unique: %d" % (scaleFactor, len(uniqueValues))
       logging.info("Finished working on scale %.2f. Unique values: %d" % (scaleFactor, len(uniqueValues)))
