@@ -88,6 +88,10 @@ void VideoFrameReader::startLogger() {
     ::google::InitGoogleLogging( "VideoFrameReader" );    
 }
 
+void VideoFrameReader::stopLogger(){
+  google::ShutdownGoogleLogging();
+}
+
 void VideoFrameReader::startThreads(){
   DEBUG("%s\n", "Thread: Producer: Starting thread");
   producerThread = boost::thread(&VideoFrameReader::videoFrameBufferProducer, this);
@@ -316,8 +320,10 @@ int VideoFrameReader::getTotalFrames(){
 
 
 VideoFrameReader::~VideoFrameReader() {
-  google::ShutdownGoogleLogging();
-
+  while( !eof ) {
+    seekToFrameWithFrameNumber( maxVideoFrameNumber );
+  }
+  joinThreads();
   // clear out any remaining frames from list
   videoFrameList.clear_and_dispose(DeleteFrameDisposer());
 

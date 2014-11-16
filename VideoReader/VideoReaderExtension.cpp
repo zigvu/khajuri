@@ -25,6 +25,7 @@ BOOST_PYTHON_MODULE(VideoReader)
       .def("savePngWithFrameNumber", &VideoFrameReader::savePngWithFrameNumber)
       .def("patchFromFrameNumber", &VideoFrameReader::patchFromFrameNumber)
       .def("startLogger", &VideoFrameReader::startLogger)
+      .def("stopLogger", &VideoFrameReader::stopLogger)
     ;
     boost::python::class_<VideoLevelDb, boost::noncopyable >( "VideoLevelDb", boost::python::init<char *>() )
       .def("savePatch", &VideoLevelDb::savePatch)
