@@ -4,10 +4,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 
+detailedUsage = \
+"""
+Using Model Performance Analysis
+================================
+
+    Usage model_performance_analysis.py <csv_folder> <score_threshold> 
+    <count_threshold> <class_mapping> <output_folder> [ <patchImageFolder> ]
+
+Parameters Description
+======================
+    <csv_folder> - where the test scores csv files are located.
+    <score_threshold> - threshold above which we account for confusion
+    <count_threshold> - count threshold above which we account for confusion between two classes
+    <class_mapping> - label_mapping.txt file generated along with leveldb
+    <output_folder> - folder where this script should create its output
+    <patchImageFolder> - Folder with all the patches.   
+
+First Flow
+==========
+Supply all parameters except for patchImageFolder. This will only generate the patches.json in the outputFolder
+
+Second Flow
+===========
+Supply all parameters including patchImageFolder. This will only generate the patches.json in the outputFolder  as well as copy over patches inside outputFolder. Patches are organized into folders with classA_classB - where the patch from classA was confused with classB.
+
+
+The parameter inside the square bracket - patchImageFolder - is optional - since its used only in the first flow.
+"""
 
 if __name__ == '__main__':
   if len( sys.argv ) < 6:
     print 'Usage %s <csv_folder> <score_threshold> <count_threshold> <class_mapping> <output_folder> [ <patchImageFolder> ]' % sys.argv[ 0 ]
+    print detailedUsage
     sys.exit( 1 )
   
   csvFolder = sys.argv[ 1 ]
