@@ -34,6 +34,10 @@ class CellrotiDetectables( object ):
     """Return all caffe label ids that have corresponding cellroti database ids"""
     return self.labeledMap.keys()
 
+  def get_detectable_database_ids(self):
+    """Return all cellroti database ids"""
+    return self.labeledMap.values()
+
   def get_detectable_database_id(self, caffeLabelId):
     """Return the mapped cellroti database id for each caffe label mapped ID"""
     if not self.labeledMap:

@@ -23,7 +23,8 @@ if __name__ == '__main__':
   cellrotiDetectables = CellrotiDetectables()
   cellrotiDetectables.read_mapped_detectables(mappingFileName)
 
-  detectableClassMapper = DetectableClassMapper(videoFileName, jsonFolder, labeledLocalozationFileName, cellrotiDetectables)
+  detectableClassMapper = DetectableClassMapper(
+    videoFileName, jsonFolder, labeledLocalozationFileName, cellrotiDetectables)
   detectableClassMapper.run()
   endTime = time.time()
   print 'It took %s %s seconds to complete' % ( sys.argv[0], endTime - startTime )
