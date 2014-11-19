@@ -23,7 +23,7 @@ def framePostProcessorRun(sharedDict, postProcessQueue, allCellBoundariesDict):
   patchDimension = Rectangle.rectangle_from_dimensions(\
     configReader.sw_patchWidth, configReader.sw_patchHeight)
   staticBoundingBoxes = BoundingBoxes(imageDim, \
-    configReader.sw_xStride, configReader.sw_xStride, patchDimension)
+    configReader.sw_xStride, configReader.sw_yStride, patchDimension)
   numpyFolder = sharedDict['numpyFolder']
   while True:
     jsonFileName = postProcessQueue.get()
@@ -91,7 +91,7 @@ class PostProcessThread( object ):
     patchDimension = Rectangle.rectangle_from_dimensions(\
         self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
     staticBoundingBoxes = BoundingBoxes(imageDim, \
-        self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+        self.configReader.sw_xStride, self.configReader.sw_yStride, patchDimension)
     scales = self.configReader.sw_scales
     allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
 
