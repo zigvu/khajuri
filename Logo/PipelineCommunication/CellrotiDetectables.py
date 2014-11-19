@@ -1,6 +1,7 @@
 import sys, os, glob
 import json, csv
 from collections import OrderedDict
+import logging
 import pycurl, cStringIO
 
 class CellrotiDetectables( object ):
@@ -49,10 +50,8 @@ class CellrotiDetectables( object ):
     
   def save_file(self, outputFileName, jsonString):
     """Save jsonString into the outputFileName file"""
+    logging.info("Saving file")
     jsonDict = json.loads(jsonString)
-    print "************************"
-    print jsonDict
-    print "************************"
     with open(outputFileName, "w") as f :
       topLineLabel = "id,name,pretty_name,label_mapping_id"
       f.write(topLineLabel + "\n")
