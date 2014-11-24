@@ -66,3 +66,13 @@ curation:
   # total patches per class = num_of_sets * num_of_patch_per_set
   num_of_sets:                                5
   num_of_patch_per_set:                       100
+
+# Cellroti
+cellroti:
+  # url to connect to cellroti - auth in env. vars.
+  urls:
+    get_detectables: 'localhost:3000/api/v1/data/detectables'
+    post_results: 'localhost:3000/api/v1/data/videos'
+  s3_buckets:
+    data_development: 'cellroti-data-development'
+    data_production: 'cellroti-data-production'

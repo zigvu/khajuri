@@ -65,6 +65,17 @@ class ConfigReader:
     self.cr_curationNumOfSets = curation['num_of_sets']
     self.cr_curationNumOfPatchPerSet = curation['num_of_patch_per_set']
 
+    # Cellroti
+    cellroti = config['cellroti']
+    ce_urls = cellroti['urls']
+    self.ce_urls_getDetectables = ce_urls['get_detectables']
+    self.ce_urls_postResults = ce_urls['post_results']
+
+    ce_s3buckets = cellroti['s3_buckets']
+    self.ce_s3bucket_dataDevelopment = ce_s3buckets['data_development']
+    self.ce_s3bucket_dataProduction = ce_s3buckets['data_production']
+
+
     # PeaksExtractor config - not exposed to config.yaml
     # Connectedness of labeled example - have a full matrix structure
     self.pe_binaryStructure = ndimage.morphology.generate_binary_structure(2,2)
