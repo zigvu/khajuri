@@ -7,6 +7,7 @@ from collections import OrderedDict
 
 from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
+from Logo.PipelineCore.CSVReaderWriter import CSVReaderWriter
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 
 if __name__ == '__main__':
@@ -23,48 +24,27 @@ if __name__ == '__main__':
 	jsonFileName = sys.argv[1]
 	csvFileName = sys.argv[2]
 
-	# read CSV file and construct dictionary
-	csvClassIdx = {}
-	csvData = OrderedDict()
-	patchFileName = None
-	with open(csvFileName, 'rb') as f:
-		reader = csv.reader(f)
-		for idx, row in enumerate(reader):
-			for i, rowItem in enumerate(row):
-				# get indices of class from header
-				if idx == 0:
-					if i == 0:
-						pass
-					else:
-						csvClassIdx[i] = rowItem.split("_")[1]
-				# once we have header, get individual class scores
-				else:
-					if i == 0:
-						patchFileName = rowItem
-						csvData[patchFileName] = OrderedDict()
-					else:
-						csvData[patchFileName][csvClassIdx[i]] = rowItem
+	jsonReaderWriter = JSONReaderWriter(jsonFileName)
+	csvReaderWriter = CSVReaderWriter(csvFileName)
+	classIds = csvReaderWriter.getClassIds()	
 
 	# store differences
 	diffMax = OrderedDict()
 	diffMin = OrderedDict()
 	diffAvg = OrderedDict()
 	counter = 0
-	for i in csvClassIdx:
-		diffMax[csvClassIdx[i]] = -1
-		diffAvg[csvClassIdx[i]] = 0
-		diffMin[csvClassIdx[i]] = 999
+	for cls in classIds:
+		diffMax[cls] = -1
+		diffAvg[cls] = 0
+		diffMin[cls] = 999
 
-	# loop through all scales and dump sliding window patches at each scale
-	jsonAnnotation = JSONReaderWriter(jsonFileName)
 	print "patchFileName,class,jsonScore,csvScore"
-	for scale in jsonAnnotation.getScalingFactors():
-		for patch in jsonAnnotation.getPatches(scale):
+	for scale in jsonReaderWriter.getScalingFactors():
+		for patch in jsonReaderWriter.getPatches(scale):
 			patchFileName = patch['patch_filename']
-			for i in csvClassIdx:
-				cls = csvClassIdx[i]
+			for cls in classIds:
 				jsonScore = patch['scores'][cls]
-				csvScore = float(csvData[patchFileName][cls])
+				csvScore = csvReaderWriter.getScoreForPatchFileNameClass(patchFileName, cls)
 				diff = jsonScore - csvScore
 				diffMax[cls] = max(diff, diffMax[cls])
 				diffAvg[cls] = diff + diffAvg[cls]
@@ -73,6 +53,5 @@ if __name__ == '__main__':
 				print "%s, %s, %f, %f" % (patchFileName, cls, jsonScore, csvScore)
 
 	print "\n\nclass,diffMax,diffAvg,diffMin"
-	for i in csvClassIdx:
-		cls = csvClassIdx[i]
+	for cls in classIds:
 		print "%s,%0.3f,%0.3f,%0.3f" % (cls, diffMax[cls], diffAvg[cls]/counter, diffMin[cls])
