@@ -38,12 +38,15 @@ if __name__ == '__main__':
 
 	tempfsFolder = '/mnt/tmp'
 	frameFolder = os.path.join(tempfsFolder, "frames")
+	ConfigReader.rm_rf(frameFolder)
 	ConfigReader.mkdir_p(frameFolder)
 	patchFolder = os.path.join(tempfsFolder, "patches")
+	ConfigReader.rm_rf(patchFolder)
 	ConfigReader.mkdir_p(patchFolder)
 	resultFolder = os.path.join(outputFolder, "results")
 	ConfigReader.rm_rf(resultFolder)
 	ConfigReader.mkdir_p(resultFolder)
+	csvFileName = "patches.csv"
 
 	patchWidth = 256
 	patchHeight = 256
@@ -82,10 +85,10 @@ if __name__ == '__main__':
 		frameCounter += 1
 
 		# delete old frames and patches
-		for filename in glob.glob(os.path.join(frameFolder, "*")):
-			os.remove(filename)
-		for filename in glob.glob(os.path.join(patchFolder, "*")):
-			os.remove(filename)
+		ConfigReader.rm_rf(frameFolder)
+		ConfigReader.mkdir_p(frameFolder)
+		ConfigReader.rm_rf(patchFolder)
+		ConfigReader.mkdir_p(patchFolder)
 
 		# for each frame, extract patches in tempfs
 		jsonReaderWriter = JSONReaderWriter(frameIndex[frameNumber])
@@ -102,17 +105,14 @@ if __name__ == '__main__':
 				imageManipulator.extract_patch(bbox, outputPatchName, patchWidth, patchHeight)
 		
 		# score using get_predictions.py
-		print "\n\tRunning test_patches.sh"
+		print "\n\tRunning test_patches.sh for frame number %d" % frameNumber
 		testPatchesCmd = "./%s %s" % (test_patches, patchFolder)
 		p = subprocess.Popen(testPatchesCmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 		for line in p.stdout.readlines():
 			print line,
 		retval = p.wait()
-		print "%d" % retval
 	
 		# for each class, compare score differences between pipeline method and get_predictions
-		#csvFileName = '/home/evan/Vision/temp/test_leveldb/csv_json_compare/CSV/patches-frame_1.csv'
-		csvFileName = os.path.join(tempfsFolder, "patches.csv")
 		csvReaderWriter = CSVReaderWriter(csvFileName)
 
 		# evaluate score differences
@@ -135,7 +135,10 @@ if __name__ == '__main__':
 							pass
 						shutil.copy(os.path.join(patchFolder, patchFileName), os.path.join(resultFolder, str(cls)))
 		# end evaluate score differences
-		break
+		try:
+			os.remove(csvFileName)
+		except:
+			pass
 	# end json file iterations
 
 	# print results and rename files
