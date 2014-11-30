@@ -12,6 +12,27 @@ from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.CurationManager import CurationManager
+from multiprocessing import Pool
+
+def getPatchFromFrames( arg ):
+    frameNumber, outputFolder, curationManager, configReader = arg
+
+    frameFileName = os.path.join(outputFolder, "frame_%s.png" % frameNumber )
+    # Get the patches from the frame file
+    if os.path.exists(frameFileName):
+      for curationPatch in curationManager.getCurationPatches(frameNumber):
+        bbox = Rectangle.rectangle_from_json(curationPatch['bbox'])
+        patchFolderName = os.path.join(outputFolder, curationPatch['patch_foldername'])
+        ConfigReader.mkdir_p(patchFolderName)
+        patchFileName = os.path.join(patchFolderName, curationPatch['patch_filename'])
+        imageManipulator = ImageManipulator(frameFileName)
+        imageManipulator.extract_patch(bbox, patchFileName, \
+          configReader.sw_patchWidth, configReader.sw_patchHeight)
+      # Remove the frame which is not needed
+      os.remove( frameFileName )
+    logging.info( 'Done with frame at : %s' % frameFileName )
+    return frameFileName
+
 
 if __name__ == "__main__":
   if len( sys.argv ) < 5:
@@ -31,10 +52,11 @@ if __name__ == "__main__":
   logging.info("Setting up patch extraction for %s" % videoFileName)
   ConfigReader.mkdir_p(outputFolder)
 
-  videoFrameReader = VideoReader.VideoFrameReader( 40, 40, videoFileName )
+  videoFrameReader = VideoReader.VideoFrameReader( 400, 400, videoFileName )
   videoFrameReader.generateFrames()
   time.sleep( 10 )
   curationManager = CurationManager(jsonFolder, configReader)
+  argumentsForProcess = []
   for frameNumber in curationManager.getFrameNumbers():
     logging.debug("Working on frame number %d" % frameNumber)
     
@@ -44,19 +66,16 @@ if __name__ == "__main__":
     while not frame:
       frame = videoFrameReader.getFrameWithFrameNumber( frameNumber )
     videoFrameReader.savePngWithFrameNumber(int(frameNumber), frameFileName)
+    argumentsForProcess.append( (
+        frameNumber,
+        outputFolder,
+        curationManager,
+        configReader ) )
 
-    # Get the patches from the frame file
-    for curationPatch in curationManager.getCurationPatches(frameNumber):
-      bbox = Rectangle.rectangle_from_json(curationPatch['bbox'])
-      patchFolderName = os.path.join(outputFolder, curationPatch['patch_foldername'])
-      ConfigReader.mkdir_p(patchFolderName)
-      patchFileName = os.path.join(patchFolderName, curationPatch['patch_filename'])
-      imageManipulator = ImageManipulator(frameFileName)
-      imageManipulator.extract_patch(bbox, patchFileName, \
-        configReader.sw_patchWidth, configReader.sw_patchHeight)
-
-    # Remove the frame which is not needed
-    os.remove( frameFileName )
+  p = Pool()
+  p.map( getPatchFromFrames, argumentsForProcess )
+  p.close()
+  p.join()
 
   # HACK: quit video reader gracefully
   frameNumber = videoFrameReader.totalFrames
