@@ -10,13 +10,12 @@ class JSONFileComparer( object ):
     self.jrw1 = JSONReaderWriter(jsonFileName1)
     self.jrw2 = JSONReaderWriter(jsonFileName2)
 
-
   def get_class_ids(self):
     """Get all class ids"""
     return self.jrw1.getClassIds()
 
-  def get_stats(self, verbose_print=False):
-    """Get max, avg, min of scores in files"""
+  def get_diff_patch_scores(self, verbose_print=False):
+    """Get max, avg, min of patch scores in files"""
     # store differences
     diffMax = OrderedDict()
     diffMin = OrderedDict()
@@ -27,7 +26,7 @@ class JSONFileComparer( object ):
       diffAvg[cls] = 0
       diffMin[cls] = 999
 
-    # loop through all scales and dump sliding window patches at each scale
+    # loop through all scales 
     if verbose_print:
       print "patchFileName,class,jsonScore1,jsonScore2"
     for scale in self.jrw1.getScalingFactors():
@@ -48,9 +47,9 @@ class JSONFileComparer( object ):
               counter += 1
               if verbose_print:
                 if abs(diff) > 0.01:
-                  print "%s, %s, %f, %f, <---" % (patchFileName, cls, jsonScore1, jsonScore2)
+                  print "%s, %s, %0.4f, %0.4f, <---" % (patchFileName, cls, jsonScore1, jsonScore2)
                 else:
-                  print "%s, %s, %f, %f" % (patchFileName, cls, jsonScore1, jsonScore2)
+                  print "%s, %s, %0.4f, %0.4f" % (patchFileName, cls, jsonScore1, jsonScore2)
     # convert avg
     for cls in self.jrw1.getClassIds():
       diffAvg[cls] = diffAvg[cls]/counter
