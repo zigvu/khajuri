@@ -26,10 +26,21 @@ if __name__ == '__main__':
 	adiffMax = OrderedDict()
 	adiffAvg = OrderedDict()
 	adiffMin = OrderedDict()
+
+	aDiffNumBboxesLoc = OrderedDict()
+	aDiffScoreOfBboxesLoc = OrderedDict()
+	aDiffNumBboxesCur = OrderedDict()
+	aDiffScoreOfBboxesCur = OrderedDict()
+
 	for cls in classes:
 		adiffMax[cls] = {'value': -1, 'filename': None}
 		adiffAvg[cls] = {'value': 0, 'filename': None}
 		adiffMin[cls] = {'value': 999, 'filename': None}
+
+		aDiffNumBboxesLoc[cls] = {'value': 0, 'filename': None}
+		aDiffScoreOfBboxesLoc[cls] = {'value': -1, 'filename': None}
+		aDiffNumBboxesCur[cls] = {'value': 0, 'filename': None}
+		aDiffScoreOfBboxesCur[cls] = {'value': -1, 'filename': None}
 
 	for f in jsonFolder1Files:
 		jsonFile = os.path.basename(f)
@@ -37,6 +48,10 @@ if __name__ == '__main__':
 		jsonFileName2 = os.path.join(jsonFolder2, jsonFile)
 		jsonFileComparer = JSONFileComparer(jsonFileName1, jsonFileName2)
 		diffMax, diffAvg, diffMin = jsonFileComparer.get_diff_patch_scores()
+		diffNumBboxesLoc, diffXPosOfBboxesLoc, diffYPosOfBboxesLoc, diffAreaOfBboxesLoc, diffScoreOfBboxesLoc = \
+			jsonFileComparer.get_diff_post_processing("localization")
+		diffNumBboxesCur, diffXPosOfBboxesCur, diffYPosOfBboxesCur, diffAreaOfBboxesCur, diffScoreOfBboxesCur = \
+			jsonFileComparer.get_diff_post_processing("curation")
 
 		# store results:
 		for cls in classes:
@@ -52,14 +67,47 @@ if __name__ == '__main__':
 				adiffMin[cls]['value'] = diffMin[cls]
 				adiffMin[cls]['filename'] = jsonFile
 
-	print "\n\nMax\nclass,diffMax,diffAvg,diffMin"
+			if diffNumBboxesLoc[cls] > aDiffNumBboxesLoc[cls]['value']:
+				aDiffNumBboxesLoc[cls]['value'] = diffNumBboxesLoc[cls]
+				aDiffNumBboxesLoc[cls]['filename'] = jsonFile
+
+			if diffScoreOfBboxesLoc[cls] > aDiffScoreOfBboxesLoc[cls]['value']:
+				aDiffScoreOfBboxesLoc[cls]['value'] = diffScoreOfBboxesLoc[cls]
+				aDiffScoreOfBboxesLoc[cls]['filename'] = jsonFile
+
+			if diffNumBboxesCur[cls] > aDiffNumBboxesCur[cls]['value']:
+				aDiffNumBboxesCur[cls]['value'] = diffNumBboxesCur[cls]
+				aDiffNumBboxesCur[cls]['filename'] = jsonFile
+
+			if diffScoreOfBboxesCur[cls] > aDiffScoreOfBboxesCur[cls]['value']:
+				aDiffScoreOfBboxesCur[cls]['value'] = diffScoreOfBboxesCur[cls]
+				aDiffScoreOfBboxesCur[cls]['filename'] = jsonFile
+
+
+	print "\n\nPatch Score Max\nclass,score,filename"
 	for cls in classes:
 		print "%s,%0.3f,%s" % (cls, adiffMax[cls]['value'], adiffMax[cls]['filename'])
 
-	print "\n\nAvg\nclass,diffMax,diffAvg,diffMin"
+	print "\n\nPatch Score Avg\nclass,score,filename"
 	for cls in classes:
 		print "%s,%0.3f,%s" % (cls, adiffAvg[cls]['value'], adiffAvg[cls]['filename'])
 
-	print "\n\nMin\nclass,diffMax,diffAvg,diffMin"
+	print "\n\nPatch Score Min\nclass,score,filename"
 	for cls in classes:
 		print "%s,%0.3f,%s" % (cls, adiffMin[cls]['value'], adiffMin[cls]['filename'])
+
+	print "\n\nLocalization Num Bbox Diff\nclass,score,filename"
+	for cls in classes:
+		print "%s,%0.3f,%s" % (cls, aDiffNumBboxesLoc[cls]['value'], aDiffNumBboxesLoc[cls]['filename'])
+
+	print "\n\nLocalization Score Diff\nclass,score,filename"
+	for cls in classes:
+		print "%s,%0.3f,%s" % (cls, aDiffScoreOfBboxesLoc[cls]['value'], aDiffScoreOfBboxesLoc[cls]['filename'])
+
+	print "\n\nCuration Num Bbox Diff\nclass,score,filename"
+	for cls in classes:
+		print "%s,%0.3f,%s" % (cls, aDiffNumBboxesCur[cls]['value'], aDiffNumBboxesCur[cls]['filename'])
+
+	print "\n\nCuration Score Diff\nclass,score,filename"
+	for cls in classes:
+		print "%s,%0.3f,%s" % (cls, aDiffScoreOfBboxesCur[cls]['value'], aDiffScoreOfBboxesCur[cls]['filename'])
