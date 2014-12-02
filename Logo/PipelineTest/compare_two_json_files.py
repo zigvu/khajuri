@@ -15,7 +15,7 @@ if __name__ == '__main__':
 	jsonFileName2 = sys.argv[2]
 
 	jsonFileComparer = JSONFileComparer(jsonFileName1, jsonFileName2)
-	diffMax, diffAvg, diffMin = jsonFileComparer.get_stats(True)
+	diffMax, diffAvg, diffMin = jsonFileComparer.get_diff_patch_scores(True)
 
 	print "\n\nclass,diffMax,diffAvg,diffMin"
 	for cls in jsonFileComparer.get_class_ids():

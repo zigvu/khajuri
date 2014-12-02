@@ -36,7 +36,7 @@ if __name__ == '__main__':
 		jsonFileName1 = os.path.join(jsonFolder1, jsonFile)
 		jsonFileName2 = os.path.join(jsonFolder2, jsonFile)
 		jsonFileComparer = JSONFileComparer(jsonFileName1, jsonFileName2)
-		diffMax, diffAvg, diffMin = jsonFileComparer.get_stats()
+		diffMax, diffAvg, diffMin = jsonFileComparer.get_diff_patch_scores()
 
 		# store results:
 		for cls in classes:
