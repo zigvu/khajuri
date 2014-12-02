@@ -27,10 +27,10 @@ LIBS_PROTOBUF = -lprotobuf -lglog -lleveldb -lsnappy
 
 # Targets
 EXEC= VideoReader
-SOURCES= $(wildcard *.cpp)
-INCLUDES= $(wildcard include/*.h*)
+SOURCES= $(filter-out caffe.pb.cpp, $(wildcard *.cpp))
+INCLUDES= $(filter-out include/caffe.pb.h, $(wildcard include/*.h))
 HEADERS= include
-OBJECTS= $(SOURCES:.cpp=.o)
+OBJECTS= $(SOURCES:.cpp=.o) caffe.pb.o
 LFLAGS= $(BOOSTLFLAGS) $(FFMPEGLFLAGS) -I$(PYTHON_INCLUDE) -L/usr/local/lib -I.
 LIBS= $(BOOSTLIBS) $(FFMPEGLIBS) $(PYTHON_LIBS) $(LIBS_CV) $(LIBS_PROTOBUF)
 SHAREDLIB= $(EXEC).so
@@ -41,7 +41,7 @@ CFLAGS:= -O3 -Wall -ggdb -I$(HEADERS) -fPIC
 all: $(EXEC)
 MAIN= VideoReader
 
-$(MAIN): $(OBJECTS) $(SHAREDLIB) protoc
+$(MAIN): protoc $(OBJECTS) $(SHAREDLIB)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJECTS) $(LIBS) $(LFLAGS)
 
 $(SHAREDLIB): $(OBJECTS)
@@ -60,3 +60,6 @@ protoc: caffe.proto
 	protoc caffe.proto --cpp_out=.	
 	mv caffe.pb.cc caffe.pb.cpp
 	mv caffe.pb.h include/caffe.pb.h
+	$(CC) $(CFLAGS) $(LFLAGS) $(LIBS) -c caffe.pb.cpp
+
+caffe.pb.o: protoc
