@@ -71,9 +71,9 @@ class ConfigReader:
     self.ce_urls_getDetectables = ce_urls['get_detectables']
     self.ce_urls_postResults = ce_urls['post_results']
 
-    ce_s3buckets = cellroti['s3_buckets']
-    self.ce_s3bucket_dataDevelopment = ce_s3buckets['data_development']
-    self.ce_s3bucket_dataProduction = ce_s3buckets['data_production']
+    self.ce_storageSelection = cellroti['storage_selection']
+    self.ce_storageLocation = cellroti['storage_location']
+
 
 
     # PeaksExtractor config - not exposed to config.yaml

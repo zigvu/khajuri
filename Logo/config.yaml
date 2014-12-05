@@ -73,6 +73,5 @@ cellroti:
   urls:
     get_detectables: 'localhost:3000/api/v1/data/detectables'
     post_results: 'localhost:3000/api/v1/data/videos'
-  s3_buckets:
-    data_development: 'cellroti-data-development'
-    data_production: 'cellroti-data-production'
+  storage_selection: 'SOFTLAYER' # alternative is s3
+  storage_location: 'somemachine.ip.com:port/write/to/Folder' # alternative is s3 bucket 'cellroti-data-production'

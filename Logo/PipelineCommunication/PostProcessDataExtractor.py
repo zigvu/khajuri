@@ -9,7 +9,7 @@ from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 
 class PostProcessDataExtractor( object ):
   """Class to extract data from caffe results to send to cellroti"""
-  def __init__(self, videoId, videoFileName, jsonFolder, outputFolder, cellrotiDetectables):
+  def __init__(self, videoId, videoFileName, jsonFolder, outputFolder, detectableClassMapper):
     """Initialize values"""
     self.videoId = videoId
     self.videoFileName = videoFileName
@@ -17,7 +17,7 @@ class PostProcessDataExtractor( object ):
     self.outputJSONFileName = os.path.join(outputFolder, "localizations.json")
     self.outputFramesFolder = os.path.join(outputFolder, "frames")
     ConfigReader.mkdir_p(self.outputFramesFolder)
-    self.cellrotiDetectables = cellrotiDetectables
+    self.detectableClassMapper = detectableClassMapper
 
     # TODO: get from config
     self.detectionFrameRate = 5
@@ -25,9 +25,8 @@ class PostProcessDataExtractor( object ):
 
   def run(self):
     """Create the json file to send to cellroti"""
-    relabeledLocalizations = self.extract_localizations(self.jsonFolder, self.cellrotiDetectables)
-    framesToExtract = self.get_frames_to_extract(relabeledLocalizations, self.cellrotiDetectables)
-    self.extract_frames(framesToExtract, self.videoFileName, self.outputFramesFolder)
+    relabeledLocalizations = self.extract_localizations(self.jsonFolder, self.detectableClassMapper)
+    framesToExtract = self.get_frames_to_extract(relabeledLocalizations, self.detectableClassMapper)
     ffprobeResults = self.run_ffprobe(self.videoFileName)
     jsonToSave = {
       'video_id': self.videoId,
@@ -36,12 +35,13 @@ class PostProcessDataExtractor( object ):
       'video_attributes': ffprobeResults
     }
     self.save_state(self.outputJSONFileName, jsonToSave)
+    self.extract_frames(framesToExtract, self.videoFileName, self.outputFramesFolder)
 
-  def extract_localizations(self, jsonFolder, cellrotiDetectables):
-    """Extract localization for all classes in cellrotiDetectables from json folder"""
+  def extract_localizations(self, jsonFolder, detectableClassMapper):
+    """Extract localization for all classes in detectableClassMapper from json folder"""
     logging.info("Extracting all localizations")
     relabeledLocalizations = OrderedDict()
-    caffeLabelIds = cellrotiDetectables.get_mapped_caffe_label_ids()
+    caffeLabelIds = detectableClassMapper.get_mapped_caffe_label_ids()
     jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
     for jsonFileName in jsonFiles:
       jsonReaderWriter = JSONReaderWriter(jsonFileName)
@@ -50,7 +50,7 @@ class PostProcessDataExtractor( object ):
       for caffeLabelId in caffeLabelIds:
         localizations = jsonReaderWriter.getLocalizations(caffeLabelId)
         if len(localizations) > 0:
-          cellrotiDetectableId = cellrotiDetectables.get_detectable_database_id(caffeLabelId)
+          cellrotiDetectableId = detectableClassMapper.get_detectable_database_id(caffeLabelId)
           relabeledLocalizations[frameNumber][cellrotiDetectableId] = localizations
     relabeledLocalizations = OrderedDict(sorted(relabeledLocalizations.items(), key=lambda t: t[0]))
     return relabeledLocalizations
@@ -79,11 +79,11 @@ class PostProcessDataExtractor( object ):
     videoFrameReader.close()
     return True
 
-  def get_frames_to_extract(self, relabeledLocalizations, cellrotiDetectables):
+  def get_frames_to_extract(self, relabeledLocalizations, detectableClassMapper):
     """For each class, get the frame number with the highest score across a window of frames"""
     logging.info("Determining frames to extract")
     numFrameIntervalPerFrameSaved = self.numSecondsForSingleFrameSaved * self.detectionFrameRate
-    cellrotiDetectableIds = cellrotiDetectables.get_detectable_database_ids()
+    cellrotiDetectableIds = detectableClassMapper.get_detectable_database_ids()
     frameTrackers = OrderedDict()
     framesToStore = OrderedDict()
     # init container

@@ -12,9 +12,15 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 
 if __name__ == '__main__':
   if len(sys.argv) < 7:
-    print 'Usage %s <config.yaml> <videoId> <videoFileName> <mappingFileName> <jsonFolder> <outputFolder>' % sys.argv[ 0 ]
+    print 'Usage %s <config.yaml> <videoId> <videoFileName> <mappingFileName> <jsonFolder> <extractedDataFolder>' % sys.argv[ 0 ]
     print '\n\nThis executable can be used to prepare post-processed data to send to cellroti.'
     print 'This needs to be run for each evaluated video prior to sending the data to cellroti.'
+    print '\n<config.yaml> - Config file of Logo pipeline'
+    print '<videoId> - ID of video in cellroti database'
+    print '<videoFileName> - Path of video in local system'
+    print '<mappingFileName> - File that has both chia class labels and cellroti detectable ids'
+    print '<jsonFolder> - Output of running post-processing on video'
+    print '<extractedDataFolder> - Folder in which to save files to send to cellroti or save to S3'
     sys.exit(1)
 
   startTime = time.time()
@@ -24,7 +30,7 @@ if __name__ == '__main__':
   videoFileName = sys.argv[3]
   mappingFileName = sys.argv[4]
   jsonFolder = sys.argv[5]
-  outputFolder = sys.argv[6]
+  extractedDataFolder = sys.argv[6]
 
   configReader = ConfigReader(configFileName)
   # Logging levels
@@ -35,7 +41,7 @@ if __name__ == '__main__':
   detectableClassMapper.read_mapped_detectables(mappingFileName)
 
   postProcessDataExtractor = PostProcessDataExtractor(
-    videoId, videoFileName, jsonFolder, outputFolder, cellrotiDetectables)
+    videoId, videoFileName, jsonFolder, extractedDataFolder, detectableClassMapper)
   postProcessDataExtractor.run()
   
   endTime = time.time()

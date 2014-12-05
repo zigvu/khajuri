@@ -14,6 +14,8 @@ if __name__ == '__main__':
 		print 'All data is first saved to S3 bucket location (indexed by video_id) and a'
 		print 'call is made to cellroti to inform the database of transfer of data.'
 		print 'This needs to be done for each evaluated video.'
+		print '\n<config.yaml> - Config file of Logo pipeline'
+		print '<extractedDataFolder> - Folder in which to save files to send to cellroti or save to S3'
 		sys.exit(1)
 
 	configFileName = sys.argv[1]
@@ -22,7 +24,9 @@ if __name__ == '__main__':
 
 	configReader = ConfigReader(configFileName)
 	httpurl = configReader.ce_urls_postResults
-	s3BucketVideos = configReader.ce_s3bucket_videos
+	storageSelection = configReader.ce_storageSelection
+	storageLocation = configReader.ce_storageLocation
+
 	# Logging levels
 	logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
 		level=configReader.log_level)
@@ -31,13 +35,21 @@ if __name__ == '__main__':
 
 	cellrotiCommunication = CellrotiCommunication()
 
-	# save to S3
-	saveState = {'video_id': 1, 'success': True}
-	
+	logging.debug('Saving folder %s to %s' % (extractedDataFolder, storageLocation))
+	saveState = cellrotiCommunication.send_data_to_cellroti(extractedDataFolder, storageSelection, storageLocation)
+	if not saveState:
+		raise RuntimeError("Couldn't save to specified location %s" % storageLocation)
 
-	# successState = cellrotiCommunication.post_url(httpurl, saveState)
-	# print successState
+	checkState = cellrotiCommunication.verify_sent_data_to_cellroti(extractedDataFolder, storageSelection, storageLocation)
+	if not checkState:
+		raise RuntimeError("Couldn't verify saved data to specified location %s" % storageLocation)
 
+
+	replyState = cellrotiCommunication.post_url(httpurl, saveState)
+	if not ('success' in replyState.keys()):
+		raise RuntimeError("Couldn't communicate with cellroti")
+
+	logging.debug(replyState)
 
 	endTime = time.time()
 	logging.info('It took %s %s seconds to complete' % ( sys.argv[0], endTime - startTime ))

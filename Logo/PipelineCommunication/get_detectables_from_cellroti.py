@@ -9,16 +9,18 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 
 if __name__ == '__main__':
 	if len(sys.argv) < 3:
-		print 'Usage %s  <config.yaml> <outputFileName>' % sys.argv[ 0 ]
+		print 'Usage %s  <config.yaml> <mappingFileName>' % sys.argv[ 0 ]
 		print '\n\nThis executable can be used to get the list of detectables from cellroti.'
-		print 'This script needs to be run once for each chia model. After running this script'
-		print 'change the outputFileName to match the chia class label mapping with cellroti'
-		print 'detectable id matching. Once that is done, you can run prepare_data_to_send_to_cellroti'
+		print '\n<config.yaml> - Config file of Logo pipeline'
+		print '<mappingFileName> - Filename to write the detectables from cellroti'
+		print '\nThis script needs to be run once for each chia model. After running this script'
+		print 'change the content of mappingFileName such that chia class labels map with cellroti'
+		print 'detectable ids. Once that is done, you can run prepare_data_to_send_to_cellroti'
 		print '\nAssumes that cellroti admin username/authtokens are in environment variables'
 		sys.exit(1)
 
 	configFileName = sys.argv[1]
-	outputFileName = sys.argv[2]
+	mappingFileName = sys.argv[2]
 
 	configReader = ConfigReader(configFileName)
 	httpurl = configReader.ce_urls_getDetectables
@@ -31,7 +33,7 @@ if __name__ == '__main__':
 	detectableList = cellrotiCommunication.get_url(httpurl)
 	
 	detectableClassMapper = DetectableClassMapper()
-	detectableClassMapper.save_detectable_list(outputFileName, detectableList)
+	detectableClassMapper.save_detectable_list(mappingFileName, detectableList)
 
 	endTime = time.time()
 	logging.info('It took %s %s seconds to complete' % ( sys.argv[0], endTime - startTime ))
