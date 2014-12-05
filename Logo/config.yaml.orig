@@ -80,7 +80,8 @@ post_processing:
 curation:
   # total patches/frames per class = num_of_sets * num_of_items_per_set
   num_of_sets:                                5
-  num_of_items_per_set:                       100
+<<<<<<< HEAD
+  num_of_patch_per_set:                       100
 
 # Cellroti
 cellroti:
@@ -90,3 +91,6 @@ cellroti:
     post_results: 'localhost:3000/api/v1/data/videos'
   storage_selection: 'SOFTLAYER' # alternative is s3
   storage_location: 'somemachine.ip.com:port/write/to/Folder' # alternative is s3 bucket 'cellroti-data-production'
+=======
+  num_of_items_per_set:                       100
+>>>>>>> d0fc713f83e409126dce961f1d7177e4d03c9c0d

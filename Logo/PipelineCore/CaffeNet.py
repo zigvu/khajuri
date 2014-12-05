@@ -8,14 +8,17 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 class CaffeNet( object ):
-  def __init__(self, configReader):
+  def __init__(self, configReader, deviceId):
     logging.debug("Initializing CaffeNet")
     self.prototxtFile = configReader.ci_video_prototxtFile
     self.modelFile = configReader.ci_modelFile
     self.classes = configReader.ci_allClassIds
     self.useGPU = configReader.ci_useGPU
+    self.deviceId = deviceId
+    self.numOfGPUs = len( configReader.ci_gpu_devices )
 
   def run_net(self, leveldbFolder):
+    logging.info( 'Run net started' )
     caffeBatchSize = -1
     # Create new prototxt file to point to right leveldb
     prototxtWithNewLeveldb = os.path.join(os.path.dirname(leveldbFolder), \
@@ -45,13 +48,16 @@ class CaffeNet( object ):
         jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
 
     # HACK: without reinitializing caffe_net twice, it won't give reproducible results
-    # Seems to happen in CPU runs:
-    if not self.useGPU:
-      logging.debug("Initializing caffe_net")
-      caffe_net = caffe.Net(prototxtWithNewLeveldb, self.modelFile)
-      caffe_net.set_phase_test() 
+    # Seems to happen in both CPU and GPU runs:
+    logging.debug("Initializing caffe_net")
+    caffe_net = caffe.Net(prototxtWithNewLeveldb, self.modelFile)
+    caffe_net.set_phase_test() 
+    if self.useGPU:
+      caffe_net.set_mode_gpu()
+      caffe_net.set_device( self.deviceId )
+    else:
       caffe_net.set_mode_cpu()
-      logging.debug("Reinitializing caffe_net")
+    logging.debug("Reinitializing caffe_net")
 
     # Run caffe net
     # counter for iteration starts at 0, so increment 1 to maxPatchCounter
@@ -61,6 +67,7 @@ class CaffeNet( object ):
     caffe_net.set_phase_test()
     if self.useGPU:
       caffe_net.set_mode_gpu()
+      caffe_net.set_device( self.deviceId )
     else:
       caffe_net.set_mode_cpu()
 
@@ -96,4 +103,5 @@ class CaffeNet( object ):
     ConfigReader.rm_rf(leveldbFolder)
 
     # Finally, return jsonFiles which were processed
+    logging.info( 'Run net done.' )
     return jsonFiles

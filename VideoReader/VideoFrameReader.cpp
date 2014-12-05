@@ -82,7 +82,10 @@ VideoFrameReader::VideoFrameReader(
   maxVideoFrameNumber = LLONG_MAX; // set to max possible for now
   eof = false;
 
-  ::google::InitGoogleLogging( "VideoFrameReader" );    
+}
+
+void VideoFrameReader::startLogger() {
+    ::google::InitGoogleLogging( "VideoFrameReader" );    
 }
 
 void VideoFrameReader::startThreads(){
@@ -190,7 +193,7 @@ int VideoFrameReader::savePngWithFrameNumber(int64_t frameNumber, char *fileName
   return -1;
 }
 
-int VideoFrameReader::patchFromFrameNumber(int64_t frameNumber, char *fileName, float scale,
+int VideoFrameReader::patchFromFrameNumber(int64_t frameNumber, char *fileName, double scale,
     int x, int y, int width, int height){
   DEBUG("VideoFrameReader: patchFromFrameNumber: %lld\n", (long long)frameNumber);
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
@@ -201,7 +204,7 @@ int VideoFrameReader::patchFromFrameNumber(int64_t frameNumber, char *fileName, 
   return -1;
 }
 
-int VideoFrameReader::savePatchFromFrameNumberToLevelDb(int64_t frameNumber, float scale,
+int VideoFrameReader::savePatchFromFrameNumberToLevelDb(int64_t frameNumber, double scale,
     int x, int y, int width, int height, int label, VideoReader::Datum *datum ) {
   DEBUG("VideoFrameReader: patchFromFrameNumber: %lld\n", (long long)frameNumber);
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);

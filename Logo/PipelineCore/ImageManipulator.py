@@ -48,6 +48,10 @@ class ImageManipulator( object ):
     patch = cv2.resize(patch, (patchWidth, patchHeight))
     cv2.imwrite(outputPatchName, patch)
 
+  def resize_image(self, scale):
+    """Resize image to new scale"""
+    self.image = cv2.resize(self.image, (0,0), fx=scale, fy=scale)
+
   def getImage(self):
     """Return current image state"""
     return self.image

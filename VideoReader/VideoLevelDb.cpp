@@ -31,7 +31,7 @@ VideoLevelDb::~VideoLevelDb(){
 }
 
 
-int VideoLevelDb::savePatch( int frameNum, float scale, int x, int y, int width, int height ) {
+int VideoLevelDb::savePatch( int frameNum, double scale, int x, int y, int width, int height ) {
   if( vfr ) {
     VideoReader::Datum datum;
     // LOG(ERROR) << "Processed " << label << " files.";
