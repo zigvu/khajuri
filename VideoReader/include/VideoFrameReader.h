@@ -28,8 +28,8 @@ class VideoFrameReader {
       uint listHeadBufNumOfFrames_,
       char * videoFileToOpen);
     ~VideoFrameReader();
-    void startThreads();
     void startLogger();
+    void startThreads();
     void joinThreads();
     void videoFrameBufferProducer();
     void videoFrameBufferConsumer(int numberOfFramesToConsume);

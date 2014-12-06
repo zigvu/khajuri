@@ -3,7 +3,7 @@ import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 from threading import Thread
 from collections import OrderedDict
-import json
+import json, pickle
 import logging
 
 import VideoReader
@@ -18,6 +18,7 @@ from Logo.PipelineCore.CaffeNet import CaffeNet
 from Logo.PipelineThread.PostProcessThread import PostProcessThread
 from Logo.PipelineThread.VideoReaderThread import VideoReaderThread
 from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
+from Logo.PipelineMath.PixelMap import PixelMap
 
 def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
   """Process for running caffe on a leveldb folder"""
@@ -64,7 +65,6 @@ class CaffeThread( object ):
     ConfigReader.mkdir_p(self.leveldbFolder)
     ConfigReader.mkdir_p(self.jsonFolder)
     ConfigReader.mkdir_p(self.numpyFolder)
-
     # Logging levels
     logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
       level=self.configReader.log_level)
@@ -98,15 +98,25 @@ class CaffeThread( object ):
     postProcessQueue = JoinableQueue()
     framePostProcesses = []
     num_consumers = 0
+
     if self.runPostProcessor:
       sharedDict['numpyFolder'] = self.numpyFolder
       sharedDict['image_width'] = videoReaderThread.frame.width
       sharedDict['image_height'] = videoReaderThread.frame.height
+      scales = self.configReader.sw_scales
+      imageDim = Rectangle.rectangle_from_dimensions(\
+          sharedDict['image_width'], sharedDict['image_height'])
+      patchDimension = Rectangle.rectangle_from_dimensions(\
+          self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
+      staticBoundingBoxes = BoundingBoxes(imageDim, \
+          self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+      scales = self.configReader.sw_scales
+      allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
       # Start threads
       num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
       #num_consumers = 1
       for i in xrange(num_consumers):
-        framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue))
+        framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue, allCellBoundariesDict))
         framePostProcesses += [framePostProcess]
         framePostProcess.start()
     caffeNetProcesses = []
@@ -115,7 +125,7 @@ class CaffeThread( object ):
       caffeNetProcess.start()
       caffeNetProcesses.append( caffeNetProcess )
 
-    logging.debug("Caffe queue joined")
+    logging.debug("Waiting for Caffe process to complete.")
     for caffeNetProcess in caffeNetProcesses:
       caffeNetProcess.join()
     videoReaderThread.join()

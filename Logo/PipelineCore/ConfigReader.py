@@ -61,6 +61,7 @@ class ConfigReader:
     self.ci_useGPU = caffeInput['use_gpu'] == True
     self.ci_gpu_devices = caffeInput['gpu_devices']
     self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
+    self.ci_computeFrameCuration = caffeInput['compute_frame_curation'] == True
     self.ci_runCaffePostProcessInParallel = caffeInput['run_caffe_postprocess_in_parallel'] == True
     self.ci_allClassIds = caffeInput['all_classes']
     self.ci_backgroundClassIds = caffeInput['background_classes']

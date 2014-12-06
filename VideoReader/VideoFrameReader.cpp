@@ -84,10 +84,6 @@ VideoFrameReader::VideoFrameReader(
 
 }
 
-void VideoFrameReader::startLogger() {
-    ::google::InitGoogleLogging( "VideoFrameReader" );    
-}
-
 void VideoFrameReader::startThreads(){
   DEBUG("%s\n", "Thread: Producer: Starting thread");
   producerThread = boost::thread(&VideoFrameReader::videoFrameBufferProducer, this);
@@ -99,6 +95,10 @@ void VideoFrameReader::joinThreads(){
   producerThread.join();
   // Note: consumer currently runs in main thread
   //consumerThread.join();
+}
+
+void VideoFrameReader::startLogger(){
+  ::google::InitGoogleLogging( "VideoFrameReader" );    
 }
 
 void VideoFrameReader::videoFrameBufferProducer(){

@@ -12,7 +12,7 @@ class VideoFrameReader(object):
     # VideoReader is ready, wait for 10 seconds
     self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
     self.videoFrameReader.generateFrames()
-    time.sleep(10)
+    time.sleep(1)
 
     # Get frame dimensions and create bounding boxes
     frame = self.videoFrameReader.getFrameWithFrameNumber(1)

@@ -2,7 +2,7 @@ import sys, os, glob, time
 from collections import OrderedDict
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
-import logging
+import logging, pickle
 
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
@@ -12,8 +12,9 @@ from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
 from Logo.PipelineCore.ConfigReader import ConfigReader
+from Logo.PipelineMath.PixelMap import PixelMap
 
-def framePostProcessorRun(sharedDict, postProcessQueue):
+def framePostProcessorRun(sharedDict, postProcessQueue, allCellBoundariesDict):
   """Process for running post-processing of JSON outputs"""
   logging.info("Frame post processing thread started")
   configReader = ConfigReader(sharedDict['configFileName'])
@@ -32,7 +33,7 @@ def framePostProcessorRun(sharedDict, postProcessQueue):
       break
     logging.debug("Start post processing of file %s" % jsonFileName)
     jsonReaderWriter = JSONReaderWriter(jsonFileName)
-    framePostProcessor = FramePostProcessor(jsonReaderWriter, staticBoundingBoxes, configReader)
+    framePostProcessor = FramePostProcessor(jsonReaderWriter, staticBoundingBoxes, configReader, allCellBoundariesDict)
     if framePostProcessor.run():
       # if dumping video heatmap, then save heatmap
       if configReader.ci_saveVideoHeatmap:
@@ -52,18 +53,17 @@ class PostProcessThread( object ):
 
     self.configReader = ConfigReader(configFileName)
 
-    self.updateStatusSleepTime = 30
+    self.updateStatusSleepTime = 1
 
     if self.configReader.ci_saveVideoHeatmap:
       ConfigReader.mkdir_p(numpyFolder)
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
+    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
       level=self.configReader.log_level)
 
   def run( self ):
     """Run the video post processing"""
-    startTime = time.time()
     logging.info("Setting up post-processing")
 
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
@@ -85,12 +85,24 @@ class PostProcessThread( object ):
     sharedDict['image_width'] = tempJSONReaderWriter.getFrameWidth()
     sharedDict['image_height'] = tempJSONReaderWriter.getFrameHeight()
 
+    scales = self.configReader.sw_scales
+    imageDim = Rectangle.rectangle_from_dimensions(\
+        sharedDict['image_width'], sharedDict['image_height'])
+    patchDimension = Rectangle.rectangle_from_dimensions(\
+        self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
+    staticBoundingBoxes = BoundingBoxes(imageDim, \
+        self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+    scales = self.configReader.sw_scales
+    allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
+
     # Start threads
+    startTime = time.time()
     framePostProcesses = []
     num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
     #num_consumers = 1
     for i in xrange(num_consumers):
-      framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue))
+      framePostProcess = Process(target=framePostProcessorRun, args=(sharedDict, postProcessQueue\
+          , allCellBoundariesDict ))
       framePostProcesses += [framePostProcess]
       framePostProcess.start()
 

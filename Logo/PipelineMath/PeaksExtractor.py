@@ -2,6 +2,7 @@ import numpy as np
 import scipy.ndimage as ndimage
 
 from Logo.PipelineMath.Rectangle import Rectangle
+import matplotlib.pyplot as plt
 
 class PeaksExtractor(object):
   def __init__(self, pixelMap, configReader, imageDim):

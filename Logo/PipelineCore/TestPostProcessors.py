@@ -2,12 +2,14 @@ import glob, sys
 import os, errno
 import numpy as np
 from skimage.transform import resize
+import matplotlib.pyplot as plt
 
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 from Logo.PipelineMath.ScaleSpaceCombiner import ScaleSpaceCombiner
 from Logo.PipelineMath.FramePostProcessor import FramePostProcessor
 from Logo.PipelineMath.PixelMapper import PixelMapper
+from Logo.PipelineMath.PixelMap import PixelMap
 
 from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
@@ -170,6 +172,110 @@ class TestPostProcessors(object):
         imgIntn = ImageManipulator(imageFileName)
         imgIntn.addPixelMap(intensityMap)
         imgIntn.saveImage(outputFileIntn)
+
+  def test_single_pixelMap(self, allCellBoundariesDict, slidingWindowNum):
+    scales = [0.4, 0.6, 0.8, 1.0, 1.2, 1.4]
+    scaleFactor = scales[2]
+    print "Scale: %.2f" % scaleFactor
+    pixelMap = PixelMap(allCellBoundariesDict, scaleFactor)
+    pc = np.zeros((pixelMap.height, pixelMap.width))
+    slidingWindows = self.staticBoundingBoxes.getBoundingBoxes(scaleFactor)
+    counter = 0
+    for slw in slidingWindows:
+      y0 = slw[1]
+      y3 = slw[1] + slw[3]
+      x0 = slw[0]
+      x3 = slw[0] + slw[2]
+      score = 1
+      if counter == slidingWindowNum:
+        print "{x0: %d, y0: %d, x3: %d, y3: %d}" % (x0, y0, x3, y3) 
+        pixelMap.addScore(x0, y0, x3, y3, score)
+        pc[y0:y3, x0:x3] += score
+        break
+      counter += 1
+    pm = pixelMap.toNumpyArray();
+    return pm, pc
+    
+
+  def test_pixelMap(self, outputFolder, allCellBoundariesDict = None):
+    """Test PixelMap.py"""
+    scales = [0.4, 1.0, 1.4]
+    if allCellBoundariesDict == None:
+      allCellBoundariesDict = PixelMap.getCellBoundaries(self.staticBoundingBoxes, scales)
+
+    celledPixelMaps = {}
+    numpyPixelMaps = {}
+    for idx, scaleFactor in enumerate(scales):
+      # celled method
+      celledPixelMap = PixelMap(allCellBoundariesDict, scaleFactor)
+      # numpy method
+      rect = self.staticBoundingBoxes.imageDim.get_scaled_rectangle(scaleFactor)
+      numpyPixelMap = np.zeros((rect.height, rect.width))
+      
+      # populate pixel maps
+      patchScore = 1
+      slidingWindows = self.staticBoundingBoxes.getBoundingBoxes(scaleFactor)
+      subplotNum = 0
+      for slw in slidingWindows:
+        y0 = slw[1] ; y3 = slw[1] + slw[3]
+        x0 = slw[0] ; x3 = slw[0] + slw[2]
+        # both methods
+        celledPixelMap.addScore(x0, y0, x3, y3, patchScore)
+        numpyPixelMap[y0:y3, x0:x3] += patchScore
+      # save to dict
+      celledPixelMaps[scaleFactor] = celledPixelMap.toNumpyArray()
+      numpyPixelMaps[scaleFactor] = numpyPixelMap
+
+    # make sure that all pixels got covered
+    for scaleFactor in scales:
+      cpm = celledPixelMaps[scaleFactor]
+      npm = numpyPixelMaps[scaleFactor]
+      cpmZero = np.count_nonzero(cpm == 0)
+      npmZero = np.count_nonzero(npm == 0)
+      if (cpmZero > 0) or (npmZero > 0):
+        raise RuntimeError("One of the methods didn't populate all pixels")
+
+    # check for area covered in each scale
+    for scaleFactor in scales:
+      cpm = celledPixelMaps[scaleFactor]
+      npm = numpyPixelMaps[scaleFactor]
+      uniqueCpm = np.unique(cpm)
+      uniqueNpm = np.unique(npm)
+      if len(uniqueCpm) != len(uniqueNpm):
+        raise RuntimeError("Different number of unique pixels in two methods")
+      for uniqueVal in uniqueCpm:
+        cpmTotal = np.count_nonzero(cpm == uniqueVal)
+        npmTotal = np.count_nonzero(npm == uniqueVal)
+        print "Scale: %.2f, Value: %d, CelledCount: %d, NumpyCount: %d ;; Difference: %.4f%%" % (\
+          scaleFactor, uniqueVal, cpmTotal, npmTotal, (1.0 * cpmTotal - npmTotal)/cpmTotal)
+
+    # draw charts:
+    fig = plt.figure(len(scales) + 1)
+    for idx, scaleFactor in enumerate(scales):
+      plt.subplot(len(scales), 3, idx * 3 + 1)
+      im = plt.imshow(celledPixelMaps[scaleFactor])
+      frame = plt.gca()
+      frame.axes.get_xaxis().set_visible(False)
+      frame.axes.get_yaxis().set_visible(False)
+      plt.subplot(len(scales), 3, idx * 3 + 2)
+      plt.imshow(numpyPixelMaps[scaleFactor])
+      frame = plt.gca()
+      frame.axes.get_xaxis().set_visible(False)
+      frame.axes.get_yaxis().set_visible(False)
+      plt.subplot(len(scales), 3, idx * 3 + 3)
+      plt.imshow(celledPixelMaps[scaleFactor] - numpyPixelMaps[scaleFactor])
+      frame = plt.gca()
+      frame.axes.get_xaxis().set_visible(False)
+      frame.axes.get_yaxis().set_visible(False)
+    # save the plot
+    plotFileName = os.path.join(outputFolder, "plot_allscales.png")
+    # color bar is little misleading - so omit for now
+    #cbar_ax = fig.add_axes([0.9, 0.15, 0.02, 0.7])
+    #fig.colorbar(im, cbar_ax)
+    fig.suptitle('CelledPixelMap, NumpyPixelMap, Difference', fontsize=12)
+    plt.savefig(plotFileName)
+    plt.close(fig)
+    return celledPixelMaps, numpyPixelMaps
 
   def test_slidingWindows(self):
     """Test sliding window pixel calculations"""
