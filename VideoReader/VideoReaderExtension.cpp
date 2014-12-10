@@ -1,4 +1,4 @@
-#include "VideoLevelDb.h"
+#include "VideoDb.h"
 #include <boost/python.hpp>
 
 BOOST_PYTHON_MODULE(VideoReader)
@@ -26,10 +26,10 @@ BOOST_PYTHON_MODULE(VideoReader)
       .def("patchFromFrameNumber", &VideoFrameReader::patchFromFrameNumber)
       .def("startLogger", &VideoFrameReader::startLogger)
     ;
-    boost::python::class_<VideoLevelDb, boost::noncopyable >( "VideoLevelDb", boost::python::init<char *>() )
-      .def("savePatch", &VideoLevelDb::savePatch)
-      .def("saveLevelDb", &VideoLevelDb::saveLevelDb)
-      .def("setVideoFrameReader", &VideoLevelDb::setVideoFrameReader)
+    boost::python::class_<VideoDb, boost::noncopyable >( "VideoDb", boost::python::init<char *>() )
+      .def("savePatch", &VideoDb::savePatch)
+      .def("saveLevelDb", &VideoDb::saveLevelDb)
+      .def("setVideoFrameReader", &VideoDb::setVideoFrameReader)
     ;
 
 }

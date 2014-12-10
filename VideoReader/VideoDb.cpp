@@ -1,6 +1,6 @@
-#include "VideoLevelDb.h"
+#include "VideoDb.h"
 
-VideoLevelDb::VideoLevelDb( std::string fileName ) {
+VideoDb::VideoDb( std::string fileName ) {
   leveldb::Options options;
   options.error_if_exists = true;
   options.create_if_missing = true;
@@ -14,11 +14,11 @@ VideoLevelDb::VideoLevelDb( std::string fileName ) {
 }
 
 
-void VideoLevelDb::setVideoFrameReader( VideoFrameReader *videoFrameReader ) {
+void VideoDb::setVideoFrameReader( VideoFrameReader *videoFrameReader ) {
   vfr = videoFrameReader;
 }
 
-VideoLevelDb::~VideoLevelDb(){
+VideoDb::~VideoDb(){
   if( vfr ) {
     vfr = NULL;
   }
@@ -31,7 +31,7 @@ VideoLevelDb::~VideoLevelDb(){
 }
 
 
-int VideoLevelDb::savePatch( int frameNum, double scale, int x, int y, int width, int height ) {
+int VideoDb::savePatch( int frameNum, double scale, int x, int y, int width, int height ) {
   if( vfr ) {
     VideoReader::Datum datum;
     // LOG(ERROR) << "Processed " << label << " files.";
@@ -64,7 +64,7 @@ int VideoLevelDb::savePatch( int frameNum, double scale, int x, int y, int width
   return label;
 }
 
-void VideoLevelDb::saveLevelDb() {
+void VideoDb::saveLevelDb() {
   // LOG(ERROR) << "Saving current batch.";
   db->Write(leveldb::WriteOptions(), batch);
 }

@@ -5,10 +5,10 @@
 #include <leveldb/write_batch.h>
 #include "caffe.pb.h"
 
-class VideoLevelDb {
+class VideoDb {
 	public:
-		VideoLevelDb( std::string fileName );
-		~VideoLevelDb();
+		VideoDb( std::string fileName );
+		~VideoDb();
     int savePatch( int frameNum, double scale, int x, int y, int width, int height );
     void saveLevelDb();
 		void setVideoFrameReader( VideoFrameReader *videoFrameReader );

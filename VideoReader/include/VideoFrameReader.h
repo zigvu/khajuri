@@ -8,7 +8,7 @@
 #include <leveldb/db.h>
 #include <leveldb/write_batch.h>
 
-class VideoLevelDb;
+class VideoDb;
 // Define a list that will store VideoFrames
 typedef boost::intrusive::list<VideoFrame> VideoFrameList;
 

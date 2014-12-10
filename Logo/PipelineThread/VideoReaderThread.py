@@ -85,7 +85,7 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
   currentFrameNum = frameStart # frame number being extracted
   extractedFrameCounter = 0               # total number of extracted frames
   curLeveldbFolder = None                 # folder where to write leveldb
-  videoLeveldb = None                     # levedb object from VideoReader
+  videoDb = None                          # db object from VideoReader
   leveldbMapping = None                   # mapping between patches in leveldb and corresponding jsons
   leveldbId = 0                           # number of leveldb created
 
@@ -102,9 +102,9 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
     # Create new leveldbs for each set of numFramesPerLeveldb frames
     if ((extractedFrameCounter %  self.numFramesPerLeveldb) == 0):
       # If ready, save leveldb and put in queue for CaffeNet
-      if videoLeveldb != None:
-        logging.info("Saving leveldb ID: %d, extractedFrameCounter: %s, self.numFramesPerLeveldb: %s" % (leveldbId, extractedFrameCounter, self.numFramesPerLeveldb))
-        videoLeveldb.saveLevelDb()
+      if videoDb != None:
+        logging.info("Saving db ID: %d, extractedFrameCounter: %s, self.numFramesPerLeveldb: %s" % (leveldbId, extractedFrameCounter, self.numFramesPerLeveldb))
+        videoDb.saveLevelDb()
         with open(leveldbMappingFile, "w") as f :
           json.dump(leveldbMapping, f, indent=2)
         self.leveldbQueue.put(curLeveldbFolder)
@@ -120,8 +120,8 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
       leveldbPatchCounter = 0
       curLeveldbFolder = os.path.join(self.leveldbFolder, "%s_leveldb_%s_%d" % (self.videoId, os.getpid(), leveldbId))
       leveldbMappingFile = os.path.join(curLeveldbFolder, "leveldb_mapping.json")
-      videoLeveldb = VideoReader.VideoLevelDb(curLeveldbFolder)
-      videoLeveldb.setVideoFrameReader(videoFrameReader)
+      videoDb = VideoReader.VideoDb(curLeveldbFolder)
+      videoDb.setVideoFrameReader(videoFrameReader)
       leveldbMapping = OrderedDict()
       leveldbId += 1
       logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/self.totalNumOfFrames)))
@@ -134,7 +134,7 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
       patchNum = 0
       for box in self.staticBoundingBoxes.getBoundingBoxes(scale):
         # Generate leveldb patch and add to json
-        leveldbPatchCounter = videoLeveldb.savePatch(currentFrameNum, scale, \
+        leveldbPatchCounter = videoDb.savePatch(currentFrameNum, scale, \
           box[0], box[1], box[2], box [3])
         jsonAnnotation.addPatch(scale, patchNum, leveldbPatchCounter, \
           box[0], box[1], box[2], box [3])
@@ -148,15 +148,15 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
   # end while
 
   # For the last leveldb group, save and put in queue
-  if videoLeveldb != None:
+  if videoDb != None:
     logging.info("Saving leveldb ID: %d" % (leveldbId))
-    videoLeveldb.saveLevelDb()
+    videoDb.saveLevelDb()
     with open(leveldbMappingFile, "w") as f :
       json.dump(leveldbMapping, f, indent=2)
     self.leveldbQueue.put(curLeveldbFolder)
 
-  # HACK: work around so that VideoLevelDb releases lock on curLeveldbFolder
-  videoLeveldb = None
+  # HACK: work around so that videoDb releases lock on curLeveldbFolder
+  videoDb = None
   # HACK: quit video reader gracefully
   currentFrameNum = videoFrameReader.totalFrames
   while not videoFrameReader.eof or currentFrameNum <= videoFrameReader.totalFrames:

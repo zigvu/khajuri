@@ -58,8 +58,8 @@ if __name__ == '__main__':
 
   curLeveldbFolder = os.path.join(outputFolder, "%s_leveldb_%d" % (videoId, 0))
   leveldbMappingFile = os.path.join(curLeveldbFolder, "leveldb_mapping.json")
-  videoLeveldb = VideoReader.VideoLevelDb(curLeveldbFolder)
-  videoLeveldb.setVideoFrameReader(videoFrameReader)
+  videoDb = VideoReader.VideoDb(curLeveldbFolder)
+  videoDb.setVideoFrameReader(videoFrameReader)
   leveldbMapping = OrderedDict()
 
   # Main loop to go through video
@@ -85,7 +85,7 @@ if __name__ == '__main__':
           patchFileName = '%s_frame_%s_scl_%s_idx_%s.png' % (\
             videoId, currentFrameNum, scale, patchNum)
           # Generate leveldb patch and add to json
-          leveldbPatchCounter = videoLeveldb.savePatch(currentFrameNum, scale, \
+          leveldbPatchCounter = videoDb.savePatch(currentFrameNum, scale, \
             box[0], box[1], box[2], box[3])
           videoFrameReader.patchFromFrameNumber(int(currentFrameNum), \
             os.path.join(patchFolder, patchFileName), scale, \
@@ -103,7 +103,7 @@ if __name__ == '__main__':
       break
     currentFrameNum += configReader.sw_frame_density
 
-  videoLeveldb.saveLevelDb()
+  videoDb.saveLevelDb()
   with open(leveldbMappingFile, "w") as f :
     json.dump(leveldbMapping, f, indent=2)
 
@@ -177,8 +177,8 @@ if __name__ == '__main__':
     str(jsonAnnotation.getFrameNumber())))
   jsonAnnotation.saveToCSV(csvFileName)
   
-  # HACK: work around so that VideoLevelDb releases lock on curLeveldbFolder
-  videoLeveldb = None
+  # HACK: work around so that videoDb releases lock on curLeveldbFolder
+  videoDb = None
   # HACK: quit video reader gracefully
   logging.debug("Getting to end of video reader")
   currentFrameNum = videoFrameReader.totalFrames
