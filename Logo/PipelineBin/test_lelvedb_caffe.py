@@ -133,11 +133,10 @@ if __name__ == '__main__':
   # HACK: without reinitializing caffe_net twice, it won't give reproducible results
   # Seems to happen in both CPU and GPU runs:
   logging.debug("Initializing caffe_net")
-  caffe_net = caffe.Net(prototxtWithNewLeveldb, self.modelFile)
+  caffe_net = caffe.Net(prototxtWithNewLeveldb, modelFile)
   caffe_net.set_phase_test() 
-  if self.useGPU:
+  if configReader.ci_useGPU:
     caffe_net.set_mode_gpu()
-    caffe_net.set_device( self.deviceId )
   else:
     caffe_net.set_mode_cpu()
   logging.debug("Reinitializing caffe_net")
