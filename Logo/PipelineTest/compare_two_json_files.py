@@ -10,6 +10,7 @@ if __name__ == '__main__':
 		print '\n'
 		print 'if <compareLocCuration> is 1, compare both localizations and curations'
 		print 'if <compareLocCuration> is 0, do NOT compare either localizations and curations'
+		print '\n'
 		print 'This executable will compare two JSON files and print any differences per class'
 		sys.exit(1)
 
