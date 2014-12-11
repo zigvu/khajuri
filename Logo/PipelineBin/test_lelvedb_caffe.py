@@ -103,7 +103,7 @@ if __name__ == '__main__':
       break
     currentFrameNum += configReader.sw_frame_density
 
-  videoDb.saveLevelDb()
+  videoDb.saveDb()
   with open(leveldbMappingFile, "w") as f :
     json.dump(leveldbMapping, f, indent=2)
 

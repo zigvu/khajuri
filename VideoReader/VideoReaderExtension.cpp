@@ -28,7 +28,7 @@ BOOST_PYTHON_MODULE(VideoReader)
     ;
     boost::python::class_<VideoDb, boost::noncopyable >( "VideoDb", boost::python::init<char *>() )
       .def("savePatch", &VideoDb::savePatch)
-      .def("saveLevelDb", &VideoDb::saveLevelDb)
+      .def("saveDb", &VideoDb::saveDb)
       .def("setVideoFrameReader", &VideoDb::setVideoFrameReader)
     ;
 

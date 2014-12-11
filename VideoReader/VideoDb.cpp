@@ -1,44 +1,84 @@
 #include "VideoDb.h"
 
 VideoDb::VideoDb( std::string fileName ) {
-  leveldb::Options options;
-  options.error_if_exists = true;
-  options.create_if_missing = true;
-  options.write_buffer_size = 268435456;
-  leveldb::Status status = leveldb::DB::Open( options, fileName, &db);
-  CHECK(status.ok()) << "Failed to open leveldb " << fileName;
-  batch = new leveldb::WriteBatch();
-  vfr = NULL;
+  dbType = LEVELDB; // dbType = LMDB;
+
+  videoFrameReader = NULL;
   label = 0;
   batchSize = 1000;
+
+  switch(dbType) {
+    case LEVELDB: {
+      leveldb::Options leveldb_options;
+      leveldb_options.error_if_exists = true;
+      leveldb_options.create_if_missing = true;
+      leveldb_options.write_buffer_size = 268435456;
+
+      leveldb::Status leveldb_status = leveldb::DB::Open( leveldb_options, fileName, &leveldb_db );
+      CHECK(leveldb_status.ok()) << "Failed to open leveldb " << fileName;
+      leveldb_batch = new leveldb::WriteBatch();
+
+      break;
+    }
+    case LMDB: {
+      break;
+    }
+    default: {
+      CHECK(false) << "Unrecognized db type " << dbType;
+    }
+  }
 }
 
-
-void VideoDb::setVideoFrameReader( VideoFrameReader *videoFrameReader ) {
-  vfr = videoFrameReader;
+void VideoDb::setVideoFrameReader( VideoFrameReader *vfr ) {
+  videoFrameReader = vfr;
 }
 
 VideoDb::~VideoDb(){
-  if( vfr ) {
-    vfr = NULL;
+  if( videoFrameReader ) {
+    videoFrameReader = NULL;
   }
-  if( batch ) {
-    delete batch;
-  }
-  if( db ) {
-    delete db;
+  switch(dbType) {
+    case LEVELDB: {
+      if( leveldb_batch ) {
+        delete leveldb_batch;
+      }
+      if( leveldb_db ) {
+        delete leveldb_db;
+      }
+      break;
+    }
+    case LMDB: {
+      break;
+    }
+    default: {
+      CHECK(false) << "Unrecognized db type " << dbType;
+    }
   }
 }
 
 
 int VideoDb::savePatch( int frameNum, double scale, int x, int y, int width, int height ) {
-  if( vfr ) {
+  switch(dbType) {
+    case LEVELDB: {
+      return saveLevelDbPatch( frameNum, scale, x, y, width, height );
+    }
+    case LMDB: {
+      break;
+    }
+    default: {
+      CHECK(false) << "Unrecognized db type " << dbType;
+    }
+  }
+}
+
+int VideoDb::saveLevelDbPatch( int frameNum, double scale, int x, int y, int width, int height ) {
+  if( videoFrameReader ) {
     VideoReader::Datum datum;
     // LOG(ERROR) << "Processed " << label << " files.";
     int retVal = -1;
     while ( retVal == -1 ) {
-      retVal = vfr->savePatchFromFrameNumberToLevelDb(
-          frameNum, scale, x, y, width, height, label,&datum );
+      retVal = videoFrameReader->savePatchFromFrameNumberToLevelDb(
+          frameNum, scale, x, y, width, height, label, &datum );
     }
     if( datum.channels() == 0 ||
         datum.height() == 0 ||
@@ -51,20 +91,47 @@ int VideoDb::savePatch( int frameNum, double scale, int x, int y, int width, int
 
     std::string value;
     datum.SerializeToString(&value);
-    batch->Put( boost::to_string( label ), value );
+    leveldb_batch->Put( boost::to_string( label ), value );
     label++;
     if( label % batchSize == 0 ) {
       // LOG(ERROR) << "Reached batch Size " << batchSize << " saving.";
       saveLevelDb();
-      delete batch;
-      batch = new leveldb::WriteBatch();
+      delete leveldb_batch;
+      leveldb_batch = new leveldb::WriteBatch();
     }
     return label - 1;
   }
   return label;
 }
 
+void VideoDb::saveDb() {
+  switch(dbType) {
+    case LEVELDB: {
+      saveLevelDb();
+      break;
+    }
+    case LMDB: {
+      break;
+    }
+    default: {
+      CHECK(false) << "Unrecognized db type " << dbType;
+    }
+  }
+}
+
 void VideoDb::saveLevelDb() {
   // LOG(ERROR) << "Saving current batch.";
-  db->Write(leveldb::WriteOptions(), batch);
+  leveldb_db->Write(leveldb::WriteOptions(), leveldb_batch);
 }
+
+  // switch(dbType) {
+  //   case LEVELDB: {
+  //     break;
+  //   }
+  //   case LMDB: {
+  //     break;
+  //   }
+  //   default: {
+  //     CHECK(false) << "Unrecognized db type " << dbType;
+  //   }
+  // }

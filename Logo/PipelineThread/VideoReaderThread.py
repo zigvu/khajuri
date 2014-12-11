@@ -104,7 +104,7 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
       # If ready, save leveldb and put in queue for CaffeNet
       if videoDb != None:
         logging.info("Saving db ID: %d, extractedFrameCounter: %s, self.numFramesPerLeveldb: %s" % (leveldbId, extractedFrameCounter, self.numFramesPerLeveldb))
-        videoDb.saveLevelDb()
+        videoDb.saveDb()
         with open(leveldbMappingFile, "w") as f :
           json.dump(leveldbMapping, f, indent=2)
         self.leveldbQueue.put(curLeveldbFolder)
@@ -150,7 +150,7 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
   # For the last leveldb group, save and put in queue
   if videoDb != None:
     logging.info("Saving leveldb ID: %d" % (leveldbId))
-    videoDb.saveLevelDb()
+    videoDb.saveDb()
     with open(leveldbMappingFile, "w") as f :
       json.dump(leveldbMapping, f, indent=2)
     self.leveldbQueue.put(curLeveldbFolder)

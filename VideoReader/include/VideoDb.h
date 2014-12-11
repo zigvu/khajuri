@@ -6,19 +6,26 @@
 #include "caffe.pb.h"
 
 class VideoDb {
-	public:
-		VideoDb( std::string fileName );
-		~VideoDb();
-    int savePatch( int frameNum, double scale, int x, int y, int width, int height );
-    void saveLevelDb();
-		void setVideoFrameReader( VideoFrameReader *videoFrameReader );
+  public:
+    VideoDb( std::string fileName );
+    ~VideoDb();
+    enum DBTYPE { LEVELDB, LMDB };
 
-	private:
-    leveldb::DB* db;
-    leveldb::Options options;
-    leveldb::WriteBatch* batch;
+    void setVideoFrameReader( VideoFrameReader *vfr );
+    int savePatch( int frameNum, double scale, int x, int y, int width, int height );
+    void saveDb();
+
+  private:
+    DBTYPE dbType;
+
     int label;
-    VideoFrameReader *vfr;
+    VideoFrameReader *videoFrameReader;
     int batchSize;
 
- };
+    // leveldb related
+    leveldb::DB* leveldb_db;
+    leveldb::WriteBatch* leveldb_batch;
+    int saveLevelDbPatch( int frameNum, double scale, int x, int y, int width, int height );
+    void saveLevelDb();
+
+};
