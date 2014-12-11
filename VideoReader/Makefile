@@ -23,7 +23,7 @@ LIBS_CV = -lopencv_highgui -lopencv_imgproc -lopencv_core # opencv-2.0
 #
 
 # Google Libs
-LIBS_PROTOBUF = -lprotobuf -lglog -lleveldb -lsnappy
+LIBS_PROTOBUF = -lprotobuf -lglog -lleveldb -lsnappy -llmdb
 
 # Targets
 EXEC= VideoReader

@@ -65,19 +65,6 @@ void VideoFrame::savePng( char*fileName ) {
 
 void VideoFrame::saveCroppedFrameToDatum( double scale, int x, int y, 
     int width, int height, int label, VideoReader::Datum *datum ) {
-  // if( scaledFrames.find( scale ) == scaledFrames.end() ) {
-  //   int w = pFrame->width, h = pFrame->height;
-  //   cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
-  //   cv::Size size = cv::Size( w * scale, h * scale );
-  //   cv::resize( *m, *m, size );
-  //   scaledFrames[ scale ] = m;
-  // }
-  // cv::Mat *m = scaledFrames[ scale ];
-
-  // cv::Mat *m = getCachedScaledMat(scale);
-  // cv::Rect myROI( x, y, width, height );
-  // cv::Mat croppedImage = (*m)(myROI);
-
   cv::Mat croppedImage = getCachedScaledCroppedMat(scale, x, y, width, height);
 
   datum->set_channels(3);
@@ -98,19 +85,6 @@ void VideoFrame::saveCroppedFrameToDatum( double scale, int x, int y,
 }
 
 void VideoFrame::saveCroppedFrame( char *fileName, double scale, int x, int y, int width, int height ){
-  // if( scaledFrames.find( scale ) == scaledFrames.end() ) {
-  //   int w = pFrame->width, h = pFrame->height;
-  //   cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
-  //   cv::Size size = cv::Size( w * scale, h * scale );
-  //   cv::resize( *m, *m, size );
-  //   scaledFrames[ scale ] = m;
-  // }
-  // cv::Mat *m = scaledFrames[ scale ];
-
-  // cv::Mat *m = getCachedScaledMat(scale);
-  // cv::Rect myROI( x, y, width, height );
-  // cv::Mat croppedImage = (*m)(myROI);
-
   cv::Mat croppedImage = getCachedScaledCroppedMat(scale, x, y, width, height);
   imwrite( fileName, croppedImage );
 }
