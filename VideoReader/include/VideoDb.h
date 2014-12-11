@@ -10,9 +10,12 @@
 
 class VideoDb {
   public:
-    VideoDb( std::string db_path );
+    enum DBTYPE { LEVELDB = 1, LMDB = 2 };
+
+    VideoDb( DBTYPE db_type, int batch_size );
     ~VideoDb();
-    enum DBTYPE { LEVELDB, LMDB };
+
+    void createNewDb( std::string db_path );
 
     void setVideoFrameReader( VideoFrameReader *vfr );
     int savePatch( int frameNum, double scale, int x, int y, int width, int height );

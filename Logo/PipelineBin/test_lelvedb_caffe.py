@@ -58,7 +58,8 @@ if __name__ == '__main__':
 
   curLeveldbFolder = os.path.join(outputFolder, "%s_leveldb_%d" % (videoId, 0))
   leveldbMappingFile = os.path.join(curLeveldbFolder, "leveldb_mapping.json")
-  videoDb = VideoReader.VideoDb(curLeveldbFolder)
+  videoDb = VideoReader.VideoDb(VideoReader.VideoDb.DBTYPE.LEVELDB, 1000)
+  videoDb.createNewDb(curLeveldbFolder)
   videoDb.setVideoFrameReader(videoFrameReader)
   leveldbMapping = OrderedDict()
 

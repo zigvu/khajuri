@@ -1,13 +1,14 @@
 #include "VideoDb.h"
 
-VideoDb::VideoDb( std::string db_path ) {
-  dbType = LEVELDB; 
-  // dbType = LMDB;
+VideoDb::VideoDb( DBTYPE db_type, int batch_size ) {
+  dbType = db_type;
 
   videoFrameReader = NULL;
   label = 0;
-  batchSize = 1000;
+  batchSize = batch_size;
+}
 
+void VideoDb::createNewDb( std::string db_path ) {
   if (dbType == LEVELDB){
     leveldb::Options leveldb_options;
     leveldb_options.error_if_exists = true;
