@@ -25,7 +25,7 @@ class VideoDb {
     // leveldb related
     leveldb::DB* leveldb_db;
     leveldb::WriteBatch* leveldb_batch;
-    int saveLevelDbPatch( int frameNum, double scale, int x, int y, int width, int height );
-    void saveLevelDb();
+    //int saveLevelDbPatch( int frameNum, double scale, int x, int y, int width, int height );
+    //void saveLevelDb();
 
 };

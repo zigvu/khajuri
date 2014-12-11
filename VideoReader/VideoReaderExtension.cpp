@@ -8,9 +8,6 @@ BOOST_PYTHON_MODULE(VideoReader)
 			.add_property("frameNum", &VideoFrame::getFrameNumber, &VideoFrame::setFrameNumber)
 			.add_property("width", &VideoFrame::getWidth )
 			.add_property("height", &VideoFrame::getHeight )
-			//.add_property("avFrame", &VideoFrame::getAVFrame)
-			//.add_property("pFrame", &VideoFrame::getPFrame)
-
     ;
     boost::python::class_<VideoFrameReader, boost::noncopyable >( "VideoFrameReader", boost::python::init<uint, uint, char *>() )
 			.add_property("fps", &VideoFrameReader::getFps )
@@ -23,7 +20,7 @@ BOOST_PYTHON_MODULE(VideoReader)
       .def("getFrameWithFrameNumber", &VideoFrameReader::getFrameWithFrameNumber, boost::python::return_internal_reference<>())
       .def("saveFrameWithFrameNumber", &VideoFrameReader::saveFrameWithFrameNumber)
       .def("savePngWithFrameNumber", &VideoFrameReader::savePngWithFrameNumber)
-      .def("patchFromFrameNumber", &VideoFrameReader::patchFromFrameNumber)
+      .def("savePatchFromFrameNumber", &VideoFrameReader::savePatchFromFrameNumber)
       .def("startLogger", &VideoFrameReader::startLogger)
     ;
     boost::python::class_<VideoDb, boost::noncopyable >( "VideoDb", boost::python::init<char *>() )

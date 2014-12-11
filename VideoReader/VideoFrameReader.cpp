@@ -133,7 +133,7 @@ void VideoFrameReader::videoFrameBufferProducer(){
         vf->setFrameNumber(frameNumber++);
         vf->setTimeStamp(packet.pts * time_base); // this will be ignored if not new frame
 
-	      vf->getPFrame( sws_ctx );
+	      vf->readPFrame( sws_ctx );
         videoFrameList.push_front(*vf);
         if(videoFrameList.size() >= maxVideoFrameListSize){
           data_ready = false;
@@ -177,7 +177,7 @@ int VideoFrameReader::saveFrameWithFrameNumber(int64_t frameNumber, char *fileNa
   DEBUG("VideoFrameReader: saveFrameWithFrameNumber: %lld\n", (long long)frameNumber);
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
   if(retVideoFrame != NULL){
-    retVideoFrame->saveFrame(fileName, sws_ctx);
+    retVideoFrame->saveFrame(fileName);
     return 0;
   }
   return -1;
@@ -187,26 +187,26 @@ int VideoFrameReader::savePngWithFrameNumber(int64_t frameNumber, char *fileName
   DEBUG("VideoFrameReader: savePngWithFrameNumber: %lld\n", (long long)frameNumber);
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
   if(retVideoFrame != NULL){
-    retVideoFrame->savePng(fileName, sws_ctx);
+    retVideoFrame->savePng(fileName);
     return 0;
   }
   return -1;
 }
 
-int VideoFrameReader::patchFromFrameNumber(int64_t frameNumber, char *fileName, double scale,
+int VideoFrameReader::savePatchFromFrameNumber(int64_t frameNumber, char *fileName, double scale,
     int x, int y, int width, int height){
-  DEBUG("VideoFrameReader: patchFromFrameNumber: %lld\n", (long long)frameNumber);
+  DEBUG("VideoFrameReader: savePatchFromFrameNumber: %lld\n", (long long)frameNumber);
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
   if(retVideoFrame != NULL){
-    retVideoFrame->saveCroppedFrame(fileName, sws_ctx, scale, x, y, width, height);
+    retVideoFrame->saveCroppedFrame(fileName, scale, x, y, width, height);
     return 0;
   }
   return -1;
 }
 
-int VideoFrameReader::savePatchFromFrameNumberToLevelDb(int64_t frameNumber, double scale,
+int VideoFrameReader::savePatchFromFrameNumberToDatum(int64_t frameNumber, double scale,
     int x, int y, int width, int height, int label, VideoReader::Datum *datum ) {
-  DEBUG("VideoFrameReader: patchFromFrameNumber: %lld\n", (long long)frameNumber);
+  DEBUG("VideoFrameReader: savePatchFromFrameNumberToDatum: %lld\n", (long long)frameNumber);
   VideoFrame *retVideoFrame = getFrameWithFrameNumber(frameNumber);
   if(retVideoFrame != NULL){
     retVideoFrame->saveCroppedFrameToDatum(scale, x, y, width, height, label, datum );

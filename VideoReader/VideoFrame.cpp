@@ -37,11 +37,8 @@ void VideoFrame::setFrameNumber(int64_t frameNumber){
 }
 int64_t VideoFrame::getFrameNumber(){ return videoFrameNumber; }
 
-void VideoFrame::saveFrame(char *fileName, SwsContext *sws_ctx){
+void VideoFrame::saveFrame(char *fileName){
   FILE *pFile;
-  
-  // populate dst
-  getPFrame(sws_ctx);
   
   // Open file
   pFile=fopen(fileName, "wb");
@@ -59,7 +56,7 @@ void VideoFrame::saveFrame(char *fileName, SwsContext *sws_ctx){
   fclose(pFile);
 }
 
-void VideoFrame::savePng( char*fileName, SwsContext *sws_ctx ) {
+void VideoFrame::savePng( char*fileName ) {
   cv::Mat m; 
   int w = pFrame->width, h = pFrame->height;
   m = cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
@@ -68,16 +65,20 @@ void VideoFrame::savePng( char*fileName, SwsContext *sws_ctx ) {
 
 void VideoFrame::saveCroppedFrameToDatum( double scale, int x, int y, 
     int width, int height, int label, VideoReader::Datum *datum ) {
-  if( scaledFrames.find( scale ) == scaledFrames.end() ) {
-    int w = pFrame->width, h = pFrame->height;
-    cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
-    cv::Size size = cv::Size( w * scale, h * scale );
-    cv::resize( *m, *m, size );
-    scaledFrames[ scale ] = m;
-  }
-  cv::Mat *m = scaledFrames[ scale ];
-  cv::Rect myROI( x, y, width, height );
-  cv::Mat croppedImage = (*m)(myROI);
+  // if( scaledFrames.find( scale ) == scaledFrames.end() ) {
+  //   int w = pFrame->width, h = pFrame->height;
+  //   cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
+  //   cv::Size size = cv::Size( w * scale, h * scale );
+  //   cv::resize( *m, *m, size );
+  //   scaledFrames[ scale ] = m;
+  // }
+  // cv::Mat *m = scaledFrames[ scale ];
+
+  // cv::Mat *m = getCachedScaledMat(scale);
+  // cv::Rect myROI( x, y, width, height );
+  // cv::Mat croppedImage = (*m)(myROI);
+
+  cv::Mat croppedImage = getCachedScaledCroppedMat(scale, x, y, width, height);
 
   datum->set_channels(3);
   datum->set_height(croppedImage.rows);
@@ -96,7 +97,32 @@ void VideoFrame::saveCroppedFrameToDatum( double scale, int x, int y,
   }
 }
 
-void VideoFrame::saveCroppedFrame( char *fileName, SwsContext *sws_ctx, double scale, int x, int y, int width, int height ){
+void VideoFrame::saveCroppedFrame( char *fileName, double scale, int x, int y, int width, int height ){
+  // if( scaledFrames.find( scale ) == scaledFrames.end() ) {
+  //   int w = pFrame->width, h = pFrame->height;
+  //   cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
+  //   cv::Size size = cv::Size( w * scale, h * scale );
+  //   cv::resize( *m, *m, size );
+  //   scaledFrames[ scale ] = m;
+  // }
+  // cv::Mat *m = scaledFrames[ scale ];
+
+  // cv::Mat *m = getCachedScaledMat(scale);
+  // cv::Rect myROI( x, y, width, height );
+  // cv::Mat croppedImage = (*m)(myROI);
+
+  cv::Mat croppedImage = getCachedScaledCroppedMat(scale, x, y, width, height);
+  imwrite( fileName, croppedImage );
+}
+
+cv::Mat VideoFrame::getCachedScaledCroppedMat( double scale, int x, int y, int width, int height ){
+  cv::Mat *m = getCachedScaledMat(scale);
+  cv::Rect myROI( x, y, width, height );
+  cv::Mat croppedImage = (*m)(myROI);
+  return croppedImage;
+}
+
+cv::Mat * VideoFrame::getCachedScaledMat( double scale ){
   if( scaledFrames.find( scale ) == scaledFrames.end() ) {
     int w = pFrame->width, h = pFrame->height;
     cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
@@ -105,12 +131,10 @@ void VideoFrame::saveCroppedFrame( char *fileName, SwsContext *sws_ctx, double s
     scaledFrames[ scale ] = m;
   }
   cv::Mat *m = scaledFrames[ scale ];
-  cv::Rect myROI( x, y, width, height );
-  cv::Mat croppedImage = (*m)(myROI);
-  imwrite( fileName, croppedImage );
+  return m;  
 }
 
-AVFrame * VideoFrame::getPFrame(SwsContext *sws_ctx){
+void VideoFrame::readPFrame(SwsContext *sws_ctx){
   if(!dst){
     dst = avcodec_alloc_frame();
     memset(dst, 0, sizeof(*dst));
@@ -128,8 +152,6 @@ AVFrame * VideoFrame::getPFrame(SwsContext *sws_ctx){
         dst->data, dst->linesize);
     sws_freeContext(convert_ctx);
   }
-  
-  return dst;
 }
 
 VideoFrame::~VideoFrame(){

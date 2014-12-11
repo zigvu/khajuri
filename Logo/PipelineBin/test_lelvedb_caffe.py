@@ -87,7 +87,7 @@ if __name__ == '__main__':
           # Generate leveldb patch and add to json
           leveldbPatchCounter = videoDb.savePatch(currentFrameNum, scale, \
             box[0], box[1], box[2], box[3])
-          videoFrameReader.patchFromFrameNumber(int(currentFrameNum), \
+          videoFrameReader.savePatchFromFrameNumber(int(currentFrameNum), \
             os.path.join(patchFolder, patchFileName), scale, \
             box[0], box[1], box[2], box [3])
           jsonAnnotation.addPatch(scale, patchNum, leveldbPatchCounter, \

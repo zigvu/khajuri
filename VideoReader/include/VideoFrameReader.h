@@ -35,9 +35,9 @@ class VideoFrameReader {
     void videoFrameBufferConsumer(int numberOfFramesToConsume);
     int saveFrameWithFrameNumber(int64_t frameNumber, char *fileName);
     int savePngWithFrameNumber(int64_t frameNumber, char *fileName);
-    int patchFromFrameNumber(int64_t frameNumber, char *fileName, double scale,
+    int savePatchFromFrameNumber(int64_t frameNumber, char *fileName, double scale,
         int x, int y, int width, int height );
-    int savePatchFromFrameNumberToLevelDb(int64_t frameNumber, double scale,
+    int savePatchFromFrameNumberToDatum(int64_t frameNumber, double scale,
         int x, int y, int width, int height, int label, VideoReader::Datum *datum );
     VideoFrame* getFrameWithFrameNumber(int64_t frameNumber);
     int seekToFrameWithFrameNumber(int64_t frameNumber);
