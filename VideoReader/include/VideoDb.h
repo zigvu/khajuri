@@ -15,10 +15,12 @@ class VideoDb {
     VideoDb( DBTYPE db_type, int batch_size );
     ~VideoDb();
 
-    void createNewDb( std::string db_path );
+    void createNewDb( std::string db_path, VideoFrameReader *vfr );
+    void loadExistingDbReadOnly( std::string db_path );
 
-    void setVideoFrameReader( VideoFrameReader *vfr );
     int savePatch( int frameNum, double scale, int x, int y, int width, int height );
+    void deletePatch( int lbl );
+    int countPatches();
     void saveDb();
 
   private:

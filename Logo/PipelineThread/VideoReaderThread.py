@@ -121,8 +121,7 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
       curLeveldbFolder = os.path.join(self.leveldbFolder, "%s_leveldb_%s_%d" % (self.videoId, os.getpid(), leveldbId))
       leveldbMappingFile = os.path.join(curLeveldbFolder, "leveldb_mapping.json")
       videoDb = VideoReader.VideoDb(VideoReader.VideoDb.DBTYPE.LEVELDB, 1000)
-      videoDb.createNewDb(curLeveldbFolder)
-      videoDb.setVideoFrameReader(videoFrameReader)
+      videoDb.createNewDb(curLeveldbFolder, videoFrameReader)
       leveldbMapping = OrderedDict()
       leveldbId += 1
       logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/self.totalNumOfFrames)))

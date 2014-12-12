@@ -26,9 +26,11 @@ BOOST_PYTHON_MODULE(VideoReader)
     boost::python::scope in_VideoDb = boost::python::class_<VideoDb, boost::noncopyable >( 
         "VideoDb", boost::python::init<VideoDb::DBTYPE, int>() )
       .def("createNewDb", &VideoDb::createNewDb)
+      .def("loadExistingDbReadOnly", &VideoDb::loadExistingDbReadOnly)
       .def("savePatch", &VideoDb::savePatch)
+      .def("deletePatch", &VideoDb::deletePatch)
+      .def("countPatches", &VideoDb::countPatches)
       .def("saveDb", &VideoDb::saveDb)
-      .def("setVideoFrameReader", &VideoDb::setVideoFrameReader)
     ;
     boost::python::enum_<VideoDb::DBTYPE>("DBTYPE")
       .value("LEVELDB", VideoDb::LEVELDB)
