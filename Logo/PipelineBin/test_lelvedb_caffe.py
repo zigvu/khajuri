@@ -54,7 +54,7 @@ if __name__ == '__main__':
   patchDimension = Rectangle.rectangle_from_dimensions(\
     configReader.sw_patchWidth, configReader.sw_patchHeight)
   staticBoundingBoxes = BoundingBoxes(imageDim, \
-    configReader.sw_xStride, configReader.sw_xStride, patchDimension)
+    configReader.sw_xStride, configReader.sw_yStride, patchDimension)
 
   curLeveldbFolder = os.path.join(outputFolder, "%s_leveldb_%d" % (videoId, 0))
   leveldbMappingFile = os.path.join(curLeveldbFolder, "leveldb_mapping.json")

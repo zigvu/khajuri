@@ -109,7 +109,7 @@ class CaffeThread( object ):
       patchDimension = Rectangle.rectangle_from_dimensions(\
           self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
       staticBoundingBoxes = BoundingBoxes(imageDim, \
-          self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+          self.configReader.sw_xStride, self.configReader.sw_yStride, patchDimension)
       scales = self.configReader.sw_scales
       allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
       # Start threads

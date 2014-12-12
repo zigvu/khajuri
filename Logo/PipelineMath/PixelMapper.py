@@ -43,9 +43,10 @@ class PixelMapper(object):
   def massageRescoringMap( self, rescoringMap ):
     values = rescoringMap.cellValues
     uniqueValues = np.unique(values)
-    if len(uniqueValues) > 2:
-      scoreMask = values < uniqueValues[-2]
-      values[scoreMask] = uniqueValues[-2]
+    uniqueValueThreshold = 3
+    if len(uniqueValues) > uniqueValueThreshold:
+      scoreMask = values < uniqueValues[-uniqueValueThreshold]
+      values[scoreMask] = uniqueValues[-uniqueValueThreshold]
     values **= -1
 
   def inferIntermediateScales(self, targetScale, scale1, scale2):
