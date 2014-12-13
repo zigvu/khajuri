@@ -50,8 +50,8 @@ def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
 
   logging.info("VideoCaffeManager process for deviceId %d started" % deviceId)
   videoCaffeManager = VideoCaffeManager(configFileName)
-  #videoCaffeManager.setupNet(newPrototxtFile, deviceId)
-  videoCaffeManager.setupQueues(producedQueue, consumedQueue, deviceId)
+  videoCaffeManager.setupNet(newPrototxtFile, deviceId)
+  videoCaffeManager.setupQueues(producedQueue, consumedQueue)
   # finally start consuming
   videoCaffeManager.startForwards()
 

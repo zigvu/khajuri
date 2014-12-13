@@ -12,6 +12,8 @@ class VideoCaffeManager( object ):
   def __init__(self, configFileName):
     self.configReader = ConfigReader(configFileName)
     self.classes = self.configReader.ci_allClassIds
+    self.numOfClasses = len(self.classes)
+
 
   def setupNet(self, newPrototxtFile, deviceId):
     """Setup caffe network"""
@@ -43,11 +45,10 @@ class VideoCaffeManager( object ):
       self.caffe_net.set_mode_cpu()
     logging.info("Done initializing caffe_net")
 
-  def setupQueues(self, producedQueue, consumedQueue, deviceId):
+  def setupQueues(self, producedQueue, consumedQueue):
     """Setup queues"""
     self.producedQueue = producedQueue
     self.consumedQueue = consumedQueue
-    self.deviceId = deviceId
 
   def startForwards(self):
     """Timing caffe forward calls"""
@@ -61,14 +62,51 @@ class VideoCaffeManager( object ):
         break
       # producer is not finished producing, so consume
       logging.info("Caffe working on batch %s on device %d" % (dbBatchMappingFile, self.deviceId))
-      self.forward()
+      self.forward(dbBatchMappingFile)
       # once scores are saved, put it in deletion queue
       self.consumedQueue.put(dbBatchMappingFile)
       self.producedQueue.task_done()
     logging.info("Caffe finished working all batches on device %d" % (self.deviceId))
 
-  def forward(self):
+  def forward(self, dbBatchMappingFile):
     """Forward call in caffe"""
     logging.info("producedQueue size: %d, deviceId: %d" % (self.producedQueue.qsize(), self.deviceId))
     logging.info("consumedQueue size: %d, deviceId: %d" % (self.consumedQueue.qsize(), self.deviceId))
-    time.sleep(1)
+
+    # Read mapping and json output files
+    dbBatchMapping = json.load(open(dbBatchMappingFile, "r"))
+    jsonFiles = []
+    jsonRWs = OrderedDict()
+    maxPatchCounter = 0
+    for patchCounter, jsonFile in dbBatchMapping.iteritems():
+      if maxPatchCounter < int(patchCounter):
+        maxPatchCounter = int(patchCounter)
+      if jsonFile not in jsonFiles:
+        jsonFiles += [jsonFile]
+        jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
+
+    # We do ONLY ONE forward pass - we expect to get only 1 batch of data
+    # (which of course could be configured to do multiple frames)
+    patchCounter = 0
+    output = self.caffe_net.forward()
+    probablities = output['prob']
+    for k in range(0, output['label'].size):
+      printStr = ""
+      scores = {}
+      for j in range(0, self.numOfClasses):
+        scores[self.classes[j]] = probablities[k][j].item(0)
+        printStr = "%s,%f" % (printStr, scores[self.classes[j]])
+      # Note: if number of patches is not multiple of batch size, then caffe
+      #  displays results for patches in the begining of leveldb
+      if patchCounter <= maxPatchCounter:
+        curPatchNumber = int(output['label'].item(k))
+        printStr = "%s%s" % (leveldbMapping[str(curPatchNumber)], printStr)
+        # Add scores to json
+        jsonRWs[leveldbMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
+        # logging.debug("%s" % printStr)
+      patchCounter += 1
+
+    # Save and put json files in post processing queue
+    for jsonFile, jsonRW in jsonRWs.iteritems():
+      jsonRW.saveState()
+      # TODO: put in processing queue
