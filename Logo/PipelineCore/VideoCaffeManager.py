@@ -100,9 +100,9 @@ class VideoCaffeManager( object ):
       #  displays results for patches in the begining of leveldb
       if patchCounter <= maxPatchCounter:
         curPatchNumber = int(output['label'].item(k))
-        printStr = "%s%s" % (leveldbMapping[str(curPatchNumber)], printStr)
+        printStr = "%s%s" % (dbBatchMapping[str(curPatchNumber)], printStr)
         # Add scores to json
-        jsonRWs[leveldbMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
+        jsonRWs[dbBatchMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
         # logging.debug("%s" % printStr)
       patchCounter += 1
 
