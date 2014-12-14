@@ -33,6 +33,18 @@ Supply all parameters including patchImageFolder. This will only generate the pa
 The parameter inside the square bracket - patchImageFolder - is optional - since its used only in the first flow.
 """
 
+
+class ConfusionPair( object ):
+  def __init__( self, k, v ):
+    self.key = k
+    self.value = v
+
+  def __lt__( self, other ):
+    if self.value < other.value:
+      return True
+    else:
+      return False
+
 if __name__ == '__main__':
   if len( sys.argv ) < 6:
     print 'Usage %s <csv_folder> <score_threshold> <count_threshold> <class_mapping> <output_folder> [ <patchImageFolder> ]' % sys.argv[ 0 ]
@@ -137,27 +149,28 @@ if __name__ == '__main__':
     patchListToExamineForJson[ "(%s,%s)" % k ] = v
   json.dump( patchListToExamineForJson,  open( patchDumpJsonFile, 'w' ), indent=2 )
   
-  logging.info( 'Confusion Matrix:' )
-  logging.info( 'Confusion Counts greater than %s:' % countThreshold )
+  confusionCountFile = os.path.join( outputFolder, "confusionCount.txt" )
+  logging.info( 'Confusion Counts greater than %s produce in file %s' % ( countThreshold, confusionCountFile ) )
+  confusionAvgCountList = []
   for k, v in countHeatMap.iteritems():
     if k [ 0 ] == k[ 1]:
       continue
     if v >= countThreshold:
-      logging.info( '%50s:->%s' % ( k, v ) )
-  
-  logging.info( 'ConfusionAvg Scores greater than %s:' % scoreThreshold )
+      confusionAvgCountList.append( ConfusionPair( k, v ) )
+  with open( confusionCountFile, 'w' ) as f:
+     for p in sorted( confusionAvgCountList ):
+      f.write( '%s --> %s\n' % ( p.key, p.value ) )
+ 
+  confusionAvgScoreFile = os.path.join( outputFolder, "confusionAvgScore.txt" )
+  logging.info( 'ConfusionAvg Scores greater than %s produce in %s' % ( scoreThreshold, confusionAvgScoreFile ) )
+  confusionAvgScoreList = []
   for k, v in avgScoreHeatMap.iteritems():
     if k [ 0 ] == k[ 1]:
       continue
     if v >= scoreThreshold:
-      logging.info( '%50s:->%s' % ( k, v ) )
+      confusionAvgScoreList.append( ConfusionPair( k, v ) )
+  with open( confusionAvgScoreFile, 'w' ) as f:
+    for p in sorted( confusionAvgScoreList ):
+      f.write( '%s --> %s\n' % ( p.key, p.value ) )
 
-
-   
-  # CSV Output
-  #  writer = csv.writer(open(os.path.join( outputFolder, 'confusion_count.csv' ), 'wb'))
-  #  for key, value in countHeatMap.items():
-  #    writer.writerow([key, value])
-  #  writer = csv.writer(open( os.path.join( outputFolder, 'confusion_avgScore.csv' ), 'wb'))
-  #  for key, value in avgScoreHeatMap.items():
-  #  writer.writerow([key, value])
+    
