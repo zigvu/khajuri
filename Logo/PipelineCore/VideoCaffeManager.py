@@ -78,12 +78,14 @@ class VideoCaffeManager( object ):
     jsonFiles = []
     jsonRWs = OrderedDict()
     maxPatchCounter = 0
-    for patchCounter, jsonFile in dbBatchMapping.iteritems():
-      if maxPatchCounter < int(patchCounter):
-        maxPatchCounter = int(patchCounter)
-      if jsonFile not in jsonFiles:
-        jsonFiles += [jsonFile]
-        jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
+
+    # BEGIN: temporary change
+    # for patchCounter, jsonFile in dbBatchMapping.iteritems():
+    #   if maxPatchCounter < int(patchCounter):
+    #     maxPatchCounter = int(patchCounter)
+    #   if jsonFile not in jsonFiles:
+    #     jsonFiles += [jsonFile]
+    #     jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
 
     # We do ONLY ONE forward pass - we expect to get only 1 batch of data
     # (which of course could be configured to do multiple frames)
@@ -98,15 +100,51 @@ class VideoCaffeManager( object ):
         printStr = "%s,%f" % (printStr, scores[self.classes[j]])
       # Note: if number of patches is not multiple of batch size, then caffe
       #  displays results for patches in the begining of leveldb
-      if patchCounter <= maxPatchCounter:
-        curPatchNumber = int(output['label'].item(k))
-        printStr = "%s%s" % (dbBatchMapping[str(curPatchNumber)], printStr)
-        # Add scores to json
-        jsonRWs[dbBatchMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
-        # logging.debug("%s" % printStr)
+      # if patchCounter <= maxPatchCounter:
+      curPatchNumber = int(output['label'].item(k))
+      printStr = "%s%s" % (dbBatchMapping[str(curPatchNumber)], printStr)
+        # # Add scores to json
+        # jsonRWs[dbBatchMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
+        # # logging.debug("%s" % printStr)
+      print "patchCounter: %s, curPatchNumber: %s" % (str(patchCounter), str(curPatchNumber))
       patchCounter += 1
 
-    # Save and put json files in post processing queue
-    for jsonFile, jsonRW in jsonRWs.iteritems():
-      jsonRW.saveState()
-      # TODO: put in processing queue
+    # # Save and put json files in post processing queue
+    # for jsonFile, jsonRW in jsonRWs.iteritems():
+    #   jsonRW.saveState()
+    #   # TODO: put in processing queue
+
+    # END: temporary change
+
+    # for patchCounter, jsonFile in dbBatchMapping.iteritems():
+    #   if maxPatchCounter < int(patchCounter):
+    #     maxPatchCounter = int(patchCounter)
+    #   if jsonFile not in jsonFiles:
+    #     jsonFiles += [jsonFile]
+    #     jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
+
+    # # We do ONLY ONE forward pass - we expect to get only 1 batch of data
+    # # (which of course could be configured to do multiple frames)
+    # patchCounter = 0
+    # output = self.caffe_net.forward()
+    # probablities = output['prob']
+    # for k in range(0, output['label'].size):
+    #   printStr = ""
+    #   scores = {}
+    #   for j in range(0, self.numOfClasses):
+    #     scores[self.classes[j]] = probablities[k][j].item(0)
+    #     printStr = "%s,%f" % (printStr, scores[self.classes[j]])
+    #   # Note: if number of patches is not multiple of batch size, then caffe
+    #   #  displays results for patches in the begining of leveldb
+    #   if patchCounter <= maxPatchCounter:
+    #     curPatchNumber = int(output['label'].item(k))
+    #     printStr = "%s%s" % (dbBatchMapping[str(curPatchNumber)], printStr)
+    #     # Add scores to json
+    #     jsonRWs[dbBatchMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
+    #     # logging.debug("%s" % printStr)
+    #   patchCounter += 1
+
+    # # Save and put json files in post processing queue
+    # for jsonFile, jsonRW in jsonRWs.iteritems():
+    #   jsonRW.saveState()
+    #   # TODO: put in processing queue

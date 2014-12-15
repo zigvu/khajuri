@@ -133,6 +133,7 @@ class VideoDbManager( object ):
             json.dump(dbBatchMapping, f, indent=2)
           self.producedQueue.put(dbBatchMappingFile)
           dbBatchId += 1
+          raise RuntimeError("Pause execution for test")
 
         # wait if caffe hasn't finished consuming
         if dbBatchId > self.maxProducedQueueSize:
