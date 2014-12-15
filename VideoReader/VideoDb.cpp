@@ -93,7 +93,12 @@ int VideoDb::savePatch( int frameNum, double scale, int x, int y, int width, int
 
     std::string value;
     datum.SerializeToString(&value);
-    std::string keystr = boost::to_string(label);
+
+    // note that datum label is an int32 - we are zero padding
+    // that label to save in db because fetch in db is lexicographic
+    char labelStr[1024];
+    sprintf(labelStr, "%010d", label);
+    std::string keystr = boost::to_string(labelStr);
 
     if (dbType == LEVELDB){
       leveldb_batch->Put(keystr, value);
