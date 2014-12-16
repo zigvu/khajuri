@@ -39,4 +39,7 @@ class VideoDb {
     MDB_dbi mdb_dbi;
     MDB_val mdb_key, mdb_data;
     MDB_txn *mdb_txn;
+
+    // for converting labels for lexicographic ordering
+    std::string createKeyString(int lbl);
 };

@@ -96,9 +96,8 @@ int VideoDb::savePatch( int frameNum, double scale, int x, int y, int width, int
 
     // note that datum label is an int32 - we are zero padding
     // that label to save in db because fetch in db is lexicographic
-    char labelStr[1024];
-    sprintf(labelStr, "%010d", label);
-    std::string keystr = boost::to_string(labelStr);
+    std::string keystr = createKeyString(label);
+
 
     if (dbType == LEVELDB){
       leveldb_batch->Put(keystr, value);
@@ -122,7 +121,8 @@ int VideoDb::savePatch( int frameNum, double scale, int x, int y, int width, int
 }
 
 void VideoDb::deletePatch( int lbl ) {
-  std::string keystr = boost::to_string(lbl);
+  std::string keystr = createKeyString(lbl);
+
   if (dbType == LEVELDB){
     leveldb_db->Delete(leveldb::WriteOptions(), keystr);
   } else if (dbType == LMDB) {
@@ -160,4 +160,11 @@ void VideoDb::saveDb() {
     CHECK_EQ(mdb_txn_commit(mdb_txn), MDB_SUCCESS) << "mdb_txn_commit failed";
     CHECK_EQ(mdb_txn_begin(mdb_env, NULL, 0, &mdb_txn), MDB_SUCCESS) << "mdb_txn_begin failed";
   }
+}
+
+std::string VideoDb::createKeyString(int lbl){
+  char labelStr[1024];
+  sprintf(labelStr, "%010d", lbl);
+  std::string keystr = boost::to_string(labelStr);
+  return keystr;
 }

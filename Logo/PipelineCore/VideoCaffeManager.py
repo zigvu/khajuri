@@ -71,7 +71,7 @@ class VideoCaffeManager( object ):
         # poison pill means done with evaluations
         break
       # producer is not finished producing, so consume
-      logging.info("Caffe working on batch %s on device %d" % (dbBatchMappingFile, self.deviceId))
+      logging.debug("Caffe working on batch %s on device %d" % (dbBatchMappingFile, self.deviceId))
       self.forward(dbBatchMappingFile)
       # once scores are saved, put it in deletion queue
       self.consumedQueue.put(dbBatchMappingFile)
@@ -80,8 +80,8 @@ class VideoCaffeManager( object ):
 
   def forward(self, dbBatchMappingFile):
     """Forward call in caffe"""
-    logging.info("producedQueue size: %d, deviceId: %d" % (self.producedQueue.qsize(), self.deviceId))
-    logging.info("consumedQueue size: %d, deviceId: %d" % (self.consumedQueue.qsize(), self.deviceId))
+    logging.debug("Queues: producedQueue: %d, deviceId: %d" % (self.producedQueue.qsize(), self.deviceId))
+    logging.debug("Queues: consumedQueue: %d, deviceId: %d" % (self.consumedQueue.qsize(), self.deviceId))
 
     # Read mapping and json output files
     dbBatchMapping = json.load(open(dbBatchMappingFile, "r"))

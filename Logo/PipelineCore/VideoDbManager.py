@@ -127,7 +127,7 @@ class VideoDbManager( object ):
       if (((dbPatchCounter + 1) % self.caffeBatchSize) == 0):
         # add to db
         if len(dbBatchMapping) > 0:
-          logging.info("Saving batch ID: %d for device id %d" % (dbBatchId, self.deviceId))
+          logging.debug("Saving batch ID: %d for device id %d" % (dbBatchId, self.deviceId))
           videoDb.saveDb()
           with open(dbBatchMappingFile, "w") as f :
             json.dump(dbBatchMapping, f, indent=2)
@@ -143,7 +143,7 @@ class VideoDbManager( object ):
         # reset datastructures
         dbBatchMapping = OrderedDict()
         dbBatchMappingFile = os.path.join(self.dbFolder, "db_mapping_%d.json" % dbBatchId)
-        # logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/self.totalNumOfFrames)))
+        logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/self.totalNumOfFrames)))
 
       # Start json annotation file
       jsonName = os.path.join(self.jsonFolder, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
