@@ -59,6 +59,8 @@ caffe_input:
   save_video_heatmap:                        false
   compute_frame_curation:                    false
   run_caffe_postprocess_in_parallel:         false
+  run_caffe:                                 true
+  run_postprocess:                           false
   all_classes:
     - '0'
     - '1'

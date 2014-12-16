@@ -7,20 +7,14 @@ import logging
 
 import VideoReader
 
-from Logo.PipelineMath.Rectangle import Rectangle
-from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
-from Logo.PipelineMath.PixelMap import PixelMap
-
 from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
+from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
+
 from Logo.PipelineCore.VideoDbManager import VideoDbManager
 from Logo.PipelineCore.VideoCaffeManager import VideoCaffeManager
+from Logo.PipelineCore.PostProcessManager import PostProcessManager
 
-from Logo.PipelineCore.CaffeNet import CaffeNet
-
-from Logo.PipelineThread.PostProcessThread import PostProcessThread
-from Logo.PipelineThread.VideoReaderThread import VideoReaderThread
-from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
 
 def runVideoDbManager(sharedDict, producedQueue, consumedQueue, \
   deviceId, frmStrt, frmStp, dbFolder, newPrototxtFile):
@@ -55,6 +49,22 @@ def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
   # finally start consuming
   videoCaffeManager.startForwards()
 
+def runFramePostProcess(sharedDict, postProcessQueue):
+  """Run post processing on raw score JSON files"""
+  configFileName = sharedDict['configFileName']
+  numpyFolder = sharedDict['numpyFolder']
+
+  imageWidth = sharedDict['imageWidth']
+  imageHeight = sharedDict['imageHeight']
+  allCellBoundariesDict = sharedDict['allCellBoundariesDict']
+
+  postProcessManager = PostProcessManager(configFileName)
+  postProcessManager.setupFolders(numpyFolder)
+  postProcessManager.setupCells(imageWidth, imageHeight, allCellBoundariesDict)
+  postProcessManager.setupQueues(postProcessQueue)
+  # finally start processing
+  postProcessManager.startPostProcess()
+
 
 class VideoProcessThread( object ):
   """Class responsible for starting and running caffe on video"""
@@ -64,7 +74,8 @@ class VideoProcessThread( object ):
     self.videoFileName = videoFileName
 
     self.configReader = ConfigReader(configFileName)
-    self.runPostProcessor = self.configReader.ci_runCaffePostProcessInParallel
+    self.runCaffe = self.configReader.ci_runCaffe
+    self.runPostProcessor = self.configReader.ci_runPostProcess
     self.frameStep = self.configReader.sw_frame_density
     self.frameStartNumber = self.configReader.ci_videoFrameNumberStart
 
@@ -86,11 +97,13 @@ class VideoProcessThread( object ):
     # TODO: Move to config:
     self.maxProducedQueueSize = 6
     self.maxConsumedQueueSize = 2
+    self.updateStatusSleepTime = 5
 
   def run( self ):
     """Run the video through caffe"""
     startTime = time.time()
-    logging.info("Setting up caffe run for video %s" % self.videoFileName)
+    if self.runCaffe:
+      logging.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
       logging.info("Setting up post-processing to run in parallel")
 
@@ -104,59 +117,133 @@ class VideoProcessThread( object ):
     sharedDict['numpyFolder'] = self.numpyFolder
     sharedDict['maxProducedQueueSize'] = self.maxProducedQueueSize
 
+    # ----------------------
+    # PROCESSING IN GPU
     producedQueues = OrderedDict()
     consumedQueues = OrderedDict()
     videoDbManagerProcesses = []
     videoCaffeManagerProcesses = []
+    if self.runCaffe:
+      deviceCount = 0
+      for deviceId in self.gpu_devices:
+        # producer/consumer queues
+        producedQueues[deviceId] = JoinableQueue(self.maxProducedQueueSize)
+        consumedQueues[deviceId] = JoinableQueue(self.maxConsumedQueueSize)
+        
+        # start and step for frames differ by GPU
+        frmStrt = self.frameStartNumber + (deviceCount * self.frameStep)
+        frmStp = self.frameStep * len(self.gpu_devices)
+        # folders and prototxt by GPU
+        dbFolder = os.path.join(self.baseDbFolder, "id_%d" % deviceId)
+        newPrototxtFile = os.path.join(self.baseDbFolder, 'prototxt_%s.prototxt' % os.path.basename(dbFolder))
+        # patch producer - save to DB
+        videoDbManagerProcess = Process(\
+          target=runVideoDbManager,\
+          args=(sharedDict, producedQueues[deviceId], consumedQueues[deviceId], \
+            deviceId, frmStrt, frmStp, dbFolder, newPrototxtFile))
+        videoDbManagerProcesses += [videoDbManagerProcess]
+        videoDbManagerProcess.start()
+        
+        # patch consumer - run caffe
+        videoCaffeManagerProcess = Process(\
+          target=runVideoCaffeManager,\
+          args=(sharedDict, producedQueues[deviceId], consumedQueues[deviceId], \
+            deviceId, newPrototxtFile))
+        videoCaffeManagerProcesses += [videoCaffeManagerProcess]
+        videoCaffeManagerProcess.start()
+        deviceCount += 1
 
-    # process in each GPU
-    deviceCount = 0
-    for deviceId in self.gpu_devices:
-      # producer/consumer queues
-      producedQueues[deviceId] = JoinableQueue(self.maxProducedQueueSize)
-      consumedQueues[deviceId] = JoinableQueue(self.maxConsumedQueueSize)
+    # ----------------------
+    # POST-PROCESSING IN CPU
+    postProcessQueue = None
+    framePostProcesses = []
+    num_consumers = 0
+    if self.runPostProcessor:
+      postProcessQueue = JoinableQueue()
+      jsonFiles = []
+  
+      # if caffe was not run, we are reading from folder instead    
+      if self.runCaffe:
+        # image width/height needed for cell boundaries
+        videoFrameReader = VideoFrameReader(self.videoFileName)
+        imageWidth = videoFrameReader.getImageDim().width
+        imageHeight = videoFrameReader.getImageDim().height
+      else:
+        jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
+        jsonReaderWriter = JSONReaderWriter(jsonFiles[0])
+        imageWidth = jsonReaderWriter.getFrameWidth()
+        imageWidth = jsonReaderWriter.getFrameHeight()
+        # Put JSON in queue so that workers can consume
+        for jsonFileName in jsonFiles:
+          logging.debug("Putting JSON file in queue: %s" % os.path.basename(jsonFileName))
+          postProcessQueue.put(jsonFileName)
+
+      # cell boundary computation can be expensive so share
+      # assume that the data structure is simple pickalable dict
+      allCellBoundariesDict = PostProcessManager.getAllCellBoundariesDict(\
+        self.configReader, imageWidth, imageHeight)
+      sharedDict['allCellBoundariesDict'] = allCellBoundariesDict
+      sharedDict['imageWidth'] = self.imageWidth
+      sharedDict['imageHeight'] = self.imageHeight
+
+      # start threads
+      num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
+      #num_consumers = 1
+      for i in xrange(num_consumers):
+        framePostProcess = Process(\
+          target=runFramePostProcess,\
+          args=(sharedDict, postProcessQueue))
+        framePostProcesses += [framePostProcess]
+        framePostProcess.start()
+
+      if self.runCaffe:
+        # closing videoFrameReader might take a while - so last statment prior to joining
+        videoFrameReader.close()
+      else:
+        # print progress
+        while postProcessQueue.qsize() > 1:
+          logging.info("Post processing %d percent done" % (int(100 - \
+            100.0 * postProcessQueue.qsize()/len(jsonFiles))))
+          time.sleep(self.updateStatusSleepTime)
+
+    # ----------------------
+    # PROCESS MANAGEMENT
+
+    # join caffe threads
+    if self.runCaffe:
+      logging.debug("Waiting for videoDbManagerProcess process to complete.")
+      for videoDbManagerProcess in videoDbManagerProcesses:
+        videoDbManagerProcess.join()
+      logging.debug("videoDbManagerProcess process joined")
+
+      logging.debug("Waiting for videoCaffeManagerProcess process to complete.")
+      for videoCaffeManagerProcess in videoCaffeManagerProcesses:
+        videoCaffeManagerProcess.join()
+      logging.debug("videoCaffeManagerProcess process joined")
+
+      logging.debug("Waiting for queues to get joined")
+      for deviceId in self.gpu_devices:
+        producedQueues[deviceId].join()
+        consumedQueues[deviceId].join()
+      logging.debug("Processing queues joined")
+      logging.info("Finished scoring video")
+
+    # join post-processing threads
+    if self.runPostProcessor:
+      logging.info("Waiting for post-processes to complete")
+      for i in xrange(num_consumers):
+        postProcessQueue.put(None)
+      postProcessQueue.join()
+      logging.debug("Post processing queues joined")
+      for framePostProcess in framePostProcesses:
+        framePostProcess.join()
+      logging.debug("Post processing process joined")
+
+      # Verification
+      logging.debug("Verifying all localizations got created")
+      PostProcessManager.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
       
-      # start and step for frames differ by GPU
-      frmStrt = self.frameStartNumber + (deviceCount * self.frameStep)
-      frmStp = self.frameStep * len(self.gpu_devices)
-      # folders and prototxt by GPU
-      dbFolder = os.path.join(self.baseDbFolder, "id_%d" % deviceId)
-      newPrototxtFile = os.path.join(self.baseDbFolder, 'prototxt_%s.prototxt' % os.path.basename(dbFolder))
-      # patch producer - save to DB
-      videoDbManagerProcess = Process(\
-        target=runVideoDbManager,\
-        args=(sharedDict, producedQueues[deviceId], consumedQueues[deviceId], \
-          deviceId, frmStrt, frmStp, dbFolder, newPrototxtFile))
-      videoDbManagerProcesses += [videoDbManagerProcess]
-      videoDbManagerProcess.start()
-      
-      # patch consumer - run caffe
-      videoCaffeManagerProcess = Process(\
-        target=runVideoCaffeManager,\
-        args=(sharedDict, producedQueues[deviceId], consumedQueues[deviceId], \
-          deviceId, newPrototxtFile))
-      videoCaffeManagerProcesses += [videoCaffeManagerProcess]
-      videoCaffeManagerProcess.start()
-      deviceCount += 1
-
-
-    logging.debug("Waiting for videoDbManagerProcess process to complete.")
-    for videoDbManagerProcess in videoDbManagerProcesses:
-      videoDbManagerProcess.join()
-    logging.debug("videoDbManagerProcess process joined")
-
-    logging.debug("Waiting for videoCaffeManagerProcess process to complete.")
-    for videoCaffeManagerProcess in videoCaffeManagerProcesses:
-      videoCaffeManagerProcess.join()
-    logging.debug("videoCaffeManagerProcess process joined")
-
-    logging.debug("Waiting for queues to get joined")
-    for deviceId in self.gpu_devices:
-      logging.debug("producedQueues size %d" % producedQueues[deviceId].qsize())
-      producedQueues[deviceId].join()
-      logging.debug("consumedQueues size %d" % consumedQueues[deviceId].qsize())
-      consumedQueues[deviceId].join()
-    logging.debug("All queues joined")
+      logging.info("All post-processing tasks complete")
 
     endTime = time.time()
     logging.info( 'It took VideoProcessThread %s seconds to complete' % ( endTime - startTime ) )

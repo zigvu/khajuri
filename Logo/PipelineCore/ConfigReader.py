@@ -63,6 +63,8 @@ class ConfigReader:
     self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
     self.ci_computeFrameCuration = caffeInput['compute_frame_curation'] == True
     self.ci_runCaffePostProcessInParallel = caffeInput['run_caffe_postprocess_in_parallel'] == True
+    self.ci_runCaffe = caffeInput['run_caffe'] == True
+    self.ci_runPostProcess = caffeInput['run_postprocess'] == True
     self.ci_allClassIds = caffeInput['all_classes']
     self.ci_backgroundClassIds = caffeInput['background_classes']
     self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds if x not in self.ci_backgroundClassIds]
