@@ -202,7 +202,7 @@ class PixelMap(object):
     # -------------------------------------------------------------
     # Part (b) : Divide cells which are dissected by sliding window boundaries
     # relabel first - start with new primes
-    print 'Unique before relabel: %s' % len(np.unique(smallestPixelCount))
+    #print 'Unique before relabel: %s' % len(np.unique(smallestPixelCount))
     counter = 0 
     primesForCells = PixelMap.generatePrimes()
     uniqueValues = np.unique(smallestPixelCount)
@@ -214,7 +214,7 @@ class PixelMap(object):
       relabelPixelCount[rBegin:rEnd, cBegin:cEnd] = counter
       counter += 10
 
-    print 'Unique after relabel: %s' % len(np.unique(relabelPixelCount))
+    #print 'Unique after relabel: %s' % len(np.unique(relabelPixelCount))
     # for each axis, dissect cells in boundaries
     rAxisLines = np.unique(rAxisLines)
     for rLine in rAxisLines:
@@ -311,7 +311,7 @@ class PixelMap(object):
         "xStride"  : staticBoundingBoxes.xstepSize [ scaleFactor ],
         "yStride"  : staticBoundingBoxes.ystepSize [ scaleFactor ]}
       # print progress
-      print "Scale %0.2f, unique: %d" % (scaleFactor, len(uniqueValues))
+      #print "Scale %0.2f, unique: %d" % (scaleFactor, len(uniqueValues))
       logging.info("Finished working on scale %.2f. Unique values: %d" % (scaleFactor, len(uniqueValues)))
 
     # error check: we shouldn't have different max_cell_counter

@@ -1,4 +1,4 @@
-import os, time, sys
+import os, time, sys, glob
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 from collections import OrderedDict
@@ -33,7 +33,7 @@ def runVideoDbManager(sharedDict, producedQueue, consumedQueue, \
   videoDbManager.startVideoDb(frmStrt, frmStp)
 
 def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
-  deviceId, newPrototxtFile):
+  postProcessQueue, deviceId, newPrototxtFile):
   """Run single videoCaffeManager process"""
   configFileName = sharedDict['configFileName']
   maxProducedQueueSize = sharedDict['maxProducedQueueSize']
@@ -45,7 +45,7 @@ def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
   logging.info("VideoCaffeManager process for deviceId %d started" % deviceId)
   videoCaffeManager = VideoCaffeManager(configFileName)
   videoCaffeManager.setupNet(newPrototxtFile, deviceId)
-  videoCaffeManager.setupQueues(producedQueue, consumedQueue)
+  videoCaffeManager.setupQueues(producedQueue, consumedQueue, postProcessQueue)
   # finally start consuming
   videoCaffeManager.startForwards()
 
@@ -161,7 +161,9 @@ class VideoProcessThread( object ):
     if self.runPostProcessor:
       postProcessQueue = JoinableQueue()
       jsonFiles = []
-  
+      imageWidth = None
+      imageHeight = None
+
       # if caffe was not run, we are reading from folder instead    
       if self.runCaffe:
         # image width/height needed for cell boundaries
@@ -172,7 +174,7 @@ class VideoProcessThread( object ):
         jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
         jsonReaderWriter = JSONReaderWriter(jsonFiles[0])
         imageWidth = jsonReaderWriter.getFrameWidth()
-        imageWidth = jsonReaderWriter.getFrameHeight()
+        imageHeight = jsonReaderWriter.getFrameHeight()
         # Put JSON in queue so that workers can consume
         for jsonFileName in jsonFiles:
           logging.debug("Putting JSON file in queue: %s" % os.path.basename(jsonFileName))
@@ -183,8 +185,8 @@ class VideoProcessThread( object ):
       allCellBoundariesDict = PostProcessManager.getAllCellBoundariesDict(\
         self.configReader, imageWidth, imageHeight)
       sharedDict['allCellBoundariesDict'] = allCellBoundariesDict
-      sharedDict['imageWidth'] = self.imageWidth
-      sharedDict['imageHeight'] = self.imageHeight
+      sharedDict['imageWidth'] = imageWidth
+      sharedDict['imageHeight'] = imageHeight
 
       # start threads
       num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)

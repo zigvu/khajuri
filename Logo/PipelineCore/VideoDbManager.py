@@ -168,7 +168,7 @@ class VideoDbManager( object ):
 
     # For the last leveldb group, save and put in queue
     if len(dbBatchMapping) > 0:
-      logging.info("Saving batch ID: %d for device id %d" % (dbBatchId, self.deviceId))
+      logging.debug("Saving batch ID: %d for device id %d" % (dbBatchId, self.deviceId))
       videoDb.saveDb()
       with open(dbBatchMappingFile, "w") as f :
         json.dump(dbBatchMapping, f, indent=2)
@@ -201,7 +201,7 @@ class VideoDbManager( object ):
 
   def delFromVideoDb(self, videoDb, dbBatchMappingFileToDelete):
     """Delete all keys from VideoDb found in dbBatchMappingFileToDelete"""
-    logging.info("Deleting keys in file %s in deviceId %d" % (dbBatchMappingFileToDelete, self.deviceId))
+    logging.debug("Deleting keys in file %s in deviceId %d" % (dbBatchMappingFileToDelete, self.deviceId))
     dbBatchMapping = json.load(open(dbBatchMappingFileToDelete, "r"))
     # delete patches
     for patchCounter, jsonFile in dbBatchMapping.iteritems():

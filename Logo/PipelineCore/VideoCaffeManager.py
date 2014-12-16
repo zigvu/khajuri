@@ -31,7 +31,7 @@ class VideoCaffeManager( object ):
     if self.caffeBatchSize == None:
       raise RuntimeError("Couldn't read batch size from file %s" % newPrototxtFile)
 
-    logging.debug("Setup caffe network for device id %d" % self.deviceId)
+    logging.info("Setup caffe network for device id %d" % self.deviceId)
     useGPU = self.configReader.ci_useGPU
     modelFile = self.configReader.ci_modelFile
 
@@ -53,12 +53,13 @@ class VideoCaffeManager( object ):
       self.caffe_net.set_device( self.deviceId )
     else:
       self.caffe_net.set_mode_cpu()
-    logging.info("Done initializing caffe_net")
+    logging.debug("Done initializing caffe_net")
 
-  def setupQueues(self, producedQueue, consumedQueue):
+  def setupQueues(self, producedQueue, consumedQueue, postProcessQueue):
     """Setup queues"""
     self.producedQueue = producedQueue
     self.consumedQueue = consumedQueue
+    self.postProcessQueue = postProcessQueue
 
   def startForwards(self):
     """Timing caffe forward calls"""
@@ -80,9 +81,6 @@ class VideoCaffeManager( object ):
 
   def forward(self, dbBatchMappingFile):
     """Forward call in caffe"""
-    logging.debug("Queues: producedQueue: %d, deviceId: %d" % (self.producedQueue.qsize(), self.deviceId))
-    logging.debug("Queues: consumedQueue: %d, deviceId: %d" % (self.consumedQueue.qsize(), self.deviceId))
-
     # Read mapping and json output files
     dbBatchMapping = json.load(open(dbBatchMappingFile, "r"))
     jsonFiles = []
@@ -125,4 +123,5 @@ class VideoCaffeManager( object ):
     # Save and put json files in post processing queue
     for jsonFile, jsonRW in jsonRWs.iteritems():
       jsonRW.saveState()
+      self.postProcessQueue.put(jsonFile)
       # TODO: put in processing queue
