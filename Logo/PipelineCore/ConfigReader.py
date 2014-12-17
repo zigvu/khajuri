@@ -15,6 +15,8 @@ class ConfigReader:
       self.log_level = logging.INFO
     if config['log_level'] == 'ERROR':
       self.log_level = logging.ERROR
+    # for recurring logs, set interval to print
+    self.logIntervalSeconds = 5
 
     # CPU count
     self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])
@@ -57,6 +59,9 @@ class ConfigReader:
     self.ci_numFramesPerLeveldb = caffeInput['num_frames_per_leveldb']
     self.ci_numConcurrentLeveldbs = caffeInput['num_concurrent_leveldbs']
     self.ci_maxLeveldbSizeMB = caffeInput['max_leveldb_size_mb']
+    self.ci_lmdbBufferMaxSize = caffeInput['lmdb_buffer_max_size']
+    self.ci_lmdbBufferMinSize = caffeInput['lmdb_buffer_min_size']
+    self.ci_lmdbNumFramesPerBuffer = caffeInput['lmdb_num_frames_per_buffer']
     self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
     self.ci_useGPU = caffeInput['use_gpu'] == True
     self.ci_gpu_devices = caffeInput['gpu_devices']

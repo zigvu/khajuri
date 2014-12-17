@@ -13,6 +13,7 @@ class VideoCaffeManager( object ):
     self.configReader = ConfigReader(configFileName)
     self.classes = self.configReader.ci_allClassIds
     self.numOfClasses = len(self.classes)
+    self.runPostProcessor = self.configReader.ci_runPostProcess
 
 
   def setupNet(self, newPrototxtFile, deviceId):
@@ -111,7 +112,7 @@ class VideoCaffeManager( object ):
         scores[self.classes[j]] = probablities[k][j].item(0)
         printStr = "%s,%f" % (printStr, scores[self.classes[j]])
       # Note: if number of patches is not multiple of batch size, then caffe
-      #  displays results for patches in the begining of leveldb
+      #  displays results for patches in the begining of db
       if patchCounter <= maxPatchCounter:
         curPatchNumber = int(output['label'].item(k))
         printStr = "%s%s" % (dbBatchMapping[str(curPatchNumber)], printStr)
@@ -123,5 +124,5 @@ class VideoCaffeManager( object ):
     # Save and put json files in post processing queue
     for jsonFile, jsonRW in jsonRWs.iteritems():
       jsonRW.saveState()
-      self.postProcessQueue.put(jsonFile)
-      # TODO: put in processing queue
+      if self.runPostProcessor:
+        self.postProcessQueue.put(jsonFile)

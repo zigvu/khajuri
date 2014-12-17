@@ -51,6 +51,11 @@ caffe_input:
   # leveldb might be maintained in TEMPFS - if exceed this size, pause leveldb creation
   # if want to ignore the size limit, set to zero
   max_leveldb_size_mb:                       10000
+  # lmdb circular buffers - look at issue65 for setting these
+  lmdb_buffer_max_size:                      6
+  lmdb_buffer_min_size:                      4
+  lmdb_num_frames_per_buffer:                1
+  # frame number to start video processing on
   video_frame_number_start:                  1
   use_gpu:                                   true
   gpu_devices:                               

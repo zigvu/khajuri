@@ -17,8 +17,7 @@ class VideoDbManager( object ):
   def __init__(self, configFileName):
     self.configReader = ConfigReader(configFileName)
     self.scales = self.configReader.sw_scales
-    # TODO: get from config
-    self.maxProducedQueueSize = 6
+    self.maxProducedQueueSize = self.configReader.ci_lmdbBufferMaxSize
     
   def setupFolders(self, dbFolder, jsonFolder):
     """Setup folders"""
@@ -83,6 +82,9 @@ class VideoDbManager( object ):
     # calculate batch size from bounding boxes
     for scale in self.scales:
       self.caffeBatchSize += len(self.staticBoundingBoxes.getBoundingBoxes(scale))
+
+    # if we want multiple frames per batch, change
+    self.caffeBatchSize = self.caffeBatchSize * self.configReader.ci_lmdbNumFramesPerBuffer
 
     # ensure backend is lmdb
     isDbLMDB = False
@@ -153,7 +155,7 @@ class VideoDbManager( object ):
       for scale in self.scales:
         patchNum = 0
         for box in self.staticBoundingBoxes.getBoundingBoxes(scale):
-          # Generate leveldb patch and add to json
+          # Generate db patch and add to json
           dbPatchCounter = videoDb.savePatch(currentFrameNum, scale, \
             box[0], box[1], box[2], box [3])
           jsonAnnotation.addPatch(scale, patchNum, dbPatchCounter, \
@@ -166,7 +168,7 @@ class VideoDbManager( object ):
       currentFrameNum += frameStep
     # end while
 
-    # For the last leveldb group, save and put in queue
+    # For the last db group, save and put in queue
     if len(dbBatchMapping) > 0:
       logging.debug("Saving batch ID: %d for device id %d" % (dbBatchId, self.deviceId))
       videoDb.saveDb()

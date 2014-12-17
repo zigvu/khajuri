@@ -94,10 +94,12 @@ class VideoProcessThread( object ):
     # More than 1 GPU Available?
     self.gpu_devices = self.configReader.ci_gpu_devices
 
-    # TODO: Move to config:
-    self.maxProducedQueueSize = 6
-    self.maxConsumedQueueSize = 2
-    self.updateStatusSleepTime = 5
+    self.maxProducedQueueSize = self.configReader.ci_lmdbBufferMaxSize
+    self.maxConsumedQueueSize = \
+        self.configReader.ci_lmdbBufferMaxSize - self.configReader.ci_lmdbBufferMinSize
+    if maxConsumedQueueSize <= 0:
+      raise RuntimeError("LMDB buffer min size must be smaller than lmdb buffer max size")
+    self.logIntervalSeconds = self.configReader.logIntervalSeconds
 
   def run( self ):
     """Run the video through caffe"""
@@ -123,6 +125,8 @@ class VideoProcessThread( object ):
     consumedQueues = OrderedDict()
     videoDbManagerProcesses = []
     videoCaffeManagerProcesses = []
+    postProcessQueue = JoinableQueue()
+
     if self.runCaffe:
       deviceCount = 0
       for deviceId in self.gpu_devices:
@@ -148,18 +152,16 @@ class VideoProcessThread( object ):
         videoCaffeManagerProcess = Process(\
           target=runVideoCaffeManager,\
           args=(sharedDict, producedQueues[deviceId], consumedQueues[deviceId], \
-            deviceId, newPrototxtFile))
+            postProcessQueue, deviceId, newPrototxtFile))
         videoCaffeManagerProcesses += [videoCaffeManagerProcess]
         videoCaffeManagerProcess.start()
         deviceCount += 1
 
     # ----------------------
     # POST-PROCESSING IN CPU
-    postProcessQueue = None
     framePostProcesses = []
     num_consumers = 0
     if self.runPostProcessor:
-      postProcessQueue = JoinableQueue()
       jsonFiles = []
       imageWidth = None
       imageHeight = None
@@ -206,7 +208,7 @@ class VideoProcessThread( object ):
         while postProcessQueue.qsize() > 1:
           logging.info("Post processing %d percent done" % (int(100 - \
             100.0 * postProcessQueue.qsize()/len(jsonFiles))))
-          time.sleep(self.updateStatusSleepTime)
+          time.sleep(self.logIntervalSeconds)
 
     # ----------------------
     # PROCESS MANAGEMENT
@@ -246,6 +248,9 @@ class VideoProcessThread( object ):
       PostProcessManager.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
       
       logging.info("All post-processing tasks complete")
+
+    # clean up db folder
+    ConfigReader.rm_rf(self.baseDbFolder)
 
     endTime = time.time()
     logging.info( 'It took VideoProcessThread %s seconds to complete' % ( endTime - startTime ) )
