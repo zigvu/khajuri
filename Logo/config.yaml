@@ -22,16 +22,16 @@ sliding_window:
   output_width:                               256
   output_height:                              256
   x_stride:
-    - 128
-    - 128
-    - 128
+    - 32
+    - 64
+    - 64
     - 128
     - 128
   y_stride:
-    - 128
-    - 128
-    - 128
-    - 128
+    - 16
+    - 32
+    - 64
+    - 64
     - 128
   scaling:
     - 0.4
