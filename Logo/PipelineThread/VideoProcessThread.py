@@ -97,7 +97,7 @@ class VideoProcessThread( object ):
     self.maxProducedQueueSize = self.configReader.ci_lmdbBufferMaxSize
     self.maxConsumedQueueSize = \
         self.configReader.ci_lmdbBufferMaxSize - self.configReader.ci_lmdbBufferMinSize
-    if maxConsumedQueueSize <= 0:
+    if self.maxConsumedQueueSize <= 0:
       raise RuntimeError("LMDB buffer min size must be smaller than lmdb buffer max size")
     self.logIntervalSeconds = self.configReader.logIntervalSeconds
 
