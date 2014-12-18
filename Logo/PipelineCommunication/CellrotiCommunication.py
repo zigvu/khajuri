@@ -2,7 +2,7 @@ import sys, os, glob
 import json, csv
 from collections import OrderedDict
 import logging
-import pycurl, cStringIO, boto
+import pycurl, cStringIO, boto, pysftp
 
 class CellrotiCommunication( object ):
   """Class to connect to cellroti and get/put values"""
@@ -10,6 +10,7 @@ class CellrotiCommunication( object ):
     """Initialize values"""
     self.user_email = "X-User-Email:%s" % os.environ['CELLROTI_ZIGVU_ADMIN_EMAIL']
     self.user_auth = "X-User-Token:%s" % os.environ['CELLROTI_ZIGVU_ADMIN_AUTHORIZATION']
+    self.private_key_location = os.environ['SSH_PRIVATE_KEY_LOCATION']
 
   def get_url(self, httpurl):
     """Performs an authenticated GET - returns parsed JSON"""
@@ -62,42 +63,28 @@ class CellrotiCommunication( object ):
     saveState = {'video_id': videoId, 'success': successStatus}
     return saveState
 
-  def verify_sent_data_to_cellroti(self, folder, storageSelection, storageLocation):
-    """Send data to cellroti server"""
-    successStatus = False
-    videoId = self.get_video_id(folder)
-
-    # storage location strings should match in config.yaml
-    if storageSelection == 'SOFTLAYER':
-      storageLocation = "%s/%d" % (storageLocation, videoId)
-      successStatus = self.verify_saved_folder_to_softlayer(folder, storageLocation)
-    elif storageSelection == 'S3':
-      # modify bucket with right path
-      successStatus = self.verify_saved_folder_to_s3(folder, storageLocation)
-    else:
-      raise RuntimeError("Cellroti storage selection not recognized")
-    return successStatus
-
   def save_folder_to_softlayer(self, folder, softlayerLocation):
     """Save specified folder to softlayer location"""
-    # TODO: write to remote here
     successStatus = True
-    return successStatus
 
-  def verify_saved_folder_to_softlayer(self, folder, softlayerLocation):
-    """Verify saved folder to softlayer location"""
-    # TODO: check remote here
-    successStatus = True
+    username, ipaddress, uploadFolder = self.parse_softlayer_storage_location(softlayerLocation)
+    sftp = pysftp.Connection(ipaddress, username=username, private_key=self.private_key_location)
+    try:
+      sftp.mkdir(uploadFolder)
+    finally:
+      successStatus = False
+      logging.error("Couldn't make folder %s in remote" % uploadFolder)
+    try:
+      sftp.put_r(folder, uploadFolder, confirm=True)
+    finally:
+      successStatus = False
+      logging.error("Couldn't upload data to remote")
+
     return successStatus
 
   def save_folder_to_s3(self, folder, s3Location):
     """Save specified folder to S3 bucket"""
     pass
-
-  def verify_saved_folder_to_s3(self, folder, s3Location):
-    """Verify write to S3 folder for each file"""
-    pass
-
 
   def get_video_id(self, folder):
     """Reads localization file and gets video id"""
@@ -108,3 +95,10 @@ class CellrotiCommunication( object ):
     videoId = jsonToSave['video_id']
     # END: these match with what is in PostProcessDataExtractor.py file
     return videoId
+
+  def parse_softlayer_storage_location(self, softlayerLocation):
+    """Return username, IP and foldername for softlayer"""
+    username = softlayerLocation.split("@")[0]
+    ipaddress = softlayerLocation.split("@")[1].split("/")[0]
+    uploadFolder = softlayerLocation.split(ipaddress)[1]
+    return username, ipaddress, uploadFolder

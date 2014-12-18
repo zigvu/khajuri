@@ -89,9 +89,10 @@ curation:
 
 # Cellroti
 cellroti:
-  # url to connect to cellroti - auth in env. vars.
+  # url to connect to cellroti; auth in env. vars.
   urls:
-    get_detectables: 'localhost:3000/api/v1/data/detectables'
-    post_results: 'localhost:3000/api/v1/data/videos'
+    get_detectables: '158.85.211.84:3000/api/v1/data/detectables'
+    post_results: '158.85.211.84:3000/api/v1/data/videos'
   storage_selection: 'SOFTLAYER' # alternative is s3
-  storage_location: 'somemachine.ip.com:port/write/to/Folder' # alternative is s3 bucket 'cellroti-data-production'
+  # for softlayer, the location is username@IP/folder; auth in env. vars.
+  storage_location: 'sftpuser@158.85.211.84/uploads' # alternative is s3 bucket 'cellroti-data-production'

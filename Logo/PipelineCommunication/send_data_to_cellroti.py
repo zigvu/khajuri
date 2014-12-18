@@ -40,11 +40,6 @@ if __name__ == '__main__':
 	if not saveState:
 		raise RuntimeError("Couldn't save to specified location %s" % storageLocation)
 
-	checkState = cellrotiCommunication.verify_sent_data_to_cellroti(extractedDataFolder, storageSelection, storageLocation)
-	if not checkState:
-		raise RuntimeError("Couldn't verify saved data to specified location %s" % storageLocation)
-
-
 	replyState = cellrotiCommunication.post_url(httpurl, saveState)
 	if not ('success' in replyState.keys()):
 		raise RuntimeError("Couldn't communicate with cellroti")
