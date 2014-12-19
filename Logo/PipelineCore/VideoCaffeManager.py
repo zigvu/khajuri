@@ -14,6 +14,7 @@ class VideoCaffeManager( object ):
     self.classes = self.configReader.ci_allClassIds
     self.numOfClasses = len(self.classes)
     self.runPostProcessor = self.configReader.ci_runPostProcess
+    self.gzipJSON = self.configReader.pp_gzipJSON
 
 
   def setupNet(self, newPrototxtFile, deviceId):
@@ -123,6 +124,6 @@ class VideoCaffeManager( object ):
 
     # Save and put json files in post processing queue
     for jsonFile, jsonRW in jsonRWs.iteritems():
-      jsonRW.saveState()
+      jsonRW.saveState(gzip_json = self.gzipJSON)
       if self.runPostProcessor:
         self.postProcessQueue.put(jsonFile)

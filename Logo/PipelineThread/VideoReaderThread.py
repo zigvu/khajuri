@@ -30,6 +30,8 @@ class VideoReaderThread( Thread ):
     self.configReader = configReader
     self.scales = self.configReader.sw_scales
     self.frameStep = self.configReader.sw_frame_density
+    self.gzipJSON = self.configReader.pp_gzipJSON
+
     self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, self.videoFileName)
     self.videoFrameReader.generateFrames()
     self.videoFrameReader.startLogger()
@@ -142,7 +144,7 @@ def startVideoReaderProcess( self, frameStart, frameStep ):
         # Increment counters
         patchNum += 1
     # Save annotation file
-    jsonAnnotation.saveState()
+    jsonAnnotation.saveState(gzip_json = self.gzipJSON)
     currentFrameNum += frameStep
     extractedFrameCounter += 1
   # end while
