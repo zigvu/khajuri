@@ -6,11 +6,19 @@ class JSONReaderWriter( object ):
     self.fileName = fileName
     self.noPatchScores = False
     if not create_new:
+      # try zipped file first
       fileBasename, fileExt = os.path.splitext(self.fileName)
       if fileExt == ".gz":
         self.myDict = json.load( gzip.open( fileName, "rb" ) )
       else:
-        self.myDict = json.load( open( fileName, "r" ) )
+        try:
+          self.myDict = json.load( open( fileName, "r" ) )
+        except:
+          # if in case we can't find the right file, check for gz as well
+          try:
+            self.myDict = json.load( gzip.open( ("%s.gz" % fileName), "rb" ) )
+          except:
+            RuntimeError("File type not recognized %s" % self.fileName)
       # if patch scores are not present, this will be empty:
       if len(self.myDict[ 'scales' ]) == 0:
         self.noPatchScores = True
