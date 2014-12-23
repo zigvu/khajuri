@@ -127,8 +127,11 @@ if __name__ == '__main__':
     clsA = imgByClass[ k[ 0 ] ]
     clsB = k[ 1 ]
     countHeatMap[ ( clsA, clsB ) ] += 1
-    avgScoreHeatMap[ ( clsA, clsB ) ] += v
-    avgScoreHeatMap[ ( clsA, clsB ) ] /= 2
+    if avgScoreHeatMap[ ( clsA, clsB ) ] == 0:
+      avg = v
+    else:
+      avg = ( avgScoreHeatMap[ ( clsA, clsB ) ] + v ) / 2.0 
+    avgScoreHeatMap[ ( clsA, clsB ) ] = avg
     if v >= scoreThreshold and clsA != clsB :
       patchListToExamine[ ( clsA, clsB ) ].append( { 'patch': k[0], 'score' : v } )
       if patchImageFolder:
