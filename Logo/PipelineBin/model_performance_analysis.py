@@ -56,6 +56,8 @@ if __name__ == '__main__':
   countThreshold = float( sys.argv[ 3 ] )
   classMappingFile = sys.argv[ 4 ]
   outputFolder = sys.argv[ 5 ]
+  if not os.path.exists( outputFolder ):
+    os.makedirs( outputFolder )
 
   patchImageFolder = None
   if len( sys.argv ) == 7:
@@ -129,10 +131,10 @@ if __name__ == '__main__':
     avgScoreHeatMap[ ( clsA, clsB ) ] /= 2
     if v >= scoreThreshold and clsA != clsB :
       patchListToExamine[ ( clsA, clsB ) ].append( { 'patch': k[0], 'score' : v } )
-      outputDir = os.path.join( outputFolder, "%s_%s"% ( clsA, clsB ) )
-      if not os.path.exists( outputDir ):
-        os.makedirs( outputDir )
       if patchImageFolder:
+        outputDir = os.path.join( outputFolder, "%s_%s"% ( clsA, clsB ) )
+        if not os.path.exists( outputDir ):
+          os.makedirs( outputDir )
         inputPatchPath = os.path.join( patchImageFolder, clsA, k[ 0 ] )
         if not os.path.exists( inputPatchPath ):
           logging.info( 'Missing Patch %s' % inputPatchPath )
