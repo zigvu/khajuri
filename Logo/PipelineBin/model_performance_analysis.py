@@ -164,7 +164,7 @@ if __name__ == '__main__':
       confusionAvgCountList.append( ConfusionPair( k, v ) )
   with open( confusionCountFile, 'w' ) as f:
      for p in sorted( confusionAvgCountList ):
-      f.write( '%s --> %s\n' % ( p.key, p.value ) )
+       f.write( '%s, %s : %s\n' % ( p.key[0], p.key[1], p.value ) )
  
   confusionAvgScoreFile = os.path.join( outputFolder, "confusionAvgScore.txt" )
   logging.info( 'ConfusionAvg Scores greater than %s produce in %s' % ( scoreThreshold, confusionAvgScoreFile ) )
@@ -176,6 +176,6 @@ if __name__ == '__main__':
       confusionAvgScoreList.append( ConfusionPair( k, v ) )
   with open( confusionAvgScoreFile, 'w' ) as f:
     for p in sorted( confusionAvgScoreList ):
-      f.write( '%s --> %s\n' % ( p.key, p.value ) )
+       f.write( '%s, %s : %s\n' % ( p.key[0], p.key[1], p.value ) )
 
     
