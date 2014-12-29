@@ -19,6 +19,7 @@ from Logo.PipelineThread.PostProcessThread import PostProcessThread
 from Logo.PipelineThread.VideoReaderThread import VideoReaderThread
 from Logo.PipelineThread.PostProcessThread import framePostProcessorRun
 from Logo.PipelineMath.PixelMap import PixelMap
+from Logo.PipelineCore.Version import LogoVersion
 
 def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
   """Process for running caffe on a leveldb folder"""
@@ -71,10 +72,12 @@ class CaffeThread( object ):
 
     # More than 1 GPU Available?
     self.gpu_devices = self.configReader.ci_gpu_devices
+    self.version = LogoVersion()
 
   def run( self ):
     """Run the video through caffe"""
     startTime = time.time()
+    self.version.logVersion()
     logging.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
       logging.info("Setting up post-processing to run in parallel")
