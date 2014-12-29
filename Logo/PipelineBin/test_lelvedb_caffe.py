@@ -37,8 +37,8 @@ if __name__ == '__main__':
   modelFile = configReader.ci_modelFile
 
   # Logging levels
-  logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
-    level=configReader.log_level)
+  logging.basicConfig(format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s', 
+    level=configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
   # Load video - since no expilicit synchronization exists to check if
   # VideoReader is ready, wait for 10 seconds

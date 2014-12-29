@@ -24,8 +24,8 @@ class VideoHeatmapThread( object ):
     ConfigReader.mkdir_p(self.videoOutputFolder)
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
-      level=self.configReader.log_level)
+    logging.basicConfig(format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s', 
+      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
   def run( self ):
     """Run the video through caffe"""

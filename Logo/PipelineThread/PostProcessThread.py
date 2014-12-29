@@ -59,8 +59,9 @@ class PostProcessThread( object ):
       ConfigReader.mkdir_p(numpyFolder)
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
-      level=self.configReader.log_level)
+    logging.basicConfig(
+      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
   def run( self ):
     """Run the video post processing"""
@@ -70,8 +71,9 @@ class PostProcessThread( object ):
     tempJSONReaderWriter = JSONReaderWriter(jsonFiles[0])
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
-      level=self.configReader.log_level)
+    logging.basicConfig(
+      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
     # Set up queues
     logging.info("Setting up post-processing queue")

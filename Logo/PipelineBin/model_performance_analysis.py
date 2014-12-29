@@ -63,9 +63,10 @@ if __name__ == '__main__':
   if len( sys.argv ) == 7:
     patchImageFolder = sys.argv[ 6 ]
   
+  # Logging levels
   logging.basicConfig(
-      format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO )
+    format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+    level=logging.INFO, datefmt="%Y-%m-%d--%H:%M:%S")
   
   logging.info( 'Using folder %s' % csvFolder )
   logging.info( 'Using score threshold %s' % scoreThreshold )
