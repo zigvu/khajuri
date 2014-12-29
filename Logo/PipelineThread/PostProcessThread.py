@@ -13,6 +13,7 @@ from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
 from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineMath.PixelMap import PixelMap
+from Logo.PipelineCore.Version import LogoVersion
 
 def framePostProcessorRun(sharedDict, postProcessQueue, allCellBoundariesDict):
   """Process for running post-processing of JSON outputs"""
@@ -62,10 +63,12 @@ class PostProcessThread( object ):
     logging.basicConfig(
       format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
       level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
+    self.version = LogoVersion()
 
   def run( self ):
     """Run the video post processing"""
     logging.info("Setting up post-processing")
+    self.version.logVersion()
 
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
     tempJSONReaderWriter = JSONReaderWriter(jsonFiles[0])
