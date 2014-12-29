@@ -14,8 +14,12 @@ class JSONFolderStats( object ):
     self.jrw1 = JSONReaderWriter(self.jsonFolder1Files[0])
     self.classes = self.jrw1.getClassIds()
     self.scales = self.jrw1.getScalingFactors()
+    self.numOfFiles = len(self.jsonFolder1Files)
+    if self.numOfFiles != len(self.jsonFolder2Files):
+      raise RuntimeError("Number of files in folders not same")
 
     # sort json files by frame number
+    print "Sorting %d files" % self.numOfFiles
     frameIndex = {}
     for f in self.jsonFolder1Files:
       jsonReaderWriter = JSONReaderWriter(f)
@@ -33,10 +37,14 @@ class JSONFolderStats( object ):
       self.folder1Scores[cls] = []
       self.folder2Scores[cls] = []
       self.scoresDiff[cls] = []
+
+    fileCount = 0
+    print "Done with sorting files"
     for f in self.jsonFolder1Files:
       jsonFile = os.path.basename(f)
       jrw1 = JSONReaderWriter(os.path.join(jsonFolder1, jsonFile))
       jrw2 = JSONReaderWriter(os.path.join(jsonFolder2, jsonFile))
+      print "Working on file %s" % jsonFile
       for scale in self.scales:
         patches1 = jrw1.getPatches(scale)
         patches2 = jrw2.getPatches(scale)
@@ -58,6 +66,10 @@ class JSONFolderStats( object ):
             self.folder1Scores[cls] += [patchScores1[cls]]
             self.folder2Scores[cls] += [patchScores2[cls]]
             self.scoresDiff[cls] += [abs(patchScores1[cls] - patchScores2[cls])]
+      # increase counters
+      fileCount += 1
+      if fileCount % 100 == 0:
+        print "Ingested %d percent of all files" % (int(fileCount * 100.0 / self.numOfFiles))
     # for each class, all scores are read into dictionary
 
   def print_score_diff_std_dev(self):
