@@ -22,6 +22,7 @@ BOOST_PYTHON_MODULE(VideoReader)
       .def("savePngWithFrameNumber", &VideoFrameReader::savePngWithFrameNumber)
       .def("savePatchFromFrameNumber", &VideoFrameReader::savePatchFromFrameNumber)
       .def("startLogger", &VideoFrameReader::startLogger)
+      .def("stopLogger", &VideoFrameReader::stopLogger)
     ;
     boost::python::scope in_VideoDb = boost::python::class_<VideoDb, boost::noncopyable >( 
         "VideoDb", boost::python::init<VideoDb::DBTYPE, int>() )

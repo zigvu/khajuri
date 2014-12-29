@@ -63,9 +63,10 @@ if __name__ == '__main__':
   if len( sys.argv ) == 7:
     patchImageFolder = sys.argv[ 6 ]
   
+  # Logging levels
   logging.basicConfig(
-      format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO )
+    format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+    level=logging.INFO, datefmt="%Y-%m-%d--%H:%M:%S")
   
   logging.info( 'Using folder %s' % csvFolder )
   logging.info( 'Using score threshold %s' % scoreThreshold )
@@ -164,7 +165,7 @@ if __name__ == '__main__':
       confusionAvgCountList.append( ConfusionPair( k, v ) )
   with open( confusionCountFile, 'w' ) as f:
      for p in sorted( confusionAvgCountList ):
-      f.write( '%s --> %s\n' % ( p.key, p.value ) )
+       f.write( '%s, %s : %s\n' % ( p.key[0], p.key[1], p.value ) )
  
   confusionAvgScoreFile = os.path.join( outputFolder, "confusionAvgScore.txt" )
   logging.info( 'ConfusionAvg Scores greater than %s produce in %s' % ( scoreThreshold, confusionAvgScoreFile ) )
@@ -176,6 +177,6 @@ if __name__ == '__main__':
       confusionAvgScoreList.append( ConfusionPair( k, v ) )
   with open( confusionAvgScoreFile, 'w' ) as f:
     for p in sorted( confusionAvgScoreList ):
-      f.write( '%s --> %s\n' % ( p.key, p.value ) )
+       f.write( '%s, %s : %s\n' % ( p.key[0], p.key[1], p.value ) )
 
     
