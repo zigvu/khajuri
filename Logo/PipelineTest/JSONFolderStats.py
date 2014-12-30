@@ -8,6 +8,7 @@ from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 class JSONFolderStats( object ):
   def __init__( self, jsonFolder1, jsonFolder2 ):
     """Initialize"""
+    print "Reading folders"
     self.jsonFolder1Files = glob.glob("%s/*.json" % jsonFolder1) + glob.glob("%s/*.gz" % jsonFolder1)
     self.jsonFolder2Files = glob.glob("%s/*.json" % jsonFolder2) + glob.glob("%s/*.gz" % jsonFolder2)
 
