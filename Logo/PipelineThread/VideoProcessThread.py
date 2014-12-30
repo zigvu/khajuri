@@ -134,7 +134,7 @@ class VideoProcessThread( object ):
     if self.runCaffe:
       # get length of video
       videoFrameReader = VideoFrameReader(self.videoFileName)
-      videoTimeLengthSeconds = videoFrameReader.getLengthInMicroSeconds() * 1.0/1000
+      videoTimeLengthSeconds = videoFrameReader.getLengthInMicroSeconds() * 1.0/1000000
 
       deviceCount = 0
       for deviceId in self.gpu_devices:
@@ -268,5 +268,5 @@ class VideoProcessThread( object ):
     if self.runCaffe:
       multiFactor = (endTime - startTime) / videoTimeLengthSeconds
       logging.info( 'The runtime was (%0.2f x) of video length (%0.2f seconds)' % \
-        (multiFactor, (endTime - startTime)))
+        (multiFactor, videoTimeLengthSeconds))
       
