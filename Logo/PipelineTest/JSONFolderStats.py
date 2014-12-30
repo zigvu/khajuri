@@ -11,12 +11,24 @@ class JSONFolderStats( object ):
     self.jsonFolder1Files = glob.glob("%s/*.json" % jsonFolder1) + glob.glob("%s/*.gz" % jsonFolder1)
     self.jsonFolder2Files = glob.glob("%s/*.json" % jsonFolder2) + glob.glob("%s/*.gz" % jsonFolder2)
 
-    self.jrw1 = JSONReaderWriter(self.jsonFolder1Files[0])
-    self.classes = self.jrw1.getClassIds()
-    self.scales = self.jrw1.getScalingFactors()
+    # error checking
     self.numOfFiles = len(self.jsonFolder1Files)
     if self.numOfFiles != len(self.jsonFolder2Files):
       raise RuntimeError("Number of files in folders not same")
+    for f1 in self.jsonFolder1Files:
+      hasFile = False
+      for f2 in self.jsonFolder2Files:
+        if os.path.basename(f1) == os.path.basename(f2):
+          hasFile = True
+          break
+      if not hasFile:
+        raise RuntimeError("File %s not present in both folders" % f1)
+    print "Done error checking folders"
+
+    self.jrw1 = JSONReaderWriter(self.jsonFolder1Files[0])
+    self.classes = self.jrw1.getClassIds()
+    self.scales = self.jrw1.getScalingFactors()
+
 
     # sort json files by frame number
     print "Sorting %d files" % self.numOfFiles
@@ -28,6 +40,7 @@ class JSONFolderStats( object ):
     self.jsonFolder1Files = []
     for frameNumber in sorted(frameIndex.keys()):
       self.jsonFolder1Files += [frameIndex[frameNumber]]
+    print "Done with sorting files"
 
     # read all patch scores
     self.folder1Scores = OrderedDict()
@@ -39,7 +52,6 @@ class JSONFolderStats( object ):
       self.scoresDiff[cls] = []
 
     fileCount = 0
-    print "Done with sorting files"
     for f in self.jsonFolder1Files:
       jsonFile = os.path.basename(f)
       jrw1 = JSONReaderWriter(os.path.join(jsonFolder1, jsonFile))
