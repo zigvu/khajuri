@@ -20,7 +20,13 @@ class VideoFrameReader(object):
       frame = self.videoFrameReader.getFrameWithFrameNumber(1)
     self.imageDim = Rectangle.rectangle_from_dimensions(frame.width, frame.height)
     self.fps = self.videoFrameReader.fps
+    self.lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
     self.currentFrameNum = 0
+
+
+  def getLengthInMicroSeconds(self):
+    """Get length of video"""
+    return self.lengthInMicroSeconds
 
   def getImageDim(self):
     """Get image dim"""
