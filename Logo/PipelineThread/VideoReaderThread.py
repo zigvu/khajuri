@@ -29,7 +29,6 @@ class VideoReaderThread( Thread ):
     self.videoFileName = videoFileName
     self.configReader = configReader
     self.scales = self.configReader.sw_scales
-    self.frameStep = self.configReader.sw_frame_density
     self.gzipJSON = self.configReader.pp_gzipJSON
 
     self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, self.videoFileName)
@@ -62,10 +61,15 @@ class VideoReaderThread( Thread ):
     # Video name prefix for all frames/patches:
     self.videoId = os.path.basename(videoFileName).split('.')[0]
     self.gpu_devices = self.configReader.ci_gpu_devices
+
+    # Calculate frameStep from density and fps
+    self.frameStep = int( round ( ( 1.0 * self.fps )/self.configReader.sw_frame_density) ) 
  
   def run( self ):
     """ Spawn as many processes as there are GPUs"""
     logging.info( 'Starting VideoFrameReader...' )
+    logging.info( "Frame Step will be %s, as fps is: %s and density is %s"
+        % ( self.frameStep, self.fps, self.configReader.sw_frame_density ) )
     videoFrameReaderProcess = []
     numOfGpus = len( self.gpu_devices )
     for i in range( numOfGpus ):
