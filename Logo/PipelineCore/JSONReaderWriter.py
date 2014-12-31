@@ -1,4 +1,5 @@
 import yaml, json, os, gzip
+import snappy, StringIO
 from collections import OrderedDict
 
 class JSONReaderWriter( object ):
@@ -9,14 +10,18 @@ class JSONReaderWriter( object ):
       # try zipped file first
       fileBasename, fileExt = os.path.splitext(self.fileName)
       if fileExt == ".gz":
-        self.myDict = json.load( gzip.open( fileName, "rb" ) )
+        self.myDict = json.load( gzip.open( self.fileName, "rb" ) )
+      elif fileExt == ".snappy":
+        iostr = StringIO.StringIO()
+        snappy.stream_decompress( open( self.fileName, "rb" ), iostr )
+        self.myDict = json.loads( iostr.getvalue() )
       else:
         try:
-          self.myDict = json.load( open( fileName, "r" ) )
+          self.myDict = json.load( open( self.fileName, "r" ) )
         except:
           # if in case we can't find the right file, check for gz as well
           try:
-            self.myDict = json.load( gzip.open( ("%s.gz" % fileName), "rb" ) )
+            self.myDict = json.load( gzip.open( ("%s.gz" % self.fileName), "rb" ) )
           except:
             RuntimeError("File type not recognized %s" % self.fileName)
       # if patch scores are not present, this will be empty:
@@ -146,6 +151,35 @@ class JSONReaderWriter( object ):
     self.myDict['curations'][classId] += [{'bbox': bbox, 'score': score}]
 
   def saveState( self, gzip_json = False, save_patch_scores = True ):
+    # if we don't need to save patch scores, remove scales dict
+    if save_patch_scores:
+      self.checkScoreExists()
+    else:
+      self.myDict[ 'scales' ] = []
+
+    # make sure we have the correct file extension
+    fileToSave = self.fileName
+    fileBasename, fileExt = os.path.splitext(self.fileName)
+    if gzip_json:
+      if not fileExt == ".snappy":
+        fileToSave = "%s.snappy" % (self.fileName)
+    else:
+      if fileExt == ".snappy":
+        fileToSave = fileBasename
+
+    # dump json
+    if gzip_json:
+      with open( fileToSave, "wb" ) as f :
+        iostr = StringIO.StringIO()
+        json.dump( self.myDict, iostr, indent=2 )
+        iostr.seek(0)
+        snappy.stream_compress( iostr, f )
+    else:
+      with open( fileToSave, "w" ) as f :
+        json.dump( self.myDict, f, indent=2 )
+
+
+  def saveStateGZ( self, gzip_json = False, save_patch_scores = True ):
     # if we don't need to save patch scores, remove scales dict
     if save_patch_scores:
       self.checkScoreExists()
