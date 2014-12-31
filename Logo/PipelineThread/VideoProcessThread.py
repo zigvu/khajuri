@@ -76,7 +76,6 @@ class VideoProcessThread( object ):
     self.configReader = ConfigReader(configFileName)
     self.runCaffe = self.configReader.ci_runCaffe
     self.runPostProcessor = self.configReader.ci_runPostProcess
-    self.frameStep = self.configReader.sw_frame_density
     self.frameStartNumber = self.configReader.ci_videoFrameNumberStart
 
     # Folder to save files
@@ -135,6 +134,10 @@ class VideoProcessThread( object ):
       # get length of video
       videoFrameReader = VideoFrameReader(self.videoFileName)
       videoTimeLengthSeconds = videoFrameReader.getLengthInMicroSeconds() * 1.0/1000000
+      # Calculate frameStep from density and fps
+      self.frameStep = int( round ( ( 1.0 * videoFrameReader.fps )/self.configReader.sw_frame_density) ) 
+      logging.info( "Frame Step will be %s, as fps is: %s and density is %s"
+          % ( self.frameStep, videoFrameReader.fps, self.configReader.sw_frame_density ) )
 
       deviceCount = 0
       for deviceId in self.gpu_devices:
