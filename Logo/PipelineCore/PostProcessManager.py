@@ -80,12 +80,3 @@ class PostProcessManager( object ):
       configReader.sw_xStride, configReader.sw_yStride, patchDimension)
     return staticBoundingBoxes
 
-  @staticmethod
-  def verifyLocalizations(jsonFolder, classId):
-    """Read JSONs and verify that localization patches got created"""
-    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
-    for jsonFileName in jsonFiles:
-      logging.debug("Verifying localization in file %s" % jsonFileName)
-      jsonReaderWriter = JSONReaderWriter(jsonFileName)
-      # this access will raise KeyError if localization not computed
-      localizationSanityCheck = jsonReaderWriter.getLocalizations(classId)

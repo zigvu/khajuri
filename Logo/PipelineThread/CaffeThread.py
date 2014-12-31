@@ -146,11 +146,7 @@ class CaffeThread( object ):
       for framePostProcess in framePostProcesses:
         framePostProcess.join()
       logging.debug("Post-processing process joined")
-
-      # Verification
-      logging.debug("Verifying all localizations got created")
-      PostProcessThread.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
-      
       logging.info("All post-processing tasks complete")
+
     endTime = time.time()
     logging.info( 'It took CaffeThread %s seconds to complete' % ( endTime - startTime ) )

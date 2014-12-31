@@ -253,12 +253,7 @@ class VideoProcessThread( object ):
       logging.debug("Post processing queues joined")
       for framePostProcess in framePostProcesses:
         framePostProcess.join()
-      logging.debug("Post processing process joined")
-
-      # Verification
-      logging.debug("Verifying all localizations got created")
-      PostProcessManager.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
-      
+      logging.debug("Post processing process joined")      
       logging.info("All post-processing tasks complete")
 
     # clean up db folder

@@ -130,25 +130,8 @@ class PostProcessThread( object ):
     for framePostProcess in framePostProcesses:
       framePostProcess.join()
     logging.debug("Post-processing process joined")
-
-    # Verification
-    logging.debug("Verifying all localizations got created")
-    PostProcessThread.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
-    
     logging.info("All post-processing tasks complete")
 
     endTime = time.time()
     logging.info( 'It took PostProcessThread %s seconds to complete' % ( endTime - startTime ) )
 
-  @staticmethod
-  def verifyLocalizations(jsonFolder, classId):
-    """Read JSONs and verify that localization patches got created"""
-    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
-    frameIndex = {}
-    for jsonFileName in jsonFiles:
-      logging.debug("Verifying localization in file %s" % jsonFileName)
-      jsonReaderWriter = JSONReaderWriter(jsonFileName)
-      frameNumber = jsonReaderWriter.getFrameNumber()
-      frameIndex[frameNumber] = jsonFileName
-      # this access will raise KeyError if localization not computed
-      localizationSanityCheck = jsonReaderWriter.getLocalizations(classId)
