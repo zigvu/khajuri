@@ -67,8 +67,9 @@ class CaffeThread( object ):
     ConfigReader.mkdir_p(self.jsonFolder)
     ConfigReader.mkdir_p(self.numpyFolder)
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
-      level=self.configReader.log_level)
+    logging.basicConfig(
+      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
     # More than 1 GPU Available?
     self.gpu_devices = self.configReader.ci_gpu_devices
