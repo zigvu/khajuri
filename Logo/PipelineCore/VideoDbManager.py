@@ -18,7 +18,7 @@ class VideoDbManager( object ):
     self.configReader = ConfigReader(configFileName)
     self.scales = self.configReader.sw_scales
     self.maxProducedQueueSize = self.configReader.ci_lmdbBufferMaxSize
-    self.gzipJSON = self.configReader.pp_gzipJSON
+    self.compressedJSON = self.configReader.pp_compressedJSON
     
   def setupFolders(self, dbFolder, jsonFolder):
     """Setup folders"""
@@ -165,7 +165,7 @@ class VideoDbManager( object ):
           # Increment counters
           patchNum += 1
       # Save annotation file
-      jsonAnnotation.saveState(gzip_json = self.gzipJSON)
+      jsonAnnotation.saveState(compressed_json = self.compressedJSON)
       currentFrameNum += frameStep
     # end while
 
