@@ -30,8 +30,8 @@ if __name__ == '__main__':
   
   configReader = ConfigReader(configFileName)
   # Logging levels
-  logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
-    level=configReader.log_level)
+  logging.basicConfig(format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s', 
+    level=configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
   classFrameNumbers = getFrameNumbers(classFrameNames)
   backgroundFrameNumbers = getFrameNumbers(backgroundFrameNames)

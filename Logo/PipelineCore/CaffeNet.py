@@ -16,6 +16,7 @@ class CaffeNet( object ):
     self.useGPU = configReader.ci_useGPU
     self.deviceId = deviceId
     self.numOfGPUs = len( configReader.ci_gpu_devices )
+    self.compressedJSON = configReader.pp_compressedJSON
 
   def run_net(self, leveldbFolder):
     logging.info( 'Run net started' )
@@ -94,7 +95,7 @@ class CaffeNet( object ):
 
     # Save and put json files in post processing queue
     for jsonFile, jsonRW in jsonRWs.iteritems():
-      jsonRW.saveState()
+      jsonRW.saveState(compressed_json = self.compressedJSON)
 
     # Clean up by deleting levedb whose use is done 
     # since large files, might need to do it twice

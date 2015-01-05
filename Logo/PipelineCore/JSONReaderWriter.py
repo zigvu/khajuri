@@ -1,12 +1,35 @@
-import yaml, json
+import yaml, json, os
+import snappy, StringIO
 from collections import OrderedDict
 
 class JSONReaderWriter( object ):
   def __init__( self, fileName, create_new = False ):
     self.fileName = fileName
+    self.noPatchScores = False
     if not create_new:
-      self.myDict = json.load( open( fileName, "r" ) )
-      self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
+      self.myDict = None
+      # try compressed file first
+      fileBasename, fileExt = os.path.splitext(self.fileName)
+      if fileExt == ".snappy":
+        iostr = StringIO.StringIO()
+        snappy.stream_decompress( open( self.fileName, "rb" ), iostr )
+        self.myDict = json.loads( iostr.getvalue() )
+      else:
+        try:
+          self.myDict = json.load( open( self.fileName, "r" ) )
+        except:
+          # if in case we can't find the right file, check for compressed as well
+          try:
+            iostr = StringIO.StringIO()
+            snappy.stream_decompress( open( ("%s.snappy" % self.fileName), "rb" ), iostr )
+            self.myDict = json.loads( iostr.getvalue() )
+          except:
+            RuntimeError("File type not recognized %s" % self.fileName)
+      # if patch scores are not present, this will be empty:
+      if len(self.myDict[ 'scales' ]) == 0:
+        self.noPatchScores = True
+      else:
+        self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
 
   def getAnnotationFileName( self ):
     return self.myDict[ 'annotation_filename' ]
@@ -24,14 +47,17 @@ class JSONReaderWriter( object ):
     return self.myDict[ 'frame_height' ]
 
   def getScalingFactors( self ):
+    self.checkScoreExists()
     return self.scalingFactors
 
   def getPatches( self, scale ):
+    self.checkScoreExists()
     for obj in self.myDict[ 'scales' ]:
       if obj[ 'scale' ] == scale:
         return obj[ 'patches' ]
 
   def getPatchFileNames( self, scale ):
+    self.checkScoreExists()
     fileNames = []
     for obj in self.myDict[ 'scales' ]:
       if obj[ 'scale' ] == scale:
@@ -40,6 +66,7 @@ class JSONReaderWriter( object ):
     return fileNames
 
   def getBoundingBoxes( self, scale ):
+    self.checkScoreExists()
     boxes = []
     for obj in self.myDict[ 'scales' ]:
       if obj[ 'scale' ] == scale:
@@ -48,9 +75,22 @@ class JSONReaderWriter( object ):
     return boxes
 
   def getClassIds( self ):
-    return self.myDict['scales'][0]['patches'][0]['scores'].keys()
+    classIds = []
+    # it might be possible to get classIds from localization
+    # or curation even if no patch scores are saved
+    if self.noPatchScores:
+      if 'localizations' in self.myDict.keys():
+        classIds = self.myDict['localizations'].keys()
+      elif 'curations' in self.myDict.keys():
+        classIds = self.myDict['curations'].keys()
+    else:
+      classIds = self.myDict['scales'][0]['patches'][0]['scores'].keys()
+    if len(classIds) == 0:
+      raise RuntimeError("Class ids cannot be determined for file %s" % self.fileName)
+    return classIds
 
   def getScoreForPatchIdAtScale( self, patchId, classId, scale ):
+    self.checkScoreExists()
     return self.myDict['scales'][ self.scalingFactors.index( scale ) ]['patches']\
         [patchId]['scores'][classId]
 
@@ -111,11 +151,36 @@ class JSONReaderWriter( object ):
   def addCuration( self, classId, bbox, score ):
     self.myDict['curations'][classId] += [{'bbox': bbox, 'score': score}]
 
-  def saveState( self ):
-    with open( self.fileName, "w" ) as f :
-      json.dump( self.myDict, f, indent=2 )
+  def saveState( self, compressed_json = False, save_patch_scores = True ):
+    # if we don't need to save patch scores, remove scales dict
+    if save_patch_scores:
+      self.checkScoreExists()
+    else:
+      self.myDict[ 'scales' ] = []
+
+    # make sure we have the correct file extension
+    fileToSave = self.fileName
+    fileBasename, fileExt = os.path.splitext(self.fileName)
+    if compressed_json:
+      if not fileExt == ".snappy":
+        fileToSave = "%s.snappy" % (self.fileName)
+    else:
+      if fileExt == ".snappy":
+        fileToSave = fileBasename
+
+    # dump json
+    if compressed_json:
+      with open( fileToSave, "wb" ) as f :
+        iostr = StringIO.StringIO()
+        json.dump( self.myDict, iostr, indent=2 )
+        iostr.seek(0)
+        snappy.stream_compress( iostr, f )
+    else:
+      with open( fileToSave, "w" ) as f :
+        json.dump( self.myDict, f, indent=2 )
 
   def saveToCSV( self, csvFileName ):
+    self.checkScoreExists()
     with open( csvFileName, "w" ) as f :
       topLineLabel = "Filename"
       classIds = self.getClassIds()
@@ -128,3 +193,10 @@ class JSONReaderWriter( object ):
           for classId in classIds:
             printStr = printStr + "," + repr(patch[ 'scores' ][ classId ])
           f.write(printStr + "\n")
+
+  def checkScoreExists(self):
+    """Raise exception if no patch scores are present"""
+    if self.noPatchScores:
+      raise RuntimeError("No patch scores saved in file %s" % self.fileName)
+    else:
+      return True

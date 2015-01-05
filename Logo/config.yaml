@@ -80,6 +80,12 @@ caffe_input:
 # Post processing
 post_processing:
   detector_threshold:                         0.8
+  # Note: to avoid losing caffe scores permanently, `save_patch_scores = false` 
+  # is ONLY considered when saving JSON after post-processing stage
+  save_patch_scores:                          true
+  # this uses the snappy library - to unzip a file from the command line
+  # issue: python -m snappy -d <filename.snappy>
+  compressed_json:                            false
 
 # Curation
 curation:

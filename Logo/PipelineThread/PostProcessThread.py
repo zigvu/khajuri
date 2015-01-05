@@ -13,6 +13,7 @@ from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
 from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineMath.PixelMap import PixelMap
+from Logo.PipelineCore.Version import LogoVersion
 
 def framePostProcessorRun(sharedDict, postProcessQueue, allCellBoundariesDict):
   """Process for running post-processing of JSON outputs"""
@@ -59,19 +60,23 @@ class PostProcessThread( object ):
       ConfigReader.mkdir_p(numpyFolder)
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
-      level=self.configReader.log_level)
+    logging.basicConfig(
+      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
+    self.version = LogoVersion()
 
   def run( self ):
     """Run the video post processing"""
     logging.info("Setting up post-processing")
+    self.version.logVersion()
 
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
     tempJSONReaderWriter = JSONReaderWriter(jsonFiles[0])
 
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', 
-      level=self.configReader.log_level)
+    logging.basicConfig(
+      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
     # Set up queues
     logging.info("Setting up post-processing queue")
@@ -125,25 +130,8 @@ class PostProcessThread( object ):
     for framePostProcess in framePostProcesses:
       framePostProcess.join()
     logging.debug("Post-processing process joined")
-
-    # Verification
-    logging.debug("Verifying all localizations got created")
-    PostProcessThread.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
-    
     logging.info("All post-processing tasks complete")
 
     endTime = time.time()
     logging.info( 'It took PostProcessThread %s seconds to complete' % ( endTime - startTime ) )
 
-  @staticmethod
-  def verifyLocalizations(jsonFolder, classId):
-    """Read JSONs and verify that localization patches got created"""
-    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
-    frameIndex = {}
-    for jsonFileName in jsonFiles:
-      logging.debug("Verifying localization in file %s" % jsonFileName)
-      jsonReaderWriter = JSONReaderWriter(jsonFileName)
-      frameNumber = jsonReaderWriter.getFrameNumber()
-      frameIndex[frameNumber] = jsonFileName
-      # this access will raise KeyError if localization not computed
-      localizationSanityCheck = jsonReaderWriter.getLocalizations(classId)

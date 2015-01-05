@@ -76,7 +76,6 @@ class VideoProcessThread( object ):
     self.configReader = ConfigReader(configFileName)
     self.runCaffe = self.configReader.ci_runCaffe
     self.runPostProcessor = self.configReader.ci_runPostProcess
-    self.frameStep = self.configReader.sw_frame_density
     self.frameStartNumber = self.configReader.ci_videoFrameNumberStart
 
     # Folder to save files
@@ -88,8 +87,9 @@ class VideoProcessThread( object ):
     ConfigReader.mkdir_p(self.jsonFolder)
     ConfigReader.mkdir_p(self.numpyFolder)
     # Logging levels
-    logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s', 
-      level=self.configReader.log_level)
+    logging.basicConfig(
+      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
     # More than 1 GPU Available?
     self.gpu_devices = self.configReader.ci_gpu_devices
@@ -104,6 +104,9 @@ class VideoProcessThread( object ):
   def run( self ):
     """Run the video through caffe"""
     startTime = time.time()
+    videoTimeLengthSeconds = 0
+    videoFrameReader = None
+
     if self.runCaffe:
       logging.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
@@ -128,6 +131,14 @@ class VideoProcessThread( object ):
     postProcessQueue = JoinableQueue()
 
     if self.runCaffe:
+      # get length of video
+      videoFrameReader = VideoFrameReader(self.videoFileName)
+      videoTimeLengthSeconds = videoFrameReader.getLengthInMicroSeconds() * 1.0/1000000
+      # Calculate frameStep from density and fps
+      self.frameStep = int( round ( ( 1.0 * videoFrameReader.fps )/self.configReader.sw_frame_density) ) 
+      logging.info( "Frame Step will be %s, as fps is: %s and density is %s"
+          % ( self.frameStep, videoFrameReader.fps, self.configReader.sw_frame_density ) )
+
       deviceCount = 0
       for deviceId in self.gpu_devices:
         # producer/consumer queues
@@ -169,7 +180,6 @@ class VideoProcessThread( object ):
       # if caffe was not run, we are reading from folder instead    
       if self.runCaffe:
         # image width/height needed for cell boundaries
-        videoFrameReader = VideoFrameReader(self.videoFileName)
         imageWidth = videoFrameReader.getImageDim().width
         imageHeight = videoFrameReader.getImageDim().height
       else:
@@ -200,15 +210,17 @@ class VideoProcessThread( object ):
         framePostProcesses += [framePostProcess]
         framePostProcess.start()
 
-      if self.runCaffe:
-        # closing videoFrameReader might take a while - so last statment prior to joining
-        videoFrameReader.close()
-      else:
+      if not self.runCaffe:
         # print progress
         while postProcessQueue.qsize() > 1:
           logging.info("Post processing %d percent done" % (int(100 - \
             100.0 * postProcessQueue.qsize()/len(jsonFiles))))
           time.sleep(self.logIntervalSeconds)
+      # end run post-processor
+
+    # closing videoFrameReader might take a while - so last statment prior to joining
+    if self.runCaffe:
+      videoFrameReader.close()
 
     # ----------------------
     # PROCESS MANAGEMENT
@@ -241,12 +253,7 @@ class VideoProcessThread( object ):
       logging.debug("Post processing queues joined")
       for framePostProcess in framePostProcesses:
         framePostProcess.join()
-      logging.debug("Post processing process joined")
-
-      # Verification
-      logging.debug("Verifying all localizations got created")
-      PostProcessManager.verifyLocalizations(self.jsonFolder, self.configReader.ci_nonBackgroundClassIds[0])
-      
+      logging.debug("Post processing process joined")      
       logging.info("All post-processing tasks complete")
 
     # clean up db folder
@@ -254,3 +261,10 @@ class VideoProcessThread( object ):
 
     endTime = time.time()
     logging.info( 'It took VideoProcessThread %s seconds to complete' % ( endTime - startTime ) )
+
+    # print runtime as multiple of video length
+    if self.runCaffe:
+      multiFactor = (endTime - startTime) / videoTimeLengthSeconds
+      logging.info( 'The runtime was (%0.2f x) of video length (%0.2f seconds)' % \
+        (multiFactor, videoTimeLengthSeconds))
+      

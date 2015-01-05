@@ -56,14 +56,17 @@ if __name__ == '__main__':
   countThreshold = float( sys.argv[ 3 ] )
   classMappingFile = sys.argv[ 4 ]
   outputFolder = sys.argv[ 5 ]
+  if not os.path.exists( outputFolder ):
+    os.makedirs( outputFolder )
 
   patchImageFolder = None
   if len( sys.argv ) == 7:
     patchImageFolder = sys.argv[ 6 ]
   
+  # Logging levels
   logging.basicConfig(
-      format='{%(filename)s:%(lineno)d} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO )
+    format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+    level=logging.INFO, datefmt="%Y-%m-%d--%H:%M:%S")
   
   logging.info( 'Using folder %s' % csvFolder )
   logging.info( 'Using score threshold %s' % scoreThreshold )
@@ -125,14 +128,17 @@ if __name__ == '__main__':
     clsA = imgByClass[ k[ 0 ] ]
     clsB = k[ 1 ]
     countHeatMap[ ( clsA, clsB ) ] += 1
-    avgScoreHeatMap[ ( clsA, clsB ) ] += v
-    avgScoreHeatMap[ ( clsA, clsB ) ] /= 2
+    if avgScoreHeatMap[ ( clsA, clsB ) ] == 0:
+      avg = v
+    else:
+      avg = ( avgScoreHeatMap[ ( clsA, clsB ) ] + v ) / 2.0 
+    avgScoreHeatMap[ ( clsA, clsB ) ] = avg
     if v >= scoreThreshold and clsA != clsB :
       patchListToExamine[ ( clsA, clsB ) ].append( { 'patch': k[0], 'score' : v } )
-      outputDir = os.path.join( outputFolder, "%s_%s"% ( clsA, clsB ) )
-      if not os.path.exists( outputDir ):
-        os.makedirs( outputDir )
       if patchImageFolder:
+        outputDir = os.path.join( outputFolder, "%s_%s"% ( clsA, clsB ) )
+        if not os.path.exists( outputDir ):
+          os.makedirs( outputDir )
         inputPatchPath = os.path.join( patchImageFolder, clsA, k[ 0 ] )
         if not os.path.exists( inputPatchPath ):
           logging.info( 'Missing Patch %s' % inputPatchPath )
@@ -159,7 +165,7 @@ if __name__ == '__main__':
       confusionAvgCountList.append( ConfusionPair( k, v ) )
   with open( confusionCountFile, 'w' ) as f:
      for p in sorted( confusionAvgCountList ):
-      f.write( '%s --> %s\n' % ( p.key, p.value ) )
+       f.write( '%s, %s : %s\n' % ( p.key[0], p.key[1], p.value ) )
  
   confusionAvgScoreFile = os.path.join( outputFolder, "confusionAvgScore.txt" )
   logging.info( 'ConfusionAvg Scores greater than %s produce in %s' % ( scoreThreshold, confusionAvgScoreFile ) )
@@ -171,6 +177,6 @@ if __name__ == '__main__':
       confusionAvgScoreList.append( ConfusionPair( k, v ) )
   with open( confusionAvgScoreFile, 'w' ) as f:
     for p in sorted( confusionAvgScoreList ):
-      f.write( '%s --> %s\n' % ( p.key, p.value ) )
+       f.write( '%s, %s : %s\n' % ( p.key[0], p.key[1], p.value ) )
 
     
