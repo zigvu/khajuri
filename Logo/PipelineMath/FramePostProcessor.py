@@ -13,7 +13,7 @@ class FramePostProcessor(object):
     self.detectorThreshold = configReader.pp_detectorThreshold
     self.nonBackgroundClassIds = configReader.ci_nonBackgroundClassIds
     self.allCellBoundariesDict = allCellBoundariesDict
-    self.gzipJSON = configReader.pp_gzipJSON
+    self.compressedJSON = configReader.pp_compressedJSON
     self.savePatchScores = configReader.pp_savePatchScores
 
     # cache computation
@@ -59,7 +59,8 @@ class FramePostProcessor(object):
       # caching
       self.classPixelMaps[classId] = {'localizationMap': localizationPixelMap}
     # save json
-    self.jsonReaderWriter.saveState(gzip_json = self.gzipJSON, save_patch_scores = self.savePatchScores)
+    self.jsonReaderWriter.saveState(compressed_json = self.compressedJSON, \
+      save_patch_scores = self.savePatchScores)
     return True
 
   def saveLocalizations(self, numpyFileBaseName):

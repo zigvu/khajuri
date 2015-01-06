@@ -78,7 +78,7 @@ class ConfigReader:
     postProcessing = config['post_processing']
     self.pp_detectorThreshold = postProcessing['detector_threshold']
     self.pp_savePatchScores = postProcessing['save_patch_scores'] == True
-    self.pp_gzipJSON = postProcessing['gzip_json'] == True
+    self.pp_compressedJSON = postProcessing['compressed_json'] == True
 
     # Curation
     curation = config['curation']
