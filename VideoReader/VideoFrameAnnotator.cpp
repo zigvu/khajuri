@@ -37,7 +37,7 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
        if( !outputVideo ) {
          outputVideo = new cv::VideoWriter;
          outputVideo->open( videoFileName, CV_FOURCC('P','I','M','1'),
-             25, cv::Size( w, h ) , true);
+             vfr->getFps(), cv::Size( w, h ) , true);
        }
        *outputVideo << *m;
     }
