@@ -14,6 +14,7 @@ from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 from Logo.PipelineCore.VideoDbManager import VideoDbManager
 from Logo.PipelineCore.VideoCaffeManager import VideoCaffeManager
 from Logo.PipelineCore.PostProcessManager import PostProcessManager
+from Logo.PipelineCore.Version import LogoVersion
 
 
 def runVideoDbManager(sharedDict, producedQueue, consumedQueue, \
@@ -93,6 +94,7 @@ class VideoProcessThread( object ):
 
     # More than 1 GPU Available?
     self.gpu_devices = self.configReader.ci_gpu_devices
+    self.version = LogoVersion()
 
     self.maxProducedQueueSize = self.configReader.ci_lmdbBufferMaxSize
     self.maxConsumedQueueSize = \
@@ -107,6 +109,7 @@ class VideoProcessThread( object ):
     videoTimeLengthSeconds = 0
     videoFrameReader = None
 
+    self.version.logVersion()
     if self.runCaffe:
       logging.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
