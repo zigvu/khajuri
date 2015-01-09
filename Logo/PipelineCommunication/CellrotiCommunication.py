@@ -71,12 +71,12 @@ class CellrotiCommunication( object ):
     sftp = pysftp.Connection(ipaddress, username=username, private_key=self.private_key_location)
     try:
       sftp.mkdir(uploadFolder)
-    finally:
+    except:
       successStatus = False
       logging.error("Couldn't make folder %s in remote" % uploadFolder)
     try:
       sftp.put_r(folder, uploadFolder, confirm=True)
-    finally:
+    except:
       successStatus = False
       logging.error("Couldn't upload data to remote")
 
