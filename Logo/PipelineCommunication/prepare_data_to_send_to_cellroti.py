@@ -41,7 +41,7 @@ if __name__ == '__main__':
   detectableClassMapper.read_mapped_detectables(mappingFileName)
 
   postProcessDataExtractor = PostProcessDataExtractor(
-    videoId, videoFileName, jsonFolder, extractedDataFolder, detectableClassMapper)
+    configReader, videoId, videoFileName, jsonFolder, extractedDataFolder, detectableClassMapper)
   postProcessDataExtractor.run()
   
   endTime = time.time()

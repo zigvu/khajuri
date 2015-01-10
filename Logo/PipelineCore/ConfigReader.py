@@ -93,6 +93,7 @@ class ConfigReader:
 
     self.ce_storageSelection = cellroti['storage_selection']
     self.ce_storageLocation = cellroti['storage_location']
+    self.ce_numSecondsPerSampleFrame = cellroti['num_seconds_per_sample_frame']
 
 
 

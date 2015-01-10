@@ -9,8 +9,10 @@ from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 
 class PostProcessDataExtractor( object ):
   """Class to extract data from caffe results to send to cellroti"""
-  def __init__(self, videoId, videoFileName, jsonFolder, outputFolder, detectableClassMapper):
+  def __init__(self, configReader, videoId, videoFileName, \
+    jsonFolder, outputFolder, detectableClassMapper):
     """Initialize values"""
+    self.configReader = configReader
     self.videoId = videoId
     self.videoFileName = videoFileName
     self.jsonFolder = jsonFolder
@@ -19,9 +21,8 @@ class PostProcessDataExtractor( object ):
     ConfigReader.mkdir_p(self.outputFramesFolder)
     self.detectableClassMapper = detectableClassMapper
 
-    # TODO: get from config
-    self.detectionFrameRate = 5
-    self.numSecondsForSingleFrameSaved = 2
+    self.detectionFrameRate = configReader.sw_frame_density
+    self.numSecondsPerSampleFrame = configReader.ce_numSecondsPerSampleFrame
 
   def run(self):
     """Create the json file to send to cellroti"""
@@ -82,7 +83,7 @@ class PostProcessDataExtractor( object ):
   def get_frames_to_extract(self, relabeledLocalizations, detectableClassMapper):
     """For each class, get the frame number with the highest score across a window of frames"""
     logging.info("Determining frames to extract")
-    numFrameIntervalPerFrameSaved = self.numSecondsForSingleFrameSaved * self.detectionFrameRate
+    numFrameIntervalPerFrameSaved = self.numSecondsPerSampleFrame * self.detectionFrameRate
     cellrotiDetectableIds = detectableClassMapper.get_detectable_database_ids()
     frameTrackers = OrderedDict()
     framesToStore = OrderedDict()
