@@ -58,7 +58,7 @@ class VideoDbManager( object ):
     patchDimension = Rectangle.rectangle_from_dimensions(\
       self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
     self.staticBoundingBoxes = BoundingBoxes(\
-      self.imageDim, self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+      self.imageDim, self.configReader.sw_xStride, self.configReader.sw_yStride, patchDimension)
 
     fps = self.videoFrameReader.fps
     lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
