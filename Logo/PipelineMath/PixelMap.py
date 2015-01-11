@@ -141,6 +141,11 @@ class PixelMap(object):
           newYStride  = staticBoundingBoxes.ystepSize[ s ]
           if existingXStride != newXStride or existingYStride != newYStride:
             useSavedOne = False
+      
+      if allCellBoundaries[ "frameDim" ][ "width" ] != staticBoundingBoxes.imageDim.width:
+        useSavedOne = False
+      if allCellBoundaries[ "frameDim" ][ "height" ] != staticBoundingBoxes.imageDim.height:
+        useSavedOne = False
 
     if useSavedOne:
       logging.info( "Using already computed boundaries from file at %s" % saveFile )
@@ -258,7 +263,9 @@ class PixelMap(object):
 
     # -------------------------------------------------------------
     # Part (c) : Create dictionary with data cell boundaries in each scale
-    allCellBoundaries = {"scales": {}}
+    allCellBoundaries = {"scales": {}, "frameDim" : {} }
+    allCellBoundaries[ "frameDim" ] [ "width" ] = staticBoundingBoxes.imageDim.width
+    allCellBoundaries[ "frameDim" ] [ "height" ] = staticBoundingBoxes.imageDim.height
     for scaleFactor in allScales:
       cellBoundaries = []
       cellCounter = 0
