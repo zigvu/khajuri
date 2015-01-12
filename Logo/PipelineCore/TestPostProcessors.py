@@ -33,7 +33,9 @@ class TestPostProcessors(object):
     fps = 1
     # we need frames in order
     frameIndex = {}
-    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
+    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json")) + \
+      glob.glob(os.path.join(jsonFolder, "*snappy"))
+
     for jsonFileName in jsonFiles:
       print "Reading json " + os.path.basename(jsonFileName)
       jsonReaderWriter = JSONReaderWriter(jsonFileName)

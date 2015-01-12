@@ -70,7 +70,9 @@ class PostProcessThread( object ):
     logging.info("Setting up post-processing")
     self.version.logVersion()
 
-    jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
+    jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json")) + \
+      glob.glob(os.path.join(self.jsonFolder, "*snappy"))
+    
     tempJSONReaderWriter = JSONReaderWriter(jsonFiles[0])
 
     # Logging levels

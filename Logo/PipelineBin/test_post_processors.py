@@ -22,7 +22,9 @@ if __name__ == '__main__':
   # TODO: replace from video frame information
   imageDim = Rectangle.rectangle_from_dimensions(1280, 720)
   testPostProcessors = TestPostProcessors(configFileName, imageDim)
-  jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
+  jsonFiles = glob.glob(os.path.join(jsonFolder, "*json")) + \
+    glob.glob(os.path.join(jsonFolder, "*snappy"))
+  
   if (testMode == 1) or (testMode == 2) or (testMode == 3):
     for jsonFileName in jsonFiles:
       print "Working on " + os.path.basename(jsonFileName)

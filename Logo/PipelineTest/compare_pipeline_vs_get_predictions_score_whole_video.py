@@ -55,7 +55,9 @@ if __name__ == '__main__':
 	# read all json files and organize based on frame number
 	# we need frames in order
 	frameIndex = {}
-	jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
+	jsonFiles = glob.glob(os.path.join(jsonFolder, "*json")) + \
+		glob.glob(os.path.join(jsonFolder, "*snappy"))
+	
 	for jsonFileName in jsonFiles:
 		jsonReaderWriter = JSONReaderWriter(jsonFileName)
 		frameNumber = jsonReaderWriter.getFrameNumber()

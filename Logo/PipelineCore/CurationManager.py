@@ -110,7 +110,9 @@ class CurationManager(object):
   def extractFromJSONFiles(self):
     """Read JSON files and construct curationBboxes dictionary"""
     # read json files
-    jsonFiles = glob.glob(os.path.join(self.inputJSONFolder, "*json"))
+    jsonFiles = glob.glob(os.path.join(self.inputJSONFolder, "*json")) + \
+      glob.glob(os.path.join(self.inputJSONFolder, "*snappy"))
+    
     if len(jsonFiles) <= 0:
       raise IOError("JSON folder doesn't have any json files")
     classIds = JSONReaderWriter(jsonFiles[0]).getClassIds()

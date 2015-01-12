@@ -9,8 +9,10 @@ class JSONFolderStats( object ):
   def __init__( self, jsonFolder1, jsonFolder2 ):
     """Initialize"""
     print "Reading folders"
-    self.jsonFolder1Files = glob.glob("%s/*.json" % jsonFolder1) + glob.glob("%s/*.gz" % jsonFolder1)
-    self.jsonFolder2Files = glob.glob("%s/*.json" % jsonFolder2) + glob.glob("%s/*.gz" % jsonFolder2)
+    self.jsonFolder1Files = glob.glob(os.path.join(jsonFolder1, "*json")) + \
+      glob.glob(os.path.join(jsonFolder1, "*snappy"))
+    self.jsonFolder2Files = glob.glob(os.path.join(jsonFolder2, "*json")) + \
+      glob.glob(os.path.join(jsonFolder2, "*snappy"))
 
     # error checking
     self.numOfFiles = len(self.jsonFolder1Files)

@@ -186,7 +186,9 @@ class VideoProcessThread( object ):
         imageWidth = videoFrameReader.getImageDim().width
         imageHeight = videoFrameReader.getImageDim().height
       else:
-        jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
+        jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json")) + \
+          glob.glob(os.path.join(self.jsonFolder, "*snappy"))
+        
         jsonReaderWriter = JSONReaderWriter(jsonFiles[0])
         imageWidth = jsonReaderWriter.getFrameWidth()
         imageHeight = jsonReaderWriter.getFrameHeight()

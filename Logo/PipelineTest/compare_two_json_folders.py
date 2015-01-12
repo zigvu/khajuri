@@ -21,8 +21,10 @@ if __name__ == '__main__':
 	jsonFolder2 = sys.argv[2]
 	compareLocCuration = int(sys.argv[3])
 
-	jsonFolder1Files = glob.glob("%s/*.json" % jsonFolder1) + glob.glob("%s/*.snappy" % jsonFolder1)
-	jsonFolder2Files = glob.glob("%s/*.json" % jsonFolder2) + glob.glob("%s/*.snappy" % jsonFolder2)
+	jsonFolder1Files = glob.glob(os.path.join(jsonFolder1, "*json")) + \
+		glob.glob(os.path.join(jsonFolder1, "*snappy"))
+	jsonFolder2Files = glob.glob(os.path.join(jsonFolder2, "*json")) + \
+		glob.glob(os.path.join(jsonFolder2, "*snappy"))
 
 	jsonFileComparer = JSONFileComparer(jsonFolder1Files[0], jsonFolder2Files[0])
 	classes = jsonFileComparer.get_class_ids()

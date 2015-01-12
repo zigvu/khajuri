@@ -43,7 +43,9 @@ class PostProcessDataExtractor( object ):
     logging.info("Extracting all localizations")
     relabeledLocalizations = OrderedDict()
     caffeLabelIds = detectableClassMapper.get_mapped_caffe_label_ids()
-    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json"))
+    jsonFiles = glob.glob(os.path.join(jsonFolder, "*json")) + \
+      glob.glob(os.path.join(jsonFolder, "*snappy"))
+      
     for jsonFileName in jsonFiles:
       jsonReaderWriter = JSONReaderWriter(jsonFileName)
       frameNumber = jsonReaderWriter.getFrameNumber()
