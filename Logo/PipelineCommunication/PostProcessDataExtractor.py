@@ -1,4 +1,6 @@
 import sys, os, glob, subprocess
+import multiprocessing
+from multiprocessing import JoinableQueue, Queue, Process, Manager
 from collections import OrderedDict
 from fractions import Fraction
 import logging, json
@@ -6,6 +8,31 @@ import logging, json
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 from Logo.PipelineCore.ConfigReader import ConfigReader
 from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
+
+def runLocalizationExtraction(caffeLabelIds, jsonFilesQueue, localizationResultsQueue):
+  """Process to extract localizations from JSON files"""
+  while True:
+    jsonFileName = jsonFilesQueue.get()
+    if jsonFileName is None:
+      jsonFilesQueue.task_done()
+      # poison pill means done with json reading
+      break
+    #logging.debug("Localization Extraction: Start extraction of file %s" % os.path.basename(jsonFileName))
+    
+    jsonReaderWriter = JSONReaderWriter(jsonFileName)
+    frameNumber = jsonReaderWriter.getFrameNumber()
+    # extract localizations
+    extractedLocalizations = {}
+    extractedLocalizations['frame_number'] = frameNumber
+    extractedLocalizations['localizations'] = {}
+    for caffeLabelId in caffeLabelIds:
+      localizations = jsonReaderWriter.getLocalizations(caffeLabelId)
+      extractedLocalizations['localizations'][caffeLabelId] = localizations
+
+    # put in queue:
+    localizationResultsQueue.put(extractedLocalizations)
+    jsonFilesQueue.task_done()
+
 
 class PostProcessDataExtractor( object ):
   """Class to extract data from caffe results to send to cellroti"""
@@ -21,14 +48,18 @@ class PostProcessDataExtractor( object ):
     ConfigReader.mkdir_p(self.outputFramesFolder)
     self.detectableClassMapper = detectableClassMapper
 
+    self.ffprobeKeys = ['format', 'width', 'height', 'quality', \
+      'length', 'playback_frame_rate', 'detection_frame_rate']
+
     self.detectionFrameRate = configReader.sw_frame_density
     self.numSecondsPerSampleFrame = configReader.ce_numSecondsPerSampleFrame
+    self.num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
 
   def run(self):
     """Create the json file to send to cellroti"""
+    ffprobeResults = self.run_ffprobe(self.videoFileName)
     relabeledLocalizations = self.extract_localizations(self.jsonFolder, self.detectableClassMapper)
     framesToExtract = self.get_frames_to_extract(relabeledLocalizations, self.detectableClassMapper)
-    ffprobeResults = self.run_ffprobe(self.videoFileName)
     jsonToSave = {
       'video_id': self.videoId,
       'detections': relabeledLocalizations,
@@ -43,18 +74,48 @@ class PostProcessDataExtractor( object ):
     logging.info("Extracting all localizations")
     relabeledLocalizations = OrderedDict()
     caffeLabelIds = detectableClassMapper.get_mapped_caffe_label_ids()
+
+    jsonFilesQueue = JoinableQueue()
+    localizationResultsQueue = Queue()
     jsonFiles = glob.glob(os.path.join(jsonFolder, "*json")) + \
       glob.glob(os.path.join(jsonFolder, "*snappy"))
-      
+
     for jsonFileName in jsonFiles:
-      jsonReaderWriter = JSONReaderWriter(jsonFileName)
-      frameNumber = jsonReaderWriter.getFrameNumber()
+      jsonFilesQueue.put(jsonFileName)
+
+    # start reading JSON files in parallel
+    localizationExtractors = []    
+    for i in xrange(self.num_consumers):
+      localizationExtractor = Process(\
+        target=runLocalizationExtraction,\
+        args=(caffeLabelIds, jsonFilesQueue, localizationResultsQueue))
+      localizationExtractors += [localizationExtractor]
+      localizationExtractor.start()
+      # for each process, put a poison pill in queue
+      jsonFilesQueue.put(None)
+
+    logging.debug("Localization Extraction: Started all processes for localization extraction")
+
+    # wait for all extraction processes to complete
+    jsonFilesQueue.join()
+
+    # collate all results:
+    logging.debug("Localization Extraction: Mapping localizations to cellroti IDs")
+    while localizationResultsQueue.qsize() > 0:
+      extractedLocalizations = localizationResultsQueue.get()
+      frameNumber = extractedLocalizations['frame_number']
       relabeledLocalizations[frameNumber] = {}
       for caffeLabelId in caffeLabelIds:
-        localizations = jsonReaderWriter.getLocalizations(caffeLabelId)
+        localizations = extractedLocalizations['localizations'][caffeLabelId]
         if len(localizations) > 0:
           cellrotiDetectableId = detectableClassMapper.get_detectable_database_id(caffeLabelId)
           relabeledLocalizations[frameNumber][cellrotiDetectableId] = localizations
+
+    logging.debug("Localization Extraction: Waiting for threads to join")
+    for localizationExtractor in localizationExtractors:
+      localizationExtractor.join()
+
+    # sort based on frame numbers
     relabeledLocalizations = OrderedDict(sorted(relabeledLocalizations.items(), key=lambda t: t[0]))
     return relabeledLocalizations
 
@@ -122,7 +183,7 @@ class PostProcessDataExtractor( object ):
         # increase counters
         frameTrackers[cellrotiDetectableId]['counter'] += 1
         # end if
-    # return final frames to capture      
+    # return final frames to capture
     return framesToStore
 
   def run_ffprobe(self, videoFileName):
@@ -146,12 +207,7 @@ class PostProcessDataExtractor( object ):
           ffprobeResults['width'] = width
           ffprobeResults['height'] = height
           ffprobeResults['quality'] = quality
-
-          start_time = float(streamJSON["start_time"])
-          duration = float(streamJSON["duration"])
-          length = (duration - start_time) * 1000
-          ffprobeResults['length'] = length
-
+    
           # get frame rate and convert to float
           fps = 0
           if "r_frame_rate" in streamJSON:
@@ -161,14 +217,25 @@ class PostProcessDataExtractor( object ):
           try:
             fps = Fraction(fps) + 0.0
           except:
-            fps = 0.0
-            logging.error("Frame rate for video %s couldn't be found" % videoFileName)
+            raise RuntimeError("Frame rate for video %s couldn't be found" % videoFileName)
           ffprobeResults['playback_frame_rate'] = fps
+
+      # get length
+      start_time = float(ffprobeJSON["format"]["start_time"])
+      duration = float(ffprobeJSON["format"]["duration"])
+      length = int((duration - start_time) * 1000) # get length in milliseconds
+      ffprobeResults['length'] = length
+
     except:
       logging.error("Command: '%s'" % ffprobeCmd)
       logging.error("Could not run ffprobe in video file %s" % videoFileName)
 
     ffprobeResults['detection_frame_rate'] = self.detectionFrameRate
+
+    # error check
+    for k in self.ffprobeKeys:
+      if not k in ffprobeResults:
+        raise RuntimeError("FFprobe couldn't find %s in video" % k)
     return ffprobeResults
 
   def get_video_quality(self, width, height):
@@ -186,7 +253,3 @@ class PostProcessDataExtractor( object ):
     with open(outputJSONFileName, "w") as f :
       json.dump(outputDict, f, indent=2 )
 
-# ruby file copy:
-# require 'fileutils'
-# inputFolder = '/home/evan/WinMLVision/Videos/Logo/WorldCup/wc14-BraNed-HLTS/json-all'; outputFolder = '/home/evan/Vision/temp/sendto_cellroti/json'
-# maxFrames = 500; Dir["#{inputFolder}/*"].each do |fn|; frameNum = File.basename(fn).split("_").last.split(".json").first.to_i; FileUtils.cp(fn, outputFolder) if frameNum < maxFrames; end; true
