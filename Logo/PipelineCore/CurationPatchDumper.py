@@ -59,10 +59,9 @@ class CurationPatchDumper(object):
     self.outputFolder = outputFolder
     ConfigReader.mkdir_p(outputFolder)
 
-    #self.num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
-    self.num_consumers = 1
+    self.num_consumers = max(int((self.configReader.multipleOfCPUCount * multiprocessing.cpu_count())/2.0), 1)
 
-  def run():
+  def run(self):
     """Start patch dumpers"""
     logging.debug("Dumper main thread: Setting up %d dump threads" % self.num_consumers)
 
@@ -85,6 +84,7 @@ class CurationPatchDumper(object):
       singlePatchDumper.start()
 
     # feed curation queue
+    logging.debug("Dumper main thread: Created threads, adding curations to dump")
     curationManager = CurationManager(self.jsonFolder, self.configReader)
     for frameNumber in curationManager.getFrameNumbers():
       curationData = {}
@@ -92,6 +92,7 @@ class CurationPatchDumper(object):
       curationData['curation_patches'] = curationManager.getCurationPatches(frameNumber)
       curationDataQueue.put(curationData)
 
+    logging.debug("Dumper main thread: All curations added to queue")
     # all curations are in queue - wait for completion
     for i in xrange(self.num_consumers):
       # for each process, put a poison pill in queue
