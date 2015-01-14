@@ -2,6 +2,7 @@ import glob, os
 import multiprocessing
 from multiprocessing import JoinableQueue, Queue, Process, Manager
 from operator import itemgetter
+import logging, json
 
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
