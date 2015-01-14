@@ -1,7 +1,59 @@
 import glob, os
+import multiprocessing
+from multiprocessing import JoinableQueue, Queue, Process, Manager
 from operator import itemgetter
 
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
+
+def runSingleJSONExtraction(jsonFilesQueue, extractionResultsQueue):
+  """Process to extract curation/localizations from single JSON file"""
+  while True:
+    jsonFileName = jsonFilesQueue.get()
+    if jsonFileName is None:
+      jsonFilesQueue.task_done()
+      # Poison pill means done with json reading
+      break
+    # Read file
+    reader = JSONReaderWriter(jsonFileName)
+    frameNumber = reader.getFrameNumber()
+    frameFileName = reader.getFrameFileName()
+    baseFrameFileName = os.path.basename(frameFileName)
+    classIds = reader.getClassIds()
+
+    # Data structure to hold extraction results
+    extractionResults = {}
+    extractionResults['frame_number'] = frameNumber
+    extractionResults['localizations'] = {}
+    extractionResults['curations'] = {}
+
+    # Extract data
+    for classId in classIds:
+      # Set up data containers
+      extractionResults['localizations'][classId] = []
+      extractionResults['curations'][classId] = []
+      # Read curations from JSON
+      curations = sorted(reader.getCurations(classId), key = itemgetter('score'), reverse = True)        
+      for idx, curation in enumerate(curations):
+        bbox = curation['bbox']
+        score = float(curation['score'])
+        patchFileName = ("%.4f_cls_%s_cur_%d_" % (score, str(classId), idx)) + baseFrameFileName
+        extractionResults['curations'][classId] += [{'frame_number': frameNumber, \
+          'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
+          'frame_filename': frameFileName,'set_number': None}]
+
+      # Read localizations from JSON
+      localizations = sorted(reader.getLocalizations(classId), key = itemgetter('score'), reverse = True)
+      for idx, localization in enumerate(localizations):
+        bbox = localization['bbox']
+        score = float(localization['score'])
+        patchFileName = ("%.4f_cls_%s_loc_%d_" % (score, str(classId), idx)) + baseFrameFileName
+        extractionResults['localizations'][classId] += [{'frame_number': frameNumber, \
+          'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
+          'frame_filename': frameFileName}]    
+    
+    # Put in resluts queue
+    extractionResultsQueue.put(extractionResults)
+    jsonFilesQueue.task_done()
 
 class CurationManager(object):
   def __init__(self, inputJSONFolder, configReader):
@@ -9,6 +61,7 @@ class CurationManager(object):
     self.inputJSONFolder = inputJSONFolder
     self.curationNumOfItemsPerSet = configReader.cr_curationNumOfItemsPerSet
     self.curationNumOfSets = configReader.cr_curationNumOfSets
+    self.num_consumers = max(int(configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
 
     # extract JSONs and compute bboxes
     self.classIds, self.frameNumbers, self.curationBboxes, self.localizationBboxes = self.extractFromJSONFiles()
@@ -108,6 +161,67 @@ class CurationManager(object):
     return frameIndex
 
   def extractFromJSONFiles(self):
+    """Read JSON files and construct curationBboxes dictionary"""
+    # set up queues
+    jsonFilesQueue = JoinableQueue()
+    extractionResultsQueue = Queue()
+
+    # read json files
+    jsonFiles = glob.glob(os.path.join(self.inputJSONFolder, "*json")) + \
+      glob.glob(os.path.join(self.inputJSONFolder, "*snappy"))
+    if len(jsonFiles) <= 0:
+      raise IOError("JSON folder doesn't have any json files")
+
+    # data structure to hold final return values
+    classIds = JSONReaderWriter(jsonFiles[0]).getClassIds()
+    frameNumbers = []
+    curationBboxes = {}
+    for classId in classIds:
+      curationBboxes[classId] = []
+    localizationBboxes = {}
+
+    # put in extraction queue    
+    for jsonFileName in jsonFiles:
+      jsonFilesQueue.put(jsonFileName)
+
+    # start reading JSON files in parallel
+    jsonExtractors = []    
+    for i in xrange(self.num_consumers):
+      jsonExtractor = Process(\
+        target=runSingleJSONExtraction,\
+        args=(jsonFilesQueue, extractionResultsQueue))
+      jsonExtractors += [jsonExtractor]
+      jsonExtractor.start()
+      # for each process, put a poison pill in queue
+      jsonFilesQueue.put(None)
+
+    logging.debug("JSON Extraction: Started all processes for json extraction")
+
+    # wait for all extraction processes to complete
+    jsonFilesQueue.join()
+
+    # collate all results:
+    logging.debug("JSON Extraction: Collating extracted results")
+    while extractionResultsQueue.qsize() > 0:
+      extractionResults = extractionResultsQueue.get()
+
+      frameNumber = extractionResults['frame_number']
+      frameNumbers += [frameNumber]
+      localizationBboxes[frameNumber] = {}
+
+      for classId in classIds:
+        curationBboxes[classId] += extractionResults['curations'][classId]
+        localizationBboxes[frameNumber][classId] = extractionResults['localizations'][classId]
+
+    # now that queues are empty, join threads
+    logging.debug("JSON Extraction: Waiting for threads to join")
+    for jsonExtractor in jsonExtractors:
+      jsonExtractor.join()
+
+    # finally return values
+    return classIds, frameNumbers, curationBboxes, localizationBboxes
+
+  def extractFromJSONFiles_old(self):
     """Read JSON files and construct curationBboxes dictionary"""
     # read json files
     jsonFiles = glob.glob(os.path.join(self.inputJSONFolder, "*json")) + \
