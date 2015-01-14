@@ -37,7 +37,7 @@ class FramePostProcessor(object):
       localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
       localizationPixelMap.setScale( 1.0 )
       # extract all detected bboxes above threshold 
-      if max( localizationPixelMap.cellValues ) >= self.detectorThreshold:
+      if np.max( localizationPixelMap.cellValues ) >= self.detectorThreshold:
         localizationPeaks = PeaksExtractor(localizationPixelMap.toNumpyArray(), \
           self.configReader, self.staticBoundingBoxes.imageDim)
         localizationPatches = localizationPeaks.getPeakBboxes(self.detectorThreshold)
@@ -51,7 +51,7 @@ class FramePostProcessor(object):
       # get best pixelMap - result of maxPooling only
       if self.configReader.ci_computeFrameCuration:
         curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
-        if max( curationPixelMap.cellValues ) >= self.detectorThreshold:
+        if np.max( curationPixelMap.cellValues ) >= self.detectorThreshold:
           curationPixelMap.setScale( 1.0 )
           # extract all curation bboxes and associated intensity
           curationPeaks = PeaksExtractor(curationPixelMap.toNumpyArray(), \
