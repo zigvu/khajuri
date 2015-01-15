@@ -28,7 +28,14 @@ class FramePostProcessor(object):
     # TODO TODO TODO TODO TODO TODO TODO TODO TODO 
     # TODO: update jsonReaderWriter with re-normalized scores
     # for each class except background classes, get localization and curation bboxes
-    for classId in self.nonBackgroundClassIds:
+    classesAboveThreshold, classesbelowThreshold =\
+        self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
+    logging.info( 'Frame %s, classesAboveThreshold %s, classesbelowThreshold %s' % 
+        ( self.jsonReaderWriter.getFrameNumber(), classesAboveThreshold, classesbelowThreshold ) )
+    for classId in classesAboveThreshold:
+      if classId not in self.nonBackgroundClassIds:
+        logging.info( 'Skipping classId %s as its a back ground class' % classId )
+        continue
       # combine detection scores in scale space
       scaleSpaceCombiner = ScaleSpaceCombiner(classId, self.staticBoundingBoxes,\
           self.jsonReaderWriter, self.allCellBoundariesDict )
@@ -37,31 +44,25 @@ class FramePostProcessor(object):
       localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
       localizationPixelMap.setScale( 1.0 )
       # extract all detected bboxes above threshold 
-      if np.max( localizationPixelMap.cellValues ) >= self.detectorThreshold:
-        localizationPeaks = PeaksExtractor(localizationPixelMap.toNumpyArray(), \
-          self.configReader, self.staticBoundingBoxes.imageDim)
-        localizationPatches = localizationPeaks.getPeakBboxes(self.detectorThreshold)
-        # save inferred localization patches to json
-        for lp in localizationPatches:
-          self.jsonReaderWriter.addLocalization(classId, lp['bbox'].json_format(), lp['intensity'])
-      else:
-        logging.info( 'Skipping localization Pixel Map for class %s, frame %s' % ( classId, self.jsonReaderWriter.getFrameNumber() ) )
+      localizationPeaks = PeaksExtractor(localizationPixelMap.toNumpyArray(), \
+        self.configReader, self.staticBoundingBoxes.imageDim)
+      localizationPatches = localizationPeaks.getPeakBboxes(self.detectorThreshold)
+      # save inferred localization patches to json
+      for lp in localizationPatches:
+        self.jsonReaderWriter.addLocalization(classId, lp['bbox'].json_format(), lp['intensity'])
       # ---------------- END: localization ---------------- 
       # ---------------- BEGIN: curation ---------------- 
       # get best pixelMap - result of maxPooling only
       if self.configReader.ci_computeFrameCuration:
         curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
-        if np.max( curationPixelMap.cellValues ) >= self.detectorThreshold:
-          curationPixelMap.setScale( 1.0 )
-          # extract all curation bboxes and associated intensity
-          curationPeaks = PeaksExtractor(curationPixelMap.toNumpyArray(), \
-            self.configReader, self.staticBoundingBoxes.imageDim)
-          curationPatches = curationPeaks.getPatchesForCuration()
-          # save curation patches to json
-          for cp in curationPatches:
-            self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'])
-        else:
-          logging.info( 'Skipping curation Pixel Map for class %s, frame %s' % ( classId, self.jsonReaderWriter.getFrameNumber() ) )
+        curationPixelMap.setScale( 1.0 )
+        # extract all curation bboxes and associated intensity
+        curationPeaks = PeaksExtractor(curationPixelMap.toNumpyArray(), \
+          self.configReader, self.staticBoundingBoxes.imageDim)
+        curationPatches = curationPeaks.getPatchesForCuration()
+        # save curation patches to json
+        for cp in curationPatches:
+          self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'])
       # ---------------- END: curation ---------------- 
       # caching
       self.classPixelMaps[classId] = {'localizationMap': localizationPixelMap}
