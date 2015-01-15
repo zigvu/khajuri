@@ -6,6 +6,49 @@ import logging, json
 
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
+def runSingleClassAggregation(sharedDict, aggregationTasksQueue, aggregationResultsQueue):
+  """Process to aggregate curations into sets"""
+  curationNumOfItemsPerSet = sharedDict['curation_num_of_items_per_set']
+  curationNumOfSets = sharedDict['curation_num_of_sets']
+  frameNumbers = sharedDict['frame_numbers']
+
+  while True:
+    aggregationTask = aggregationTasksQueue.get()
+    if aggregationTask is None:
+      aggregationTasksQueue.task_done()
+      # Poison pill means done with json reading
+      break
+    # Read task
+    classId = aggregationTask['class_id']
+    curationBboxes = aggregationTask['curation_bboxes']
+    # sort curations for whole class based on scores
+    curationBboxes = sorted(curationBboxes, key = itemgetter('score'), reverse = True)
+    # assign each curation a set_number
+    setId = -1
+    for idx, curation in enumerate(curationBboxes):
+      # stopping conditions
+      if (idx % curationNumOfItemsPerSet) == 0:
+        setId += 1
+      if setId >= curationNumOfSets:
+        break
+      curation['set_number'] = setId
+      curation['patch_foldername'] = os.path.join(("set_%d" % setId), "class_" + str(classId))
+
+    # Put in resluts queue
+    frameIndex = {}
+    for frameNumber in frameNumbers:
+      frameIndex[frameNumber] = []
+      for curation in curationBboxes:
+        if (curation['set_number'] != None) and (curation['frame_number'] == frameNumber):
+          frameIndex[frameNumber] += [{'bbox': curation['bbox'], \
+            'patch_foldername': curation['patch_foldername'], \
+            'patch_filename': curation['patch_filename'],\
+            'frame_filename': curation['frame_filename']}]
+
+    aggregationResultsQueue.put(frameIndex)
+    aggregationTasksQueue.task_done()
+
+
 def runSingleJSONExtraction(jsonFilesQueue, extractionResultsQueue):
   """Process to extract curation/localizations from single JSON file"""
   while True:
@@ -132,33 +175,56 @@ class CurationManager(object):
 
   def aggregateCurationPatches(self):
     """Aggregate curations for each frame"""
+    logging.debug("Curation aggregation: Set up curation aggregation")
     # initialize container to hold final curation boxes
     frameIndex = {}
     for frameNumber in self.frameNumbers:
       frameIndex[frameNumber] = []
-    # sort curations for whole class based on scores
+    # set up queues
+    aggregationTasksQueue = JoinableQueue()
+    aggregationResultsQueue = Queue()
+    sharedManager = Manager()
+    sharedDict = sharedManager.dict()
+    sharedDict['curation_num_of_items_per_set'] = self.curationNumOfItemsPerSet
+    sharedDict['curation_num_of_sets'] = self.curationNumOfSets
+    sharedDict['frame_numbers'] = self.frameNumbers
+
+    # add aggregation tasks to queue
     for classId in self.classIds:
-      self.curationBboxes[classId] = sorted(self.curationBboxes[classId], \
-        key = itemgetter('score'), reverse = True)
-      # assign each curation a set_number
-      setId = -1
-      for idx, curation in enumerate(self.curationBboxes[classId]):
-        # stopping conditions
-        if (idx % self.curationNumOfItemsPerSet) == 0:
-          setId += 1
-        if setId >= self.curationNumOfSets:
-          break
-        curation['set_number'] = setId
-        curation['patch_foldername'] = os.path.join(("set_%d" % setId), "class_" + str(classId))
-    # organize curations based on frame numbers for easy access
-    for frameNumber in sorted(frameIndex.keys()):
-      for classId in self.classIds:
-        for curation in self.curationBboxes[classId]:
-          if (curation['set_number'] != None) and (curation['frame_number'] == frameNumber):
-            frameIndex[frameNumber] += [{'bbox': curation['bbox'], \
-              'patch_foldername': curation['patch_foldername'], \
-              'patch_filename': curation['patch_filename'],\
-              'frame_filename': curation['frame_filename']}]
+      aggregationTask = {}
+      aggregationTask['class_id'] = classId
+      aggregationTask['curation_bboxes'] = self.curationBboxes[classId]
+      aggregationTasksQueue.put(aggregationTask)
+
+    # start aggregating runs in parallel
+    curationAggregators = []    
+    for i in xrange(self.num_consumers):
+      curationAggregator = Process(\
+        target=runSingleClassAggregation,\
+        args=(sharedDict, aggregationTasksQueue, aggregationResultsQueue))
+      curationAggregators += [curationAggregator]
+      curationAggregator.start()
+      # for each process, put a poison pill in queue
+      aggregationTasksQueue.put(None)
+
+    logging.debug("Curation aggregation: Started all processes for curation aggregation")
+
+    # wait for all extraction processes to complete
+    aggregationTasksQueue.join()
+
+    # collate all results:
+    logging.debug("Curation aggregation: Collating curation aggregation results")
+    while aggregationResultsQueue.qsize() > 0:
+      frameIndexResults = aggregationResultsQueue.get()
+      for frameNumber in self.frameNumbers:
+        frameIndex[frameNumber] += frameIndexResults[frameNumber]
+
+    # now that queues are empty, join threads
+    logging.debug("Curation aggregation: Waiting for threads to join")
+    for curationAggregator in curationAggregators:
+      curationAggregator.join()
+
+    logging.debug("Curation aggregation: All tasks done, returning")
     return frameIndex
 
   def extractFromJSONFiles(self):
@@ -220,50 +286,5 @@ class CurationManager(object):
       jsonExtractor.join()
 
     # finally return values
-    return classIds, frameNumbers, curationBboxes, localizationBboxes
-
-  def extractFromJSONFiles_old(self):
-    """Read JSON files and construct curationBboxes dictionary"""
-    # read json files
-    jsonFiles = glob.glob(os.path.join(self.inputJSONFolder, "*json")) + \
-      glob.glob(os.path.join(self.inputJSONFolder, "*snappy"))
-    
-    if len(jsonFiles) <= 0:
-      raise IOError("JSON folder doesn't have any json files")
-    classIds = JSONReaderWriter(jsonFiles[0]).getClassIds()
-    frameNumbers = []
-    # extract all curations
-    curationBboxes = {}
-    for classId in classIds:
-      curationBboxes[classId] = []
-    # extract all localizations
-    localizationBboxes = {}
-    for f in jsonFiles:
-      reader = JSONReaderWriter(f)
-      frameNumber = reader.getFrameNumber()
-      frameNumbers += [frameNumber]
-      frameFileName = reader.getFrameFileName()
-      baseFrameFileName = os.path.basename(frameFileName)
-      localizationBboxes[frameNumber] = {}
-      for classId in classIds:
-        # Read curations from JSON
-        curations = sorted(reader.getCurations(classId), key = itemgetter('score'), reverse = True)        
-        for idx, curation in enumerate(curations):
-          bbox = curation['bbox']
-          score = float(curation['score'])
-          patchFileName = ("%.4f_cls_%s_cur_%d_" % (score, str(classId), idx)) + baseFrameFileName
-          curationBboxes[classId] += [{'frame_number': frameNumber, \
-            'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
-            'frame_filename': frameFileName,'set_number': None}]
-        # Read localizations from JSON
-        localizations = sorted(reader.getLocalizations(classId), key = itemgetter('score'), reverse = True)
-        localizationBboxes[frameNumber][classId] = []
-        for idx, localization in enumerate(localizations):
-          bbox = localization['bbox']
-          score = float(localization['score'])
-          #patchFileName = ("%.4f_loc_%d_cls_%s_" % (score, idx, str(classId))) + baseFrameFileName
-          patchFileName = ("%.4f_cls_%s_loc_%d_" % (score, str(classId), idx)) + baseFrameFileName
-          localizationBboxes[frameNumber][classId] += [{'frame_number': frameNumber, \
-            'bbox': bbox, 'score': score, 'patch_filename': patchFileName, \
-            'frame_filename': frameFileName}]        
+    logging.debug("JSON Extraction: Done with all JSON extractions")
     return classIds, frameNumbers, curationBboxes, localizationBboxes
