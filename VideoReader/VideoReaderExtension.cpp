@@ -1,4 +1,4 @@
-#include "VideoDb.h"
+#include "VideoFrameAnnotator.h"
 #include <boost/python.hpp>
 
 BOOST_PYTHON_MODULE(VideoReader)
@@ -37,6 +37,12 @@ BOOST_PYTHON_MODULE(VideoReader)
       .value("LEVELDB", VideoDb::LEVELDB)
       .value("LMDB", VideoDb::LMDB)
       .export_values()
+    ;
+    boost::python::class_<VideoFrameAnnotator>( "VideoFrameAnnotator", boost::python::init<char *>() )
+			.add_property("currentFrameNum", &VideoFrameAnnotator::currentFrameNum)
+      .def("setVideoFrameReader", &VideoFrameAnnotator::setVideoFrameReader)
+      .def("addToVideo", &VideoFrameAnnotator::addToVideo)
+      .def("addBoundingBox", &VideoFrameAnnotator::addBoundingBox)
     ;
 
 }
