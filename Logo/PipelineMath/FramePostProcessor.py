@@ -28,13 +28,17 @@ class FramePostProcessor(object):
     # TODO TODO TODO TODO TODO TODO TODO TODO TODO 
     # TODO: update jsonReaderWriter with re-normalized scores
     # for each class except background classes, get localization and curation bboxes
-    classesAboveThreshold, classesbelowThreshold =\
-        self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
-    logging.info( 'Frame %s, classesAboveThreshold %s, classesbelowThreshold %s' % 
-        ( self.jsonReaderWriter.getFrameNumber(), classesAboveThreshold, classesbelowThreshold ) )
-    for classId in classesAboveThreshold:
+    if self.configReader.ci_computeFrameCuration:
+      classesAboveThreshold, classesbelowThreshold =\
+          self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
+      logging.debug( 'Frame %s, class localized %s' % 
+          ( self.jsonReaderWriter.getFrameNumber(), classesAboveThreshold ) )
+      classesToPostProcess = classesAboveThreshold
+    else:
+      classesToPostProcess = self.nonBackgroundClassIds
+    for classId in classesToPostProcess:
       if classId not in self.nonBackgroundClassIds:
-        logging.info( 'Skipping classId %s as its a back ground class' % classId )
+        logging.debug( 'Skipping classId %s as its a back ground class' % classId )
         continue
       # combine detection scores in scale space
       scaleSpaceCombiner = ScaleSpaceCombiner(classId, self.staticBoundingBoxes,\
