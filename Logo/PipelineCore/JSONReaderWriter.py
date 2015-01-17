@@ -41,9 +41,9 @@ class JSONReaderWriter( object ):
           patchScore = float(patch['scores'][classId])
           myMax = max( patchScore, myMax ) 
       if myMax >= threshold:
-        above.add( classId )
+        above.add( int( classId ) )
       else:
-        below.add( classId )
+        below.add( int( classId ) )
     return above, below
     
 
