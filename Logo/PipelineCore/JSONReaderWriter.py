@@ -32,6 +32,7 @@ class JSONReaderWriter( object ):
         self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
 
   def getClassesSplit( self, threshold ):
+    ''' This method splits the classes into above and below'''
     above = set()
     below = set()
     for classId in self.getClassIds():
