@@ -8,23 +8,16 @@ class JSONReaderWriter( object ):
     self.noPatchScores = False
     if not create_new:
       self.myDict = None
-      # try compressed file first
-      fileBasename, fileExt = os.path.splitext(self.fileName)
-      if fileExt == ".snappy":
+      accessFileName, accessFileExt = JSONReaderWriter.getCorrectFileName(self.fileName)
+      if accessFileExt == ".snappy":
         iostr = StringIO.StringIO()
-        snappy.stream_decompress( open( self.fileName, "rb" ), iostr )
+        snappy.stream_decompress( open( accessFileName, "rb" ), iostr )
         self.myDict = json.loads( iostr.getvalue() )
+      elif accessFileExt == ".json":
+        self.myDict = json.load( open( accessFileName, "r" ) )
       else:
-        try:
-          self.myDict = json.load( open( self.fileName, "r" ) )
-        except:
-          # if in case we can't find the right file, check for compressed as well
-          try:
-            iostr = StringIO.StringIO()
-            snappy.stream_decompress( open( ("%s.snappy" % self.fileName), "rb" ), iostr )
-            self.myDict = json.loads( iostr.getvalue() )
-          except:
-            RuntimeError("File type not recognized %s" % self.fileName)
+        RuntimeError("File type not recognized %s" % self.fileName)
+
       # if patch scores are not present, this will be empty:
       if len(self.myDict[ 'scales' ]) == 0:
         self.noPatchScores = True
@@ -200,3 +193,36 @@ class JSONReaderWriter( object ):
       raise RuntimeError("No patch scores saved in file %s" % self.fileName)
     else:
       return True
+
+  @staticmethod
+  def getCorrectFileName(fileName):
+    """JSON files can now be stored as ".snappy" or ".json
+    When either is supplied, transform to the right file extension
+    based on what is available in the file system"""
+    accessFileName = None
+    accessFileExt = None
+    fileBasename, fileExt = os.path.splitext(fileName)
+    # check if file exists
+    if os.path.isfile(fileName):
+      # if file exists, then return extension and access file name
+      accessFileName = fileName
+      accessFileExt = fileExt
+    else:
+      # if file doesn't exist, then try another extension
+      if fileExt == ".snappy":
+        # if json file, then fileBasename must be JSON
+        if os.path.isfile(fileBasename):
+          fileBasenameTemp, fileExt = os.path.splitext(fileBasename)
+          accessFileName = fileBasename
+          accessFileExt = fileExt
+      else:
+        # if json file, then check to see if snappy
+        fileNameTemp = "%s%s" % (fileName, ".snappy")
+        if os.path.isfile(fileNameTemp):
+          accessFileName = fileNameTemp
+          accessFileExt = ".snappy"
+    # error check
+    if (accessFileName == None) or (accessFileExt == None):
+      raise RuntimeError("File %s couldn't be read from disk" % fileName)
+    # return values
+    return accessFileName, accessFileExt
