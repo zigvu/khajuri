@@ -28,15 +28,21 @@ class FramePostProcessor(object):
     # TODO TODO TODO TODO TODO TODO TODO TODO TODO 
     # TODO: update jsonReaderWriter with re-normalized scores
     # for each class except background classes, get localization and curation bboxes
-    if self.configReader.ci_computeFrameCuration or \
-        self.configReader.ci_saveVideoHeatmap:
+    if self.configReader.ci_saveVideoHeatmap:
       classesToPostProcess = self.nonBackgroundClassIds
+    elif self.configReader.ci_computeFrameCuration:
+      classesAboveThreshold, classesbelowThreshold =\
+          self.jsonReaderWriter.getClassesSplit( min( self.configReader.pe_curationPatchThresholds ) )
+      logging.debug( 'Frame %s, localization/curation computed for classes %s' % 
+          ( self.jsonReaderWriter.getFrameNumber(), classesAboveThreshold ) )
+      classesToPostProcess = classesAboveThreshold
     else:
       classesAboveThreshold, classesbelowThreshold =\
           self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
       logging.debug( 'Frame %s, localization computed for classes %s' % 
           ( self.jsonReaderWriter.getFrameNumber(), classesAboveThreshold ) )
       classesToPostProcess = classesAboveThreshold
+
     for classId in classesToPostProcess:
       if classId not in self.nonBackgroundClassIds:
         continue
