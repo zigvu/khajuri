@@ -30,8 +30,12 @@ class FramePostProcessor(object):
     # for each class except background classes, get localization and curation bboxes
     if self.configReader.ci_saveVideoHeatmap:
       classesToPostProcess = self.nonBackgroundClassIds
-      logging.debug( 'Frame %s, heatmap calculations using all nonBackgroundClassIds' % 
-          self.jsonReaderWriter.getFrameNumber() )
+      if self.configReader.ci_computeFrameCuration:
+        logging.debug( 'Frame %s, heatmap/curation/localization computed for all nonBackgroundClassIds.' % 
+            self.jsonReaderWriter.getFrameNumber() )
+      else:
+        logging.debug( 'Frame %s, heatmap/localization computed for all nonBackgroundClassIds.' % 
+            self.jsonReaderWriter.getFrameNumber() )
     elif self.configReader.ci_computeFrameCuration:
       classesAboveThreshold, classesbelowThreshold =\
           self.jsonReaderWriter.getClassesSplit( min( self.configReader.pe_curationPatchThresholds ) )
