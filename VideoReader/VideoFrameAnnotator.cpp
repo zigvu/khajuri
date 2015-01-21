@@ -28,10 +28,10 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
        sprintf( frameNumber, "FN%d", frameNum );
        std::string frameNumString = frameNumber ;
        cv::putText( *m, frameNumString, cv::Point(30,30), 
-           cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(256,256,256), 1, CV_AA);
+           cv::FONT_HERSHEY_COMPLEX, 1.2, cv::Scalar(256,256,256), 1, CV_AA);
        if( eval ) {
         cv::putText( *m, "#", cv::Point(15,30),
-            cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(256,256,256), 1, CV_AA);
+            cv::FONT_HERSHEY_COMPLEX, 1.2, cv::Scalar(256,256,256), 1, CV_AA);
        }
 
        if( !outputVideo ) {
@@ -46,7 +46,7 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
 
 int VideoFrameAnnotator::addBoundingBox( int frameNum, int x, int y, int width, int height, int classId, float score ) {
   VideoFrame * vFrame;
-  int pixelGap = 3;
+  int pixelGap = 5;
   int lineThickness = 1;
   if( frameNum < currentFrameNum ) {
     return -1;
@@ -62,8 +62,8 @@ int VideoFrameAnnotator::addBoundingBox( int frameNum, int x, int y, int width, 
     cv::Mat * m = vFrame->getMat();
     char txt[50];
     sprintf( txt, "%d:%.2f", classId, score );
-    cv::putText( *m, txt, cv::Point( x + pixelGap , y + pixelGap - 10 ), 
-        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.8, cv::Scalar(256,256,256), 1, CV_AA);
+    cv::putText( *m, txt, cv::Point( x + pixelGap , y + pixelGap + 15 ), 
+        cv::FONT_HERSHEY_COMPLEX, 1.2, cv::Scalar(256,256,256), 2, CV_AA);
     cv::rectangle( *m, cv::Point( x, y ),
         cv::Point( x + width, y + height ),
         cv::Scalar(0,0,256),
