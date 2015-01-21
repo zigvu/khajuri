@@ -1,5 +1,6 @@
 from collections import OrderedDict
 import numpy as np
+import logging
 
 from Logo.PipelineMath.ScaleSpaceCombiner import ScaleSpaceCombiner
 from Logo.PipelineMath.PeaksExtractor import PeaksExtractor
@@ -27,7 +28,30 @@ class FramePostProcessor(object):
     # TODO TODO TODO TODO TODO TODO TODO TODO TODO 
     # TODO: update jsonReaderWriter with re-normalized scores
     # for each class except background classes, get localization and curation bboxes
-    for classId in self.nonBackgroundClassIds:
+    if self.configReader.ci_saveVideoHeatmap:
+      classesToPostProcess = self.nonBackgroundClassIds
+      if self.configReader.ci_computeFrameCuration:
+        logging.debug( 'Frame %s, heatmap/curation/localization computed for all nonBackgroundClassIds.' % 
+            self.jsonReaderWriter.getFrameNumber() )
+      else:
+        logging.debug( 'Frame %s, heatmap/localization computed for all nonBackgroundClassIds.' % 
+            self.jsonReaderWriter.getFrameNumber() )
+    elif self.configReader.ci_computeFrameCuration:
+      classesAboveThreshold, classesbelowThreshold =\
+          self.jsonReaderWriter.getClassesSplit( min( self.configReader.pe_curationPatchThresholds ) )
+      logging.debug( 'Frame %s, localization/curation computed for classes %s' % 
+          ( self.jsonReaderWriter.getFrameNumber(), map( int, classesAboveThreshold ) ) )
+      classesToPostProcess = classesAboveThreshold
+    else:
+      classesAboveThreshold, classesbelowThreshold =\
+          self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
+      logging.debug( 'Frame %s, localization computed for classes %s' % 
+          ( self.jsonReaderWriter.getFrameNumber(), map( int, classesAboveThreshold ) ) )
+      classesToPostProcess = classesAboveThreshold
+
+    for classId in classesToPostProcess:
+      if classId not in self.nonBackgroundClassIds:
+        continue
       # combine detection scores in scale space
       scaleSpaceCombiner = ScaleSpaceCombiner(classId, self.staticBoundingBoxes,\
           self.jsonReaderWriter, self.allCellBoundariesDict )

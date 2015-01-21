@@ -24,6 +24,24 @@ class JSONReaderWriter( object ):
       else:
         self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
 
+  def getClassesSplit( self, threshold ):
+    ''' This method splits the classes into above and below'''
+    above = set()
+    below = set()
+    for classId in self.getClassIds():
+      myMax = -1
+      for scale in self.scalingFactors:
+        for patch in self.getPatches( scale ):
+          patchScore = float(patch['scores'][classId])
+          myMax = max( patchScore, myMax ) 
+      if myMax >= threshold:
+        above.add( classId )
+      else:
+        below.add( classId )
+    return above, below
+    
+
+
   def getAnnotationFileName( self ):
     return self.myDict[ 'annotation_filename' ]
 
