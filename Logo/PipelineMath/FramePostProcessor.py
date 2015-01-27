@@ -89,6 +89,6 @@ class FramePostProcessor(object):
 
   def saveLocalizations(self, numpyFileBaseName):
     """Save localization calculations to different files in npy format"""
-    for classId in self.nonBackgroundClassIds:
+    for classId in self.configReader.ci_heatMapClassIds:
       clsFilename = "%s_%s.npy" % (numpyFileBaseName, str(classId))
       np.save(clsFilename, self.classPixelMaps[classId]['localizationMap'].cellValues)

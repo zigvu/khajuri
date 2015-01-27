@@ -91,7 +91,6 @@ post_processing:
 curation:
   # total patches/frames per class = num_of_sets * num_of_items_per_set
   num_of_sets:                                5
-<<<<<<< HEAD
   num_of_items_per_set:                       100
 
 # Cellroti
@@ -107,11 +106,10 @@ cellroti:
   # for example, a value of 10 indicates that there will be only 
   # 1 sample frame in cellroti per 10 seconds worth of video
   num_seconds_per_sample_frame:               5
-=======
-  num_of_patch_per_set:                       100
 
 heatmap:
   classes:
    - '0'
+   - '1'
+   - '2'
    - '6'
->>>>>>> supportHeatMapClassInConfig
