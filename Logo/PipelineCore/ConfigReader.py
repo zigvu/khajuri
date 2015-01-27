@@ -73,6 +73,7 @@ class ConfigReader:
     self.ci_allClassIds = caffeInput['all_classes']
     self.ci_backgroundClassIds = caffeInput['background_classes']
     self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds if x not in self.ci_backgroundClassIds]
+    self.ci_heatMapClassIds = config[ 'heatmap' ] [ 'classes' ]
 
     # Post processing
     postProcessing = config['post_processing']

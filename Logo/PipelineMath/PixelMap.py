@@ -141,7 +141,6 @@ class PixelMap(object):
           newYStride  = staticBoundingBoxes.ystepSize[ s ]
           if existingXStride != newXStride or existingYStride != newYStride:
             useSavedOne = False
-      
       if allCellBoundaries[ "frameDim" ][ "width" ] != staticBoundingBoxes.imageDim.width:
         useSavedOne = False
       if allCellBoundaries[ "frameDim" ][ "height" ] != staticBoundingBoxes.imageDim.height:

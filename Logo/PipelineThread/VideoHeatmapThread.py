@@ -4,6 +4,8 @@ import logging
 import numpy as np
 
 from Logo.PipelineMath.Rectangle import Rectangle
+from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
+from Logo.PipelineMath.PixelMap import PixelMap
 
 from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
@@ -22,6 +24,8 @@ class VideoHeatmapThread( object ):
     self.videoOutputFolder = videoOutputFolder
 
     ConfigReader.mkdir_p(self.videoOutputFolder)
+
+    # Check for config.yaml file's save_heatmap and curation
 
     # Logging levels
     logging.basicConfig(format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s', 
@@ -49,11 +53,17 @@ class VideoHeatmapThread( object ):
     videoFrameReader = VideoFrameReader(self.videoFileName)
     fps = videoFrameReader.getFPS()
     imageDim = videoFrameReader.getImageDim()
+    patchDimension = Rectangle.rectangle_from_dimensions(\
+        self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
+    staticBoundingBoxes = BoundingBoxes(imageDim, \
+        self.configReader.sw_xStride, self.configReader.sw_xStride, patchDimension)
+    scales = self.configReader.sw_scales
+    self.allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, scales)
 
     # Create as many output videos as non background classes
     videoBaseName = os.path.basename(self.videoFileName).split('.')[0]
     videoHeatMaps = OrderedDict()
-    for classId in self.configReader.ci_nonBackgroundClassIds:
+    for classId in self.configReader.ci_heatMapClassIds:
       outVideoFileName = os.path.join(self.videoOutputFolder, \
         "%s_%s.avi" % (videoBaseName, str(classId)))
       logging.debug("Videos to create: %s" % outVideoFileName)
@@ -66,7 +76,7 @@ class VideoHeatmapThread( object ):
         # Save each frame
         imageFileName = os.path.join(self.videoOutputFolder, "temp_%d.png" % currentFrameNum)
         videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
-        for classId in self.configReader.ci_nonBackgroundClassIds:
+        for classId in self.configReader.ci_heatMapClassIds:
           imgLclz = ImageManipulator(imageFileName)
           bbox = Rectangle.rectangle_from_endpoints(1,1,250,35)
           label = "Frame: %d" % currentFrameNum
@@ -85,7 +95,7 @@ class VideoHeatmapThread( object ):
         jsonReaderWriter = JSONReaderWriter(frameIndex[currentFrameNum])
         numpyFileBaseName = os.path.join(self.numpyFolder, "%d" % currentFrameNum)
         lclzPixelMaps = {}
-        for classId in self.configReader.ci_nonBackgroundClassIds:
+        for classId in self.configReader.ci_heatMapClassIds:
           clsFilename = "%s_%s.npy" % (numpyFileBaseName, str(classId))
           lclzPixelMaps[classId] = np.load(clsFilename)
 
@@ -94,9 +104,11 @@ class VideoHeatmapThread( object ):
       videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
 
       # Add heatmap and bounding boxes    
-      for classId in self.configReader.ci_nonBackgroundClassIds:
+      for classId in self.configReader.ci_heatMapClassIds:
         imgLclz = ImageManipulator(imageFileName)
-        imgLclz.addPixelMap(lclzPixelMaps[classId])
+        pixelMap = PixelMap( self.allCellBoundariesDict, 1.0 )
+        pixelMap.cellValues = lclzPixelMaps[classId]
+        imgLclz.addPixelMap( pixelMap.toNumpyArray() )
         for lclzPatch in jsonReaderWriter.getLocalizations(classId):
           bbox = Rectangle.rectangle_from_json(lclzPatch['bbox'])
           score = float(lclzPatch['score'])
@@ -120,7 +132,7 @@ class VideoHeatmapThread( object ):
 
     logging.debug("Saving heatmap videos")
     # Once video is done, save all files
-    for classId in self.configReader.ci_nonBackgroundClassIds:
+    for classId in self.configReader.ci_heatMapClassIds:
       videoHeatMaps[classId].save()
     logging.info("Finished creating videos")
     endTime = time.time()
