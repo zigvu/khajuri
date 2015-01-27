@@ -24,12 +24,11 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
     if( vFrame ) {
        cv::Mat * m = vFrame->getMat();
        int w = vFrame->getWidth(), h = vFrame->getHeight();
-       if( eval ) {
-          cv::putText( *m, "#", cv::Point(15,30),
-              cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(256,256,256), 1, CV_AA);
-       }
        char frameNumber[100];
        sprintf( frameNumber, "FN%d", frameNum );
+       if( eval ) {
+          sprintf( frameNumber, "FN%d#", frameNum );
+       }
        std::string frameNumString = frameNumber ;
        cv::putText( *m, frameNumString, cv::Point(30,30), 
            cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(256,256,256), 1, CV_AA);
