@@ -45,6 +45,7 @@ class VideoFrame : public list_base_hook<>{
     void saveCroppedFrame( char *fileNamePrefix, double scale, int x, int y, int width, int height );
 		void readPFrame(SwsContext *sws_ctx);
     void saveCroppedFrameToDatum( double scale, int x, int y, int width, int height, int label, VideoReader::Datum *datum );
+    cv::Mat *getMat();
 
 	private:
     IplImage *iplImage;

@@ -1,4 +1,4 @@
-#include "VideoDb.h"
+#include "VideoFrameAnnotator.h"
 #include <boost/python.hpp>
 
 BOOST_PYTHON_MODULE(VideoReader)
@@ -24,6 +24,12 @@ BOOST_PYTHON_MODULE(VideoReader)
       .def("startLogger", &VideoFrameReader::startLogger)
       .def("stopLogger", &VideoFrameReader::stopLogger)
     ;
+    boost::python::class_<VideoFrameAnnotator>( "VideoFrameAnnotator", boost::python::init<char *>() )
+			.add_property("currentFrameNum", &VideoFrameAnnotator::currentFrameNum)
+      .def("setVideoFrameReader", &VideoFrameAnnotator::setVideoFrameReader)
+      .def("addToVideo", &VideoFrameAnnotator::addToVideo)
+      .def("addBoundingBox", &VideoFrameAnnotator::addBoundingBox)
+    ;
     boost::python::scope in_VideoDb = boost::python::class_<VideoDb, boost::noncopyable >( 
         "VideoDb", boost::python::init<VideoDb::DBTYPE, int>() )
       .def("createNewDb", &VideoDb::createNewDb)
@@ -38,5 +44,4 @@ BOOST_PYTHON_MODULE(VideoReader)
       .value("LMDB", VideoDb::LMDB)
       .export_values()
     ;
-
 }
