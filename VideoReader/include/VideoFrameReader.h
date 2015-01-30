@@ -42,7 +42,7 @@ class VideoFrameReader {
         int x, int y, int width, int height, int label, VideoReader::Datum *datum );
     VideoFrame* getFrameWithFrameNumber(int64_t frameNumber);
     int seekToFrameWithFrameNumber(int64_t frameNumber);
-    uint getLengthInMicroSeconds();
+    int64_t getLengthInMicroSeconds();
     double getFps();
     int getTotalFrames();
     
