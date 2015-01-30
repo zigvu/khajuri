@@ -306,7 +306,7 @@ int VideoFrameReader::seekToFrameWithFrameNumber(int64_t frameNumber){
   return SEEK_FAIL;
 }
 
-uint VideoFrameReader::getLengthInMicroSeconds() {
+int64_t VideoFrameReader::getLengthInMicroSeconds() {
   return pFormatCtx->duration;
 }
 
