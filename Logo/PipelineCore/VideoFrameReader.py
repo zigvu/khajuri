@@ -13,7 +13,7 @@ class VideoFrameReader(object):
     """Initialization"""
     # Load video - since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
-    self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
+    self.videoFrameReader = VideoReader.VideoFrameReader(5000, 5000, videoFileName)
     self.videoFrameReader.generateFrames()
     time.sleep(1)
 

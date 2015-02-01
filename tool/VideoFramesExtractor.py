@@ -7,7 +7,7 @@ from multiprocessing import Process
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append('%s/../VideoReader' % baseScriptDir)
 
-import VideoReader
+from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 
 if __name__ == '__main__':
   if len(sys.argv) < 4:
@@ -21,18 +21,10 @@ if __name__ == '__main__':
     os.makedirs(outputDir)
   f = open(frameNumsFile, "r")
   frameNums = f.read().split()
-  videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
-  videoFrameReader.generateFrames()
-  fps = videoFrameReader.fps
+  videoFrameReader = VideoFrameReader(videoFileName)
   outputDirId = os.path.basename(outputDir)
-  for frameNum in sorted(frameNums):
+  for frameNum in frameNums:
     fileName = os.path.join(
         outputDir, "%s_frame_%s.png" % (outputDirId, frameNum))
     videoFrameReader.savePngWithFrameNumber(int(frameNum), fileName)
-    if videoFrameReader.eof:
-      break
-
-  while not videoFrameReader.eof:
-    videoFrameReader.seekToFrameWithFrameNumber(int(frameNum))
-    frameNum = int(frameNum) + 100
-  videoFrameReader.waitForEOF()
+  videoFrameReader.close()
