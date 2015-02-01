@@ -146,7 +146,7 @@ class PixelMap(object):
         useSavedOne = False
       if allCellBoundaries[ "frameDim" ][ "height" ] != staticBoundingBoxes.imageDim.height:
         useSavedOne = False
-
+        
     if useSavedOne:
       logging.info( "Using already computed boundaries from file at %s" % saveFile )
       return allCellBoundaries
