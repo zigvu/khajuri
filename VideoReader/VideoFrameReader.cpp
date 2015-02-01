@@ -135,6 +135,7 @@ void VideoFrameReader::videoFrameBufferProducer(){
         wasLastFrameFinished = true;
 
         vf->setFrameNumber(frameNumber++);
+        maxVideoFrameNumber = frameNumber - 1;
         vf->setTimeStamp(packet.pts * time_base); // this will be ignored if not new frame
 
 	      vf->readPFrame( sws_ctx );
@@ -247,7 +248,7 @@ VideoFrame* VideoFrameReader::getFrameWithFrameNumber(int64_t frameNumber){
 
 int VideoFrameReader::seekToFrameWithFrameNumber(int64_t frameNumber){
   
-  if((frameNumber < 0) || (frameNumber > maxVideoFrameNumber)){
+  if((frameNumber < 0) || (frameNumber > maxVideoFrameNumber && eof)){
     DEBUG("VideoFrameReader: seekToFrameWithFrameNumber: SEEK_OUT_OF_BOUNDS: Request: %lld, Max: %lld\n", 
       (long long)frameNumber, (long long)maxVideoFrameNumber);
 
@@ -261,7 +262,8 @@ int VideoFrameReader::seekToFrameWithFrameNumber(int64_t frameNumber){
   }
   // if it is in the tail region, no need to change list
   if((frameNumber >= videoFrameList.back().getFrameNumber())
-    && ((frameNumber - videoFrameList.back().getFrameNumber()) < listTailBufNumOfFrames)){
+    && ((frameNumber - videoFrameList.back().getFrameNumber()) < listTailBufNumOfFrames)
+    && frameNumber <= videoFrameList.front().getFrameNumber() ){
     DEBUG("%s\n","VideoFrameReader: seekToFrameWithFrameNumber: SEEK_SUCCESS - within tail");
 
     return SEEK_SUCCESS;
@@ -297,7 +299,7 @@ int VideoFrameReader::seekToFrameWithFrameNumber(int64_t frameNumber){
     videoFrameBufferConsumer(numberOfFramesToConsume);
 
     // TODO: remove wait with mutex:
-    boost::posix_time::seconds workTime(1);
+    boost::posix_time::seconds workTime(0.01);
     boost::this_thread::sleep(workTime);
 
     return seekToFrameWithFrameNumber(frameNumber);
