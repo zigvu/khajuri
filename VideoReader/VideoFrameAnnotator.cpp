@@ -23,14 +23,16 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
     VideoFrame *vFrame = vfr->getFrameWithFrameNumber( frameNum );
     if( vFrame ) {
        cv::Mat * m = vFrame->getMat();
-       int w = vFrame->getWidth(), h = vFrame->getHeight();
+       int w = vFrame->getWidth(), h = vFrame->getHeight() + 30;
+       cv::Mat row = cv::Mat::zeros(30, w, CV_8UC3);
+       row.push_back( *m );
        char frameNumber[100];
        sprintf( frameNumber, "FN%d", frameNum );
        if( eval ) {
           sprintf( frameNumber, "FN%d#", frameNum );
        }
        std::string frameNumString = frameNumber ;
-       cv::putText( *m, frameNumString, cv::Point(30,30), 
+       cv::putText( row, frameNumString, cv::Point(w/2.0,25), 
            cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(256,256,256), 1, CV_AA);
 
        if( !outputVideo ) {
@@ -38,7 +40,7 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
          outputVideo->open( videoFileName, CV_FOURCC('P','I','M','1'),
              vfr->getFps(), cv::Size( w, h ) , true);
        }
-       *outputVideo << *m;
+       *outputVideo << row;
     }
   }
 }
