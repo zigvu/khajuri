@@ -19,6 +19,7 @@ class FramePostProcessor(object):
 
     # cache computation
     self.classPixelMaps = {}
+    self.bestLocalizationScale = {}
 
   def run(self):
     """Collect and analyze detection results"""
@@ -58,6 +59,7 @@ class FramePostProcessor(object):
       # ---------------- BEGIN: localization ---------------- 
       # get best pixelMap - result of averaging and maxPooling
       localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
+      self.bestLocalizationScale[ classId ] = localizationPixelMap.scaleFactor
       localizationPixelMap.setScale( 1.0 )
       # extract all detected bboxes above threshold 
       localizationPeaks = PeaksExtractor(localizationPixelMap.toNumpyArray(), \

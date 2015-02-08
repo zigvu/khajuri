@@ -146,6 +146,13 @@ class JSONReaderWriter( object ):
   def getLocalizations( self, classId ):
     return self.myDict['localizations'][classId]
 
+  def getClassIdsWithLocalizations( self ):
+    classIds = []
+    for classId, value in self.myDict['localizations'].iteritems():
+      if value:
+        classIds.append( classId )
+    return classIds
+
   def addLocalization( self, classId, bbox, score ):
     self.myDict['localizations'][classId] += [{'bbox': bbox, 'score': score}]
 
