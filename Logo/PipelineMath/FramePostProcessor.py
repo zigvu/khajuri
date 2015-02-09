@@ -28,28 +28,25 @@ class FramePostProcessor(object):
     # TODO TODO TODO TODO TODO TODO TODO TODO TODO 
     # TODO: update jsonReaderWriter with re-normalized scores
     # for each class except background classes, get localization and curation bboxes
+    classesToPostProcess = []
+    heatmapClassIds = []
+    curationClassIds = []
+    
     if self.configReader.ci_saveVideoHeatmap:
-      classesToPostProcess = self.nonBackgroundClassIds
-      if self.configReader.ci_computeFrameCuration:
-        logging.debug( 'Frame %s, heatmap/curation/localization computed for all nonBackgroundClassIds.' % 
-            self.jsonReaderWriter.getFrameNumber() )
-      else:
-        logging.debug( 'Frame %s, heatmap/localization computed for all nonBackgroundClassIds.' % 
-            self.jsonReaderWriter.getFrameNumber() )
-    elif self.configReader.ci_computeFrameCuration:
+      classesToPostProcess.extend( self.configReader.ci_heatMapClassIds )
+      heatmapClassIds = map( int, self.configReader.ci_heatMapClassIds )
+    if self.configReader.ci_computeFrameCuration:
       classesAboveThreshold, classesbelowThreshold =\
           self.jsonReaderWriter.getClassesSplit( min( self.configReader.pe_curationPatchThresholds ) )
-      logging.debug( 'Frame %s, localization/curation computed for classes %s' % 
-          ( self.jsonReaderWriter.getFrameNumber(), map( int, classesAboveThreshold ) ) )
-      classesToPostProcess = classesAboveThreshold
-    else:
-      classesAboveThreshold, classesbelowThreshold =\
-          self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
-      logging.debug( 'Frame %s, localization computed for classes %s' % 
-          ( self.jsonReaderWriter.getFrameNumber(), map( int, classesAboveThreshold ) ) )
-      classesToPostProcess = classesAboveThreshold
+      classesToPostProcess.extend( classesAboveThreshold )
+      curationClassIds = map( int, classesAboveThreshold )
+    classesAboveThreshold, classesbelowThreshold =\
+        self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
+    classesToPostProcess.extend( classesAboveThreshold )
+    logging.debug( 'Frame %s, heatmaps saved for classes %s, curations computed for classes %s, localizations computed for classes %s' % 
+        ( self.jsonReaderWriter.getFrameNumber(), heatmapClassIds, curationClassIds,  map( int, classesAboveThreshold ) ) )
 
-    for classId in classesToPostProcess:
+    for classId in set(classesToPostProcess):
       if classId not in self.nonBackgroundClassIds:
         continue
       # combine detection scores in scale space
