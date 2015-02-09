@@ -18,6 +18,23 @@ VideoFrameAnnotator::~VideoFrameAnnotator(){
   }
 }
 
+static void addRectangle( cv::Mat *m, int x, int y, int width, int height ) {
+  int lineThickness = 1;
+  cv::rectangle( *m, cv::Point( x, y ),
+      cv::Point( x + width, y + height ),
+      cv::Scalar(256,256,256),
+      lineThickness );
+  cv::rectangle( *m, cv::Point( x + 1, y + 1 ),
+      cv::Point( x + width - 1, y + height - 1 ),
+      cv::Scalar(0,0,0),
+      lineThickness );
+  cv::rectangle( *m, cv::Point( x - 1, y - 1 ),
+      cv::Point( x + width + 1, y + height + 1 ),
+      cv::Scalar(0,0,256),
+      lineThickness );
+}
+
+
 void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
   if( vfr ) {
     VideoFrame *vFrame = vfr->getFrameWithFrameNumber( frameNum );
@@ -31,7 +48,8 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
        }
        std::string frameNumString = frameNumber ;
        cv::putText( *m, frameNumString, cv::Point(30,30), 
-           cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(256,256,256), 1, CV_AA);
+           cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(256,256,256), 2, CV_AA);
+       addRectangle( m, 1, 1, 255, 35 );
 
        if( !outputVideo ) {
          outputVideo = new cv::VideoWriter;
@@ -46,7 +64,6 @@ void VideoFrameAnnotator::addToVideo( int frameNum, bool eval ) {
 int VideoFrameAnnotator::addBoundingBox( int frameNum, int x, int y, int width, int height, int classId, float score ) {
   VideoFrame * vFrame;
   int pixelGap = 5;
-  int lineThickness = 1;
   if( frameNum < currentFrameNum ) {
     return -1;
   }
@@ -63,18 +80,7 @@ int VideoFrameAnnotator::addBoundingBox( int frameNum, int x, int y, int width, 
     sprintf( txt, "%d:%.2f", classId, score );
     cv::putText( *m, txt, cv::Point( x + pixelGap , y + pixelGap + 15 ), 
         cv::FONT_HERSHEY_SIMPLEX, 0.8, cv::Scalar(256,256,256), 2, CV_AA);
-    cv::rectangle( *m, cv::Point( x, y ),
-        cv::Point( x + width, y + height ),
-        cv::Scalar(256,256,256),
-        lineThickness );
-    cv::rectangle( *m, cv::Point( x + 1, y + 1 ),
-        cv::Point( x + width - 1, y + height - 1 ),
-        cv::Scalar(0,0,0),
-        lineThickness );
-    cv::rectangle( *m, cv::Point( x - 1, y - 1 ),
-        cv::Point( x + width + 1, y + height + 1 ),
-        cv::Scalar(0,0,256),
-        lineThickness );
+    addRectangle( m, x, y, width, height );
   }
   currentFrameNum = frameNum;
   return 0;
