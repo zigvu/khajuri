@@ -60,8 +60,22 @@ class FrameDebugger( object ):
           logging.debug( 'Show scale where localizations were identified' )
           print 'Best localization Scale is at %s for classId %s' % ( framePostProcessor.bestLocalizationScale[ classId ], classId )
           logging.debug( 'Dump heatmap frame for each classId identified in localizations' )
+          htmlFile = open( os.path.join( outputFolder, "%s.html" % classId ), "w" )
+          htmlFile.write( "<html>" + "\n" )
+          htmlFile.write( " <head>\
+          <script>\
+          function writeText(txt,id,classId) {\
+                document.getElementById(\"desc\").innerHTML = txt;\
+                document.getElementById(\"patch\").src = \"patch_\" + classId + \"_\" + id + \".png\" ;\
+          }\
+          </script>\
+          </head> " )
+          htmlFile.write( "<table><tr><td>" )
           if frame != None:
-            imageFileName = os.path.join(self.outputFolder, "debug_%s_%s.png" % ( frameNum, classId ) )
+            baseName = "debug_%s_%s.png" % ( frameNum, classId )
+            imageFileName = os.path.join(self.outputFolder, baseName )
+            htmlFile.write( "<img src=%s/ usemap='#patchmap'></td>" % baseName + "\n" )
+            htmlFile.write( "<td><img id=patch></img><td>Score:<div id=\"desc\"/></td></tr></table>" )
             self.videoFrameReader.savePngWithFrameNumber(int(frameNum), str(imageFileName))
             image = ImageManipulator(imageFileName)
             bbox = Rectangle.rectangle_from_endpoints(1,1,250,35)
@@ -82,8 +96,38 @@ class FrameDebugger( object ):
                   cb["y3"] )
               #image.addLabeledBbox( bbox, "")
               pass
+            htmlFile.write( "<map name='patchmap'>" + "\n" )
+            scale =  framePostProcessor.bestLocalizationScale[ classId ]
+            patchId = 0
+            for patch in jsonReaderWriter.getPatches( scale ):
+              x = patch[ 'patch' ] ['x' ]/scale
+              y = patch[ 'patch' ] ['y' ]/scale
+              width = patch[ 'patch' ] ['width' ]
+              height = patch[ 'patch' ] ['height' ]
+              x1 = x + width/scale
+              y1 = y + height/scale
+              score = patch[ 'scores' ] [classId ]
+              patchImageFile = os.path.join( outputFolder, "patch_%s_%s.png" % ( classId, patchId ) )
+              self.videoFrameReader.videoFrameReader.savePatchFromFrameNumber( 
+                  frameNum, 
+                  str(patchImageFile),
+                  scale, 
+                  int( patch[ 'patch' ] ['x' ] ), 
+                  int( patch[ 'patch' ] ['y' ] ), 
+                  int( patch[ 'patch' ] ['width' ] ), 
+                  int( patch[ 'patch' ] ['height' ] ), 
+                  )
+              htmlStr = '<area shape="rect" coords="%s,%s,%s,%s" href="#" onclick=writeText(\"%s\",%s,%s)>' %\
+                  ( x, y, x1, y1, score, patchId, classId )
+              htmlFile.write( htmlStr  + "\n" )
+              patchId += 1
+
+            htmlFile.write( "</map>" + "\n" )
+
+              
 
             image.saveImage( imageFileName )
+          htmlFile.write( "</html>"+ "\n" )
 
 
 if __name__ == '__main__':
