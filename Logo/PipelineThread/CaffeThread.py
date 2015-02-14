@@ -48,7 +48,7 @@ def caffeNetRun(sharedDict, leveldbQueue, postProcessQueue, deviceId):
 
 class CaffeThread( object ):
   """Class responsible for starting and running caffe"""
-  def __init__(self, configFileName, videoFileName, leveldbFolder, jsonFolder, numpyFolder):
+  def __init__(self, configFileName, videoFileName):
     """Initialize values"""
     self.configFileName = configFileName
     self.configReader = ConfigReader(configFileName)
@@ -59,9 +59,9 @@ class CaffeThread( object ):
     self.runPostProcessor = self.configReader.ci_runCaffePostProcessInParallel
 
     # Folder to save files
-    self.leveldbFolder = leveldbFolder
-    self.jsonFolder = jsonFolder
-    self.numpyFolder = numpyFolder
+    self.leveldbFolder = self.configReader.sw_folders_leveldb
+    self.jsonFolder = self.configReader.sw_folders_json
+    self.numpyFolder = self.configReader.sw_folders_numpy
     ConfigReader.rm_rf(self.leveldbFolder)
     ConfigReader.mkdir_p(self.leveldbFolder)
     ConfigReader.mkdir_p(self.jsonFolder)

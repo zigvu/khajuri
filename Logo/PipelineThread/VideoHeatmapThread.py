@@ -13,13 +13,13 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 
 class VideoHeatmapThread( object ):
   """Class to draw heatmap for all classes in video"""
-  def __init__(self, configFileName, videoFileName, jsonFolder, numpyFolder, videoOutputFolder):
+  def __init__(self, configFileName, videoFileName):
     """Initialize values"""
     self.configReader = ConfigReader(configFileName)
     self.videoFileName = videoFileName
-    self.jsonFolder = jsonFolder
-    self.numpyFolder = numpyFolder
-    self.videoOutputFolder = videoOutputFolder
+    self.jsonFolder = self.configReader.sw_folders_json
+    self.numpyFolder = self.configReader.sw_folders_numpy
+    self.videoOutputFolder = self.configReader.sw_folders_video
 
     ConfigReader.mkdir_p(self.videoOutputFolder)
 

@@ -8,15 +8,12 @@ sys.path.append( '%s/../../VideoReader'% baseScriptDir  )
 from Logo.PipelineThread.VideoLocalizationCppThread import VideoLocalizationCppThread
 
 if __name__ == '__main__':
-  if len(sys.argv) < 5:
-    print 'Usage %s <config.yaml> <videoFileName> <jsonFolder> <videoOutputFolder>' % sys.argv[ 0 ]
+  if len(sys.argv) < 3:
+    print 'Usage %s <config.yaml> <videoFileName>' % sys.argv[ 0 ]
     sys.exit(1)
 
   configFileName = sys.argv[1]
   videoFileName = sys.argv[2]
-  jsonFolder = sys.argv[3]
-  videoOutputFolder = sys.argv[4]
 
-  videoLocalizationThread = VideoLocalizationCppThread(configFileName, \
-  	videoFileName, jsonFolder, videoOutputFolder)
+  videoLocalizationThread = VideoLocalizationCppThread(configFileName,videoFileName)
   videoLocalizationThread.run()

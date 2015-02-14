@@ -69,7 +69,7 @@ def runFramePostProcess(sharedDict, postProcessQueue):
 
 class VideoProcessThread( object ):
   """Class responsible for starting and running caffe on video"""
-  def __init__(self, configFileName, videoFileName, baseDbFolder, jsonFolder, numpyFolder):
+  def __init__(self, configFileName, videoFileName):
     """Initialize values"""
     self.configFileName = configFileName
     self.videoFileName = videoFileName
@@ -80,9 +80,9 @@ class VideoProcessThread( object ):
     self.frameStartNumber = self.configReader.ci_videoFrameNumberStart
 
     # Folder to save files
-    self.baseDbFolder = baseDbFolder
-    self.jsonFolder = jsonFolder
-    self.numpyFolder = numpyFolder
+    self.baseDbFolder = self.configReader.sw_folders_leveldb
+    self.jsonFolder = self.configReader.sw_folders_json
+    self.numpyFolder = self.configReader.sw_folders_numpy
     ConfigReader.rm_rf(self.baseDbFolder)
     ConfigReader.mkdir_p(self.baseDbFolder)
     ConfigReader.mkdir_p(self.jsonFolder)

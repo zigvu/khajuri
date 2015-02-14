@@ -14,16 +14,16 @@ from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.CurationManager import CurationManager
 
 if __name__ == "__main__":
-  if len( sys.argv ) < 6:
-    print 'Usage %s <config.yaml> <videoFileName> <jsonFolder> <outputFolder> <classId>' % sys.argv[ 0 ]
+  if len( sys.argv ) < 4:
+    print 'Usage %s <config.yaml> <videoFileName> <classId>' % sys.argv[ 0 ]
     sys.exit( 1 )
   configFileName = sys.argv[ 1 ]
   videoFileName = sys.argv[ 2 ]
-  jsonFolder = sys.argv[ 3 ]
-  outputFolder = sys.argv[ 4 ]
-  classId = str(sys.argv[ 5 ])
+  classId = str(sys.argv[ 3 ])
 
   configReader = ConfigReader(configFileName)
+  jsonFolder = configReader.sw_folders_json
+  outputFolder = configReader.sw_folders_frame
   # Logging levels
   logging.basicConfig(format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s', 
     level=configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
