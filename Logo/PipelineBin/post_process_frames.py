@@ -8,13 +8,11 @@ sys.path.append( '%s/../../VideoReader'% baseScriptDir  )
 from Logo.PipelineThread.PostProcessThread import PostProcessThread
 
 if __name__ == '__main__':
-  if len(sys.argv) < 4:
-    print 'Usage %s <config.yaml> <jsonFolder> <numpyFolder>' % sys.argv[ 0 ]
+  if len(sys.argv) < 2:
+    print 'Usage %s <config.yaml>' % sys.argv[ 0 ]
     sys.exit(1)
 
   configFileName = sys.argv[1]
-  jsonFolder = sys.argv[2]
-  numpyFolder = sys.argv[3]
 
-  postProcessThread = PostProcessThread(configFileName, jsonFolder, numpyFolder)
+  postProcessThread = PostProcessThread(configFileName)
   postProcessThread.run()

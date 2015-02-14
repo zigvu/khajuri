@@ -13,12 +13,12 @@ from Logo.PipelineCore.ConfigReader import ConfigReader
 
 class VideoLocalizationCppThread( object ):
   """Class to draw localization for all classes in video"""
-  def __init__(self, configFileName, videoFileName, jsonFolder, videoOutputFolder):
+  def __init__(self, configFileName, videoFileName):
     """Initialize values"""
     self.configReader = ConfigReader(configFileName)
     self.videoFileName = videoFileName
-    self.jsonFolder = jsonFolder
-    self.videoOutputFolder = videoOutputFolder
+    self.jsonFolder = self.configReader.sw_folders_json
+    self.videoOutputFolder = self.configReader.sw_folders_video
 
     ConfigReader.mkdir_p(self.videoOutputFolder)
 

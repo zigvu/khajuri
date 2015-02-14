@@ -46,18 +46,17 @@ def framePostProcessorRun(sharedDict, postProcessQueue, allCellBoundariesDict):
 
 class PostProcessThread( object ):
   """Class responsible for post-processing caffe results"""
-  def __init__(self, configFileName, jsonFolder, numpyFolder):
+  def __init__(self, configFileName):
     """Initialize values"""
     self.configFileName = configFileName
-    self.jsonFolder = jsonFolder
-    self.numpyFolder = numpyFolder
 
     self.configReader = ConfigReader(configFileName)
-
+    self.jsonFolder = self.configReader.sw_folders_json
+    self.numpyFolder = self.configReader.sw_folders_numpy
     self.updateStatusSleepTime = 1
 
     if self.configReader.ci_saveVideoHeatmap:
-      ConfigReader.mkdir_p(numpyFolder)
+      ConfigReader.mkdir_p(self.numpyFolder)
 
     # Logging levels
     logging.basicConfig(
