@@ -5,13 +5,16 @@ import matplotlib.cm as cm
 import matplotlib as mpl
 
 class ImageManipulator( object ):
-  def __init__(self, imageFileName):
-    self.image = cv2.imread(imageFileName)
+  def __init__(self, imageFileName, videoFrame=None):
+    if videoFrame:
+      self.image = videoFrame.getMat()
+    else:
+      self.image = cv2.imread(imageFileName)
     self.font = cv2.FONT_HERSHEY_SIMPLEX
     norm = mpl.colors.Normalize(vmin=0, vmax=1)
     self.colorMap = cm.ScalarMappable(norm=norm, cmap=cm.jet)
     self.heatmapVis = 0.5
-
+  
   def addPixelMap(self, pixelMap):
     """Overlay pixelMap as heatmap on top of image"""
     heatmap = self.colorMap.to_rgba(pixelMap,bytes=True)

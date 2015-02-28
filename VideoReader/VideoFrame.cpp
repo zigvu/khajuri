@@ -63,14 +63,14 @@ void VideoFrame::savePng( char*fileName ) {
   cv::imwrite( fileName, m );
 }
 
-cv::Mat * VideoFrame::getMat() {
+cv::Mat VideoFrame::getMat() {
   float scale = 1.0;
   if( scaledFrames.find( scale ) == scaledFrames.end() ) {
     int w = pFrame->width, h = pFrame->height;
     cv::Mat * m = new cv::Mat(h, w, CV_8UC3, dst->data[ 0 ]);
     scaledFrames[ scale ] = m;
   }
-  return scaledFrames[ scale ];
+  return *scaledFrames[ scale ];
 }
 
 void VideoFrame::saveCroppedFrameToDatum( double scale, int x, int y, 

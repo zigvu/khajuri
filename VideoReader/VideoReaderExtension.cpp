@@ -8,6 +8,7 @@ BOOST_PYTHON_MODULE(VideoReader)
 			.add_property("frameNum", &VideoFrame::getFrameNumber, &VideoFrame::setFrameNumber)
 			.add_property("width", &VideoFrame::getWidth )
 			.add_property("height", &VideoFrame::getHeight )
+      .def("getMat", &VideoFrame::getMat)
     ;
     boost::python::class_<VideoFrameReader, boost::noncopyable >( "VideoFrameReader", boost::python::init<uint, uint, char *>() )
 			.add_property("fps", &VideoFrameReader::getFps )
