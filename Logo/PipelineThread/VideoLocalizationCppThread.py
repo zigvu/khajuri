@@ -38,7 +38,8 @@ class VideoLocalizationCppThread( object ):
 
     # Read all JSONs
     frameIndex = {}
-    jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
+    jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json")) + \
+      glob.glob(os.path.join(self.jsonFolder, "*snappy"))
     for jsonFileName in jsonFiles:
       logging.debug("Reading json %s" % os.path.basename(jsonFileName))
       jsonReaderWriter = JSONReaderWriter(jsonFileName)
