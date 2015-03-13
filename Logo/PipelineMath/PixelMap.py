@@ -68,12 +68,17 @@ class PixelMap(object):
 
   def toNumpyArray(self):
     """Converts this PixelMap to a numpy array"""
-    start = time.time()
     pixelCount = np.zeros((self.height, self.width))
     for cb in self.cellBoundaries:
       pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]] = self.cellValues[cb["idx"]]
-    end = time.time()
     return pixelCount
+
+  def fromNumpyArray(self, pixelCount):
+    """Convert given numpyArray to pixelMap"""
+    if np.shape(pixelCount)[0] != self.height or np.shape(pixelCount)[1] != self.width:
+      raise RuntimeError("Input numpy array of different size than PixelMap")
+    for cb in self.cellBoundaries:
+      self.cellValues[cb["idx"]] = np.max(pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]])
 
   # ********************
   # Add scores from json
