@@ -43,7 +43,8 @@ class FramePostProcessor(object):
     classesAboveThreshold, classesbelowThreshold =\
         self.jsonReaderWriter.getClassesSplit( self.detectorThreshold )
     classesToPostProcess.extend( classesAboveThreshold )
-    logging.debug( 'Frame %s, heatmaps saved for classes %s, curations computed for classes %s, localizations computed for classes %s' % 
+    classesAboveThreshold = filter( lambda x: x in self.nonBackgroundClassIds, classesAboveThreshold )
+    logging.debug( 'Frame %s, heatmaps saved for classes %s, curations computed for classes %s, localizations computed for classes %s.' % 
         ( self.jsonReaderWriter.getFrameNumber(), heatmapClassIds, curationClassIds,  map( int, classesAboveThreshold ) ) )
 
     for classId in set(classesToPostProcess):
