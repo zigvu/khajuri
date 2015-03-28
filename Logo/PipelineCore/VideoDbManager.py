@@ -126,12 +126,7 @@ class VideoDbManager( object ):
     # Main loop to go through video
     logging.info("Start patch extraction for deviceId %d" % self.deviceId)
     while (not self.videoFrameReader.eof) or (currentFrameNum <= self.videoFrameReader.totalFrames):
-      if not self.videoFrameReader.eof:
-        if currentFrameNum > self.videoFrameReader.totalFrames:
-          logging.info( 'Sleeping 0.01 seconds, cur %s, total %s, eof %s' % ( currentFrameNum, self.videoFrameReader.totalFrames, self.videoFrameReader.eof ) )
-          time.sleep( 0.01 )
-          self.videoFrameReader.seekToFrameWithFrameNumber( currentFrameNum )
-          continue
+      self.videoFrameReader.seekToFrameWithFrameNumber( currentFrameNum )
       # For each batch of patches, put in queue
       if (((dbPatchCounter + 1) % self.caffeBatchSize) == 0):
         # add to db
