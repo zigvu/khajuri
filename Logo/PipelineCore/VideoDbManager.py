@@ -152,6 +152,8 @@ class VideoDbManager( object ):
       jsonName = os.path.join(self.jsonFolder, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
       jsonAnnotation = JSONReaderWriter(jsonName, create_new=True)
       jsonAnnotation.initializeJSON(self.videoId, currentFrameNum, self.imageDim, self.scales)
+      frame = self.videoFrameReader.getFrameWithFrameNumber( currentFrameNum )
+      jsonAnnotation.setFrameTimestamp( frame.timeStamp )
       # Put patch into db
       for scale in self.scales:
         patchNum = 0

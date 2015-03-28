@@ -119,6 +119,9 @@ class JSONReaderWriter( object ):
       self.myDict[ 'scales' ].append(OrderedDict(\
         [('scale', scale), ('patches', [])]))
 
+  def setFrameTimestamp( self, t ):
+    self.myDict[ 'frame_timestamp' ] = t
+
   def addPatch(self, scale, patchNum, leveldbCounter, x, y, width, height):
     for scaleVal in self.myDict['scales']:
       if scaleVal['scale'] == scale:
