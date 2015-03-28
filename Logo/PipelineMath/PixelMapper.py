@@ -47,32 +47,40 @@ class PixelMapper(object):
     self.massageRescoringMap(mapAllCellCount, mapDetectionCellCount)
     localizationMap = mapAllCellCount * intensityMap
     return localizationMap, intensityMap
-  
-  def massageRescoringMap(self, mapAllCellCount, mapDetectionCellCount):
-    """Rescore localization to highlight positive detections"""
-    # if there is not a single detection, skip arithmetic
-    maxDetectionCount = np.max(mapDetectionCellCount.cellValues)
-    if maxDetectionCount <= 0:
-      mapAllCellCount.cellValues = 0
-      return
-    # TODO: config tuning of sigmoid values for each scale
 
-    # STEP 1: 
-    # adjust for patches in edges and corners
-    # spike detection counts when number of cell visit is low but a detection happened
-    mapAllCellCount.cellValues = mapDetectionCellCount.cellValues/mapAllCellCount.cellValues
-    mapAllCellCount.cellValues = 1.0/(1.0 + np.exp(-2 * \
-      (mapAllCellCount.cellValues - self.sigmoidCenter) * self.sigmoidSteepness))
-    # STEP 2:
-    # even if score count of edge patches is not originally high,
-    # make them contribute significantly towards final bbox
-    mapAllCellCount.cellValues *= (maxDetectionCount/2.0)
-    mapAllCellCount.cellValues += mapDetectionCellCount.cellValues
+ 
+  def spikeDetection( self, mapAllCellCount ):
+    self.spikeDetectionUsingCellMap( mapAllCellCount )
 
-    # STEP 3:
-    # spike detections
+  def spikeDetectionUsingCellMap( self, mapAllCellCount ):
+    # Zero Out all Pixels below threshold
+    threshold = 1
+    maxima = mapAllCellCount.copy()
+    diff = ( maxima.cellValues > threshold )
+    maxima.cellValues[ diff == 0 ] = 0
 
-    # BEGIN TODO: convert to cell based
+    # 1. Find cell Indexes with a positive value
+    posValueSet = set()
+    for i in np.argwhere( diff ):
+      posValueSet.add( i[0] )
+
+    # 2. Find Islands and Number them
+    islands = []
+    while len( posValueSet ) > 0:
+      i = posValueSet.pop()
+      neighbors, maxValue, avgValue, cb = maxima.BFS( i )
+      for n in neighbors:
+        if n != i:
+          posValueSet.discard( n )
+        maxima.cellValues[ n ] = maxima.cellValues[ n ] / ( 1.0 * maxValue )
+        maxima.cellValues[ n ] = 1.0/( 1.0 
+            + np.exp( -2 * ( maxima.cellValues[ n ] - self.sigmoidCenter ) * self.sigmoidSteepness ) )
+      islands.append( neighbors )
+
+    # 3. Find bounding Boxes ?
+    mapAllCellCount.cellValues = maxima.cellValues
+
+  def spikeDetectionUsingNumpy( self, mapAllCellCount ):
     npPixelMap = mapAllCellCount.toNumpyArray()
     rescoringMap = np.zeros(np.shape(npPixelMap))
     binaryStructure = ndimage.morphology.generate_binary_structure(2,2)
@@ -100,7 +108,31 @@ class PixelMapper(object):
         1.0/(1.0 + np.exp(-2 * (npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]]\
            - self.sigmoidCenter) * self.sigmoidSteepness))
     mapAllCellCount.fromNumpyArray(rescoringMap)
-    # END TODO: convert to cell based
+
+  def massageRescoringMap(self, mapAllCellCount, mapDetectionCellCount):
+    """Rescore localization to highlight positive detections"""
+    # if there is not a single detection, skip arithmetic
+    maxDetectionCount = np.max(mapDetectionCellCount.cellValues)
+    if maxDetectionCount <= 0:
+      mapAllCellCount.cellValues = 0
+      return
+    # TODO: config tuning of sigmoid values for each scale
+
+    # STEP 1: 
+    # adjust for patches in edges and corners
+    # spike detection counts when number of cell visit is low but a detection happened
+    mapAllCellCount.cellValues = mapDetectionCellCount.cellValues/mapAllCellCount.cellValues
+    mapAllCellCount.cellValues = 1.0/(1.0 + np.exp(-2 * \
+      (mapAllCellCount.cellValues - self.sigmoidCenter) * self.sigmoidSteepness))
+    # STEP 2:
+    # even if score count of edge patches is not originally high,
+    # make them contribute significantly towards final bbox
+    mapAllCellCount.cellValues *= (maxDetectionCount/2.0)
+    mapAllCellCount.cellValues += mapDetectionCellCount.cellValues
+
+    # STEP 3:
+    # spike detections
+    self.spikeDetection( mapAllCellCount )
 
     # maxDetectionCount = np.max(mapAllCellCount.cellValues)
     # mapAllCellCount.cellValues /= maxDetectionCount

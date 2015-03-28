@@ -57,7 +57,7 @@ class FramePostProcessor(object):
       localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
       localizationPixelMap.setScale( 1.0 )
       # extract all detected bboxes above threshold 
-      localizationPeaks = PeaksExtractor(localizationPixelMap.toNumpyArray(), \
+      localizationPeaks = PeaksExtractor(localizationPixelMap, \
         self.configReader, self.staticBoundingBoxes.imageDim)
       localizationPatches = localizationPeaks.getPeakBboxes(self.detectorThreshold)
       # save inferred localization patches to json
@@ -70,7 +70,7 @@ class FramePostProcessor(object):
         curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
         curationPixelMap.setScale( 1.0 )
         # extract all curation bboxes and associated intensity
-        curationPeaks = PeaksExtractor(curationPixelMap.toNumpyArray(), \
+        curationPeaks = PeaksExtractor(curationPixelMap, \
           self.configReader, self.staticBoundingBoxes.imageDim)
         curationPatches = curationPeaks.getPatchesForCuration()
         # save curation patches to json

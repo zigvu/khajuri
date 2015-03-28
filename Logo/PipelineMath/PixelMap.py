@@ -1,4 +1,4 @@
-import math, os
+import math, os, sys
 import logging
 import numpy as np
 from shapely.geometry import box
@@ -9,15 +9,20 @@ import time, pickle
 
 def setupNeighbor( neighbors, cellBoundaries, cb ):
   centralBox = box( cb[ 'x0' ] - 1, cb[ 'y0' ] - 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
-  boxes = []
+  boxes = {}
   for neighbor in cellBoundaries:
     if neighbor == cb:
       continue
     neighborBox = box( neighbor[ 'x0' ] - 1, neighbor[ 'y0' ] - 1,
         neighbor[ 'x3' ] + 1, neighbor[ 'y3' ] + 1 )
     if neighborBox.intersects( centralBox ):
-      boxes.append( neighbor )
-  neighbors[ ( cb[ 'x0' ], cb[ 'y0'], cb[ 'x3' ], cb[ 'y3' ], cb[ 'idx' ] ) ] = boxes
+      boxes[ neighbor[ 'idx' ] ] = ( 
+          neighbor[ 'x0' ],
+          neighbor[ 'y0' ],
+          neighbor[ 'x3' ],
+          neighbor[ 'y3' ],
+          )
+  neighbors[ cb[ 'idx' ] ] = boxes
 
 class PixelMap(object):
   def __init__(self, allCellBoundariesDict, scaleFactor):
@@ -79,6 +84,38 @@ class PixelMap(object):
       raise RuntimeError("Input numpy array of different size than PixelMap")
     for cb in self.cellBoundaries:
       self.cellValues[cb["idx"]] = np.max(pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]])
+
+  def BFS( self, index ):
+    maxValue = self.cellValues[ index ]
+    sumValue = self.cellValues[ index ]
+    xMin = sys.maxint
+    yMin = sys.maxint
+    xMax = 0
+    yMax = 0
+    neighbors = set()
+    unvisitedCells = set()
+    unvisitedCells.add( index )
+    while len( unvisitedCells ) > 0:
+      index = unvisitedCells.pop()
+      if index in neighbors:
+        continue
+      for n in self.cellBoundariesDict[ 'neighbors' ][ index ].keys():
+        if n not in neighbors and self.cellValues[ n ] > 0:
+          cb = self.cellBoundariesDict[ 'neighbors' ][ index ] [ n ]
+          if xMin > cb[ 0 ]:
+            xMin = cb[ 0 ]
+          if yMin > cb[ 1 ]:
+            yMin = cb[ 1 ]
+          if xMax < cb[ 2 ]:
+            xMax = cb[ 2 ]
+          if yMax < cb[ 3 ]:
+            yMax = cb[ 3 ]
+          unvisitedCells.add( n )
+      if self.cellValues[ index ] > maxValue:
+        maxValue = self.cellValues[ index ]
+      sumValue += self.cellValues[ index ]
+      neighbors.add( index )
+    return neighbors, maxValue, (1.0 * sumValue)/len ( neighbors ), ( xMin, yMin, xMax, yMax )
 
   # ********************
   # Add scores from json
@@ -311,8 +348,7 @@ class PixelMap(object):
           if ((cb["x0"] >= cStart) and (cb["x0"] < cEnd) and (cb["y0"] >= rStart) and (cb["y0"] < rEnd)):
             cellIdxs += [cb["idx"]]
         cellSlidingWindows[ ( cStart, rStart, cEnd, rEnd ) ] = cellIdxs
-      #neighbors = PixelMap.setupNeighbors( cellBoundaries )
-      neighbors = []
+      neighbors = PixelMap.setupNeighbors( cellBoundaries )
       # save data to dictionary
       allCellBoundaries["scales"][scaleFactor] = {\
         "cell_boundaries": cellBoundaries, \
