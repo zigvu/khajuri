@@ -7,22 +7,40 @@ from Queue import Queue, Empty
 import multiprocessing
 import time, pickle
 
-def setupNeighbor( neighbors, cellBoundaries, cb ):
-  centralBox = box( cb[ 'x0' ] - 1, cb[ 'y0' ] - 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
-  boxes = {}
-  for neighbor in cellBoundaries:
-    if neighbor == cb:
-      continue
-    neighborBox = box( neighbor[ 'x0' ] - 1, neighbor[ 'y0' ] - 1,
-        neighbor[ 'x3' ] + 1, neighbor[ 'y3' ] + 1 )
-    if neighborBox.intersects( centralBox ):
-      boxes[ neighbor[ 'idx' ] ] = ( 
-          neighbor[ 'x0' ],
-          neighbor[ 'y0' ],
-          neighbor[ 'x3' ],
-          neighbor[ 'y3' ],
-          )
-  neighbors[ cb[ 'idx' ] ] = boxes
+def getPossibleCBs( cb, xHelper, yHelper ):
+  myList = []
+  for index in [ cb[ "x0" ], cb[ "x0"] - 1, cb[ "x0" ] + 1  ]:
+     if xHelper.get( index ):
+       for item in xHelper.get( index ):
+          myList.append( item )
+  for index in [ cb[ "y0" ], cb[ "y0" ] - 1, cb[ "y0" ] + 1,       ]:
+     if yHelper.get( index ):
+       for item in yHelper.get( index ):
+          myList.append( item )
+  return myList
+
+def setupNeighbor( queue, neighbors, cellBoundaries, xHelper, yHelper ):
+  while True:
+     index, cb = queue.get()
+     logging.info( 'Got cb : %s at index %s for setting up from queue' % ( cb, index ) )
+     if not cb:
+       break
+     else:
+       centralBox = box( cb[ 'x0' ] - 1, cb[ 'y0' ] - 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
+       boxes = {}
+       for neighbor in getPossibleCBs( cb, xHelper, yHelper ):
+         if neighbor == cb:
+           continue
+         neighborBox = box( neighbor[ 'x0' ] - 1, neighbor[ 'y0' ] - 1,
+             neighbor[ 'x3' ] + 1, neighbor[ 'y3' ] + 1 )
+         if neighborBox.intersects( centralBox ):
+           boxes[ neighbor[ 'idx' ] ] = ( 
+               neighbor[ 'x0' ],
+               neighbor[ 'y0' ],
+               neighbor[ 'x3' ],
+               neighbor[ 'y3' ],
+               )
+       neighbors[ cb[ 'idx' ] ] = boxes
 
 class PixelMap(object):
   def __init__(self, allCellBoundariesDict, scaleFactor):
@@ -86,8 +104,6 @@ class PixelMap(object):
       self.cellValues[cb["idx"]] = np.max(pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]])
 
   def BFS( self, index ):
-    maxValue = self.cellValues[ index ]
-    sumValue = self.cellValues[ index ]
     xMin = sys.maxint
     yMin = sys.maxint
     xMax = 0
@@ -111,11 +127,10 @@ class PixelMap(object):
           if yMax < cb[ 3 ]:
             yMax = cb[ 3 ]
           unvisitedCells.add( n )
-      if self.cellValues[ index ] > maxValue:
-        maxValue = self.cellValues[ index ]
-      sumValue += self.cellValues[ index ]
       neighbors.add( index )
-    return neighbors, maxValue, (1.0 * sumValue)/len ( neighbors ), ( xMin, yMin, xMax, yMax )
+    maxValue = np.max( self.cellValues[ list( neighbors ) ] )
+    avgValue = np.average( self.cellValues[ list( neighbors ) ] )
+    return neighbors, maxValue, avgValue, ( xMin, yMin, xMax, yMax )
 
   # ********************
   # Add scores from json
@@ -376,16 +391,35 @@ class PixelMap(object):
     activeProcess = Queue()
     manager = Manager()
     neighbors = manager.dict()
+    neighborXHelper = {}
+    neighborYHelper = {}
+    queueOfCBs = multiprocessing.Queue()
+    j = 0
     for cb in cellBoundaries:
-      while len( multiprocessing.active_children()) >= multiprocessing.cpu_count():
-        try:
-          for i in range( multiprocessing.cpu_count() / 3 ):
-              q = activeProcess.get(False)
-              if q:
-                q.join()
-        except Empty:
-          break
-      p = Process( target=setupNeighbor, args=( neighbors, cellBoundaries, cb ) )
+       if not neighborXHelper.get( cb[ "x0" ] ):
+          neighborXHelper[ cb[ "x0" ] ] = []
+       neighborXHelper[ cb[ "x0" ] ].append( cb )
+       if not neighborXHelper.get( cb[ "x3" ] ):
+          neighborXHelper[ cb[ "x3" ] ] = []
+       neighborXHelper[ cb[ "x3" ] ].append( cb )
+       if not neighborYHelper.get( cb[ "y0" ] ):
+          neighborYHelper[ cb[ "y0" ] ] = []
+       neighborYHelper[ cb[ "y0" ] ].append( cb )
+       if not neighborYHelper.get( cb[ "y3" ] ):
+          neighborYHelper[ cb[ "y3" ] ] = []
+       neighborYHelper[ cb[ "y3" ] ].append( cb )
+       j += 1
+       queueOfCBs.put( ( j, cb ) )
+
+    for _i in range( multiprocessing.cpu_count() ):
+      queueOfCBs.put( ( j, None ) )
+      p = Process( target=setupNeighbor,
+          args=(
+            queueOfCBs,
+            neighbors,
+            cellBoundaries,
+            neighborXHelper,
+            neighborYHelper ) )
       p.start()
       activeProcess.put( p )
     while activeProcess.qsize() > 0:

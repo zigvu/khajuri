@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import scipy.ndimage as ndimage
-from skimage.transform import resize
 from PixelMap import PixelMap
 
 class PixelMapper(object):

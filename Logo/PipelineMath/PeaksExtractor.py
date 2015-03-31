@@ -87,7 +87,7 @@ class PeaksExtractor(object):
       # create bbox based on the label
       bbox = Rectangle.rectangle_from_endpoints(xStart, yStart, xEnd, yEnd)
       # get the average intensity of the bbox
-      avgIntensity = np.average(self.pixelMap.toNumpy()[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]])
+      avgIntensity = np.average(self.pixelMap.toNumpyArray()[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]])
       candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity}]
       #candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity, 'label': ("%.2f" % avgIntensity)}]
     return candidateBboxes
