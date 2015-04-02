@@ -63,18 +63,13 @@ class PixelMapper(object):
     for i in np.argwhere( diff ):
       posValueSet.add( i[0] )
 
-    # 2. Find Islands and Number them
-    islands = []
+    # 2. Find Islands and update their value
     while len( posValueSet ) > 0:
       i = posValueSet.pop()
       neighbors, maxValue, avgValue, cb = maxima.BFS( i )
-      for n in neighbors:
-        if n != i:
-          posValueSet.discard( n )
-        maxima.cellValues[ n ] = maxima.cellValues[ n ] / ( 1.0 * maxValue )
-        maxima.cellValues[ n ] = 1.0/( 1.0 
-            + np.exp( -2 * ( maxima.cellValues[ n ] - self.sigmoidCenter ) * self.sigmoidSteepness ) )
-      islands.append( neighbors )
+      posValueSet.difference_update( neighbors.difference( set( [i] ) ) )
+      maxima.cellValues[ list( neighbors ) ] = 1.0/( 1.0 
+            + np.exp( -2 * ( maxima.cellValues[ list( neighbors ) ] - self.sigmoidCenter ) * self.sigmoidSteepness ) )
 
     # 3. Find bounding Boxes ?
     mapAllCellCount.cellValues = maxima.cellValues
