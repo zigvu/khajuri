@@ -68,8 +68,11 @@ class PixelMapper(object):
       i = posValueSet.pop()
       neighbors, maxValue, avgValue, cb = maxima.BFS( i )
       posValueSet.difference_update( neighbors.difference( set( [i] ) ) )
+      maxima.cellValues[ list( neighbors) ] =\
+          maxima.cellValues[ list( neighbors ) ] / ( 1.0 * maxValue )
       maxima.cellValues[ list( neighbors ) ] = 1.0/( 1.0 
-            + np.exp( -2 * ( maxima.cellValues[ list( neighbors ) ] - self.sigmoidCenter ) * self.sigmoidSteepness ) )
+            + np.exp( -2 * ( maxima.cellValues[ list( neighbors ) ] - self.sigmoidCenter ) *
+              self.sigmoidSteepness ) )
 
     # 3. Find bounding Boxes ?
     mapAllCellCount.cellValues = maxima.cellValues
