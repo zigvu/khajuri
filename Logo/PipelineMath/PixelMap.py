@@ -28,7 +28,7 @@ def setupNeighbor( queue, neighbors, cellBoundaries, xHelper, yHelper ):
      else:
        centralBox = box( cb[ 'x0' ] - 1, cb[ 'y0' ] - 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
        boxes = {}
-       for neighbor in getPossibleCBs( cb, xHelper, yHelper ):
+       for neighbor in cellBoundaries:
          if neighbor == cb:
            continue
          neighborBox = box( neighbor[ 'x0' ] - 1, neighbor[ 'y0' ] - 1,
