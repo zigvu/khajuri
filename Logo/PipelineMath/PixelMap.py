@@ -22,25 +22,24 @@ def getPossibleCBs( cb, xHelper, yHelper ):
 def setupNeighbor( queue, neighbors, cellBoundaries, xHelper, yHelper ):
   while True:
      index, cb = queue.get()
-     logging.info( 'Got cb : %s at index %s for setting up from queue' % ( cb, index ) )
      if not cb:
        break
      else:
        centralBox = box( cb[ 'x0' ] - 1, cb[ 'y0' ] - 1, cb[ 'x3' ] + 1, cb[ 'y3' ] + 1 )
        boxes = {}
-       for neighbor in cellBoundaries:
+       for idx, neighbor in cellBoundaries.iteritems():
          if neighbor == cb:
            continue
          neighborBox = box( neighbor[ 'x0' ] - 1, neighbor[ 'y0' ] - 1,
              neighbor[ 'x3' ] + 1, neighbor[ 'y3' ] + 1 )
          if neighborBox.intersects( centralBox ):
-           boxes[ neighbor[ 'idx' ] ] = ( 
+           boxes[ idx ] = ( 
                neighbor[ 'x0' ],
                neighbor[ 'y0' ],
                neighbor[ 'x3' ],
                neighbor[ 'y3' ],
                )
-       neighbors[ cb[ 'idx' ] ] = boxes
+       neighbors[ index ] = boxes
 
 class PixelMap(object):
   def __init__(self, allCellBoundariesDict, scaleFactor):
@@ -92,16 +91,16 @@ class PixelMap(object):
   def toNumpyArray(self):
     """Converts this PixelMap to a numpy array"""
     pixelCount = np.zeros((self.height, self.width))
-    for cb in self.cellBoundaries:
-      pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]] = self.cellValues[cb["idx"]]
+    for idx, cb in self.cellBoundaries.iteritems():
+      pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]] = self.cellValues[idx]
     return pixelCount
 
   def fromNumpyArray(self, pixelCount):
     """Convert given numpyArray to pixelMap"""
     if np.shape(pixelCount)[0] != self.height or np.shape(pixelCount)[1] != self.width:
       raise RuntimeError("Input numpy array of different size than PixelMap")
-    for cb in self.cellBoundaries:
-      self.cellValues[cb["idx"]] = np.max(pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]])
+    for idx,cb in self.cellBoundaries.iteritems():
+      self.cellValues[idx] = np.max(pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]])
 
   def BFS( self, index ):
     xMin = sys.maxint
@@ -129,7 +128,12 @@ class PixelMap(object):
           unvisitedCells.add( n )
       neighbors.add( index )
     maxValue = np.max( self.cellValues[ list( neighbors ) ] )
-    avgValue = np.average( self.cellValues[ list( neighbors ) ] )
+    sumValue = 0
+    areaTotal = 0
+    for n in neighbors:
+      sumValue += ( self.cellValues[ n ] * self.cellAreas[ n ] )
+      areaTotal += self.cellAreas[ n ]
+    avgValue = sumValue / ( 1.0 * areaTotal )
     return neighbors, maxValue, avgValue, ( xMin, yMin, xMax, yMax )
 
   # ********************
@@ -161,6 +165,7 @@ class PixelMap(object):
     """Set scale of this PixelMap object"""
     self.cellBoundariesDict = self.allCellBoundariesDict['scales'][scaleFactor]
     self.cellBoundaries = self.cellBoundariesDict["cell_boundaries"]
+    self.cellAreas = self.cellBoundariesDict["cell_areas"]
     self.cellSlidingWindows = self.cellBoundariesDict["sw_mapping"]
     self.width = self.cellBoundariesDict["width"]
     self.height = self.cellBoundariesDict["height"]
@@ -324,7 +329,8 @@ class PixelMap(object):
     allCellBoundaries[ "frameDim" ] [ "width" ] = staticBoundingBoxes.imageDim.width
     allCellBoundaries[ "frameDim" ] [ "height" ] = staticBoundingBoxes.imageDim.height
     for scaleFactor in allScales:
-      cellBoundaries = []
+      cellBoundaries = {}
+      cellAreas = {}
       cellCounter = 0
       slidingWindows = staticBoundingBoxes.getBoundingBoxes(scaleFactor)
       rect = staticBoundingBoxes.imageDim.get_scaled_rectangle(scaleFactor)
@@ -339,7 +345,8 @@ class PixelMap(object):
         cBegin = np.min(cb[1]) ; cEnd = np.max(cb[1]) + 1
         #print "{x0: %d, y0: %d, x3: %d, y3: %d}" % (cBegin, rBegin, cEnd, rEnd) # For testing
         testPixelCount[rBegin:rEnd, cBegin:cEnd] += 1
-        cellBoundaries += [{"x0": cBegin, "y0": rBegin, "x3": cEnd, "y3": rEnd, "idx": cellCounter}]
+        cellBoundaries[ cellCounter ] = {"x0": cBegin,"y0": rBegin,"x3": cEnd,"y3": rEnd}
+        cellAreas[ cellCounter ] = 1.0 * ( cEnd - cBegin ) * ( rEnd - rBegin )
         cellCounter += 1
       # error check: ensure that all pixels got visited once and no pixel got visited twice
       if (np.max(testPixelCount) > 1) or (np.min(testPixelCount) < 1):
@@ -358,15 +365,16 @@ class PixelMap(object):
         cStart = slw[0] ; cEnd = slw[0] + slw[2]
         # collect all cell counters for this sliding window
         cellIdxs = []
-        for cb in cellBoundaries:
+        for idx, cb in cellBoundaries.iteritems():
           # if the origin of cb is in this sliding window, collect it in
           if ((cb["x0"] >= cStart) and (cb["x0"] < cEnd) and (cb["y0"] >= rStart) and (cb["y0"] < rEnd)):
-            cellIdxs += [cb["idx"]]
+            cellIdxs += [idx]
         cellSlidingWindows[ ( cStart, rStart, cEnd, rEnd ) ] = cellIdxs
       neighbors = PixelMap.setupNeighbors( cellBoundaries )
       # save data to dictionary
       allCellBoundaries["scales"][scaleFactor] = {\
         "cell_boundaries": cellBoundaries, \
+        "cell_areas": cellAreas, \
         "sw_mapping": cellSlidingWindows, \
         "max_cell_counter": (cellCounter - 1), \
         "width": rect.width, "height": rect.height, \
@@ -394,8 +402,7 @@ class PixelMap(object):
     neighborXHelper = {}
     neighborYHelper = {}
     queueOfCBs = multiprocessing.Queue()
-    j = 0
-    for cb in cellBoundaries:
+    for idx, cb in cellBoundaries.iteritems():
        if not neighborXHelper.get( cb[ "x0" ] ):
           neighborXHelper[ cb[ "x0" ] ] = []
        neighborXHelper[ cb[ "x0" ] ].append( cb )
@@ -408,11 +415,10 @@ class PixelMap(object):
        if not neighborYHelper.get( cb[ "y3" ] ):
           neighborYHelper[ cb[ "y3" ] ] = []
        neighborYHelper[ cb[ "y3" ] ].append( cb )
-       j += 1
-       queueOfCBs.put( ( j, cb ) )
+       queueOfCBs.put( ( idx, cb ) )
 
     for _i in range( multiprocessing.cpu_count() ):
-      queueOfCBs.put( ( j, None ) )
+      queueOfCBs.put( ( 0, None ) )
       p = Process( target=setupNeighbor,
           args=(
             queueOfCBs,
