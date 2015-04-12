@@ -52,7 +52,7 @@ class FramePostProcessor(object):
         continue
       # combine detection scores in scale space
       scaleSpaceCombiner = ScaleSpaceCombiner(classId, self.staticBoundingBoxes,\
-          self.jsonReaderWriter, self.allCellBoundariesDict )
+          self.configReader, self.jsonReaderWriter, self.allCellBoundariesDict )
       # ---------------- BEGIN: localization ---------------- 
       # get best pixelMap - result of averaging and maxPooling
       localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()

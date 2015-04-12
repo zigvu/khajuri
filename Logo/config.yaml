@@ -39,6 +39,8 @@ sliding_window:
     - 1.0
     - 1.3
     - 1.6
+  # put in same folder as this config.yaml file - no absolute path here
+  scale_decayed_factors_file:                "config_scale_decay_factors.json"
 
 # Caffe input
 caffe_input:

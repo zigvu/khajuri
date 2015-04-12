@@ -50,7 +50,25 @@ class ConfigReader:
       self.sw_xStride[ float(sw_scale) ] = slidingWindow['x_stride'][ i ] 
       self.sw_yStride[ float(sw_scale) ] = slidingWindow['y_stride'][ i ] 
       i += 1
-      
+
+    # Scale decay factors
+    decayFactorFileName = os.path.join(os.path.dirname(configFileName),\
+        slidingWindow['scale_decayed_factors_file'])
+    sdf = json.load(open(decayFactorFileName, 'r'))
+    self.sw_scale_decay_factors = sdf['scaleDecayFactors']
+    self.sw_scale_decay_sigmoid_center = 0.5
+    self.sw_scale_decay_sigmoid_steepness = 10
+    # check that JSON decay has all scale combinations
+    sdfScales = []
+    for sd in self.sw_scale_decay_factors:
+        sdfScales += [sd['scale']]
+        sdScales = []
+        for sdFactor in sd['factors']:
+            sdScales += [sdFactor['scale']]
+        assert sdScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
+    assert sdfScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
+
+
     # Caffe input
     caffeInput = config['caffe_input']
     self.ci_modelFile = caffeInput['model_file']

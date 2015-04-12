@@ -42,7 +42,6 @@ output.txt
 *.log
 VideoReader.so
 *.log
-*.json
 tags
 *.lprof
 
