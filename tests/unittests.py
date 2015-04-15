@@ -1,62 +1,71 @@
 #!/usr/bin/python
-import khajuri.VideoPipeline
-import Controller.Config
-from Controller.Frame import FrameGroup
-from Controller.Plugin import PluginGroup
-from Controller.Result import ResultGroup
-from Controller.DetectionStrand import DetectionStrand, DetectionStrandGroup
 import unittest
-import VideoReader
+import random
 
-class TestVideoPipelin(unittest.TestCase):
- 
-    def setUp(self):
-        self.configFileName = '/home/regmi/khajuri/config.yaml'
-        self.videoFileName = "/home/regmi/1/short.mp4"
-	self.conf = Config.Config( self.configFileName )
-	self.fg = None
-	self.pg = None
-    
-    def testFrameGroup(self):
-        # Test FrameGroup:
-        print "#####-- Testing FrameGroup --#####"
-        self.fg = FrameGroup(4, self.conf)
-        print fg
+from Logo.PipelineCore.JSONReaderWriter import FrameInfo
+from Logo.PipelineCore.JSONReaderWriter import Writer
+from Logo.PipelineMath.PixelMap import PixelMap
+from Logo.PipelineMath.Rectangle import Rectangle
+from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 
-    def testPluginGroup(self):
-        print "#####-- Testing PluginGroup --#####"
-        self.pg = PluginGroup(self.conf)
-        print pg
-    
-    def testResultGroup(self):
-        print "#####-- Testing ResultGroup --#####"
-        rg = ResultGroup(self.fg, self.pg)
-        print rg
+class TestFrameInfo(unittest.TestCase):
 
-    def testDetectionStrand(self):
-        print "#####-- Testing DetectionStrand --#####"
-        ds = DetectionStrand(4, self.conf)
-        rg = ds.process()
-        print rg
+  def testBasic( self ):
+    frameInfo = FrameInfo()
 
-    def testVideoReader(self):
-        myFrameReader = VideoReader.VideoFrameReader( 40, 40, self.videoFileName )
-        print myFrameReader.fps
-        print myFrameReader.lengthInMicroSeconds
-        myFrameReader.generateFrames()
-        vFrame = True
-        i = 1
-        while not myFrameReader.eof:
-           vFrame = myFrameReader.getFrameWithFrameNumber( i )
-           if vFrame:
-             i += 1
-             print 'TimeStamp: %s' % vFrame.timeStamp
-             print 'FrameNum: %s' % vFrame.frameNum
-        myFrameReader.waitForEOF()       
+    # Basic Setting of FrameInfo
+    frameInfo.frame_number = 3
+    frameInfo.frame_width = 1024
 
-    def testDetectionStrandGroup(self):
-        dsg = DetectionStrandGroup( self.videoFileName, self.conf )
-	dsg.runVidPipe()
-    
-    def testVideoPipeline(self):
-         VideoPipeline.processVideo( self.configFileName, self.videoFileName )
+    assert frameInfo.frame_number == 3
+    assert frameInfo.frame_width == 1024
+
+  def testScores( self ):
+    frameInfo = FrameInfo()
+
+  def testLocalization( self ):
+    pass
+
+  def testCurations( self ):
+    frameInfo = FrameInfo()
+    frameInfo.frame_number = 1
+
+    frameJsonWriter = Writer( frameInfo, '/tmp/save.json' )
+    frameJsonWriter.write()
+
+  def testPickle( self ):
+    frameInfo = FrameInfo()
+    frameInfo.frame_number = 3
+    frameInfo.scale = [ 1.34, 1.25, 3.45 ]
+
+    frameInfo.save( '/tmp/pickle.save' )
+
+class PixelMapTest( unittest.TestCase ):
+
+  def testNeighborMap( self ):
+    return
+    ''' Test NeighborMap created '''
+    imageDim = Rectangle.rectangle_from_dimensions( 1280, 720 )
+    patchDim = Rectangle.rectangle_from_dimensions( 256, 256 )
+    xStepSize = {
+      0.4 : 32,
+      1: 32,
+      1.4 : 32,
+    }
+    yStepSize = {
+      0.4 : 32,
+      1: 32,
+      1.4 : 32,
+    }
+    staticBoundingBoxes = BoundingBoxes(imageDim, xStepSize, yStepSize, patchDim)
+    allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, [ 0.4, 1, 1.4 ])
+
+    pass
+
+  def testCellMap( self ):
+    ''' Test the cellMap created '''
+    pass
+
+
+if __name__ == '__main__':
+    unittest.main()

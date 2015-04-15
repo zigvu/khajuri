@@ -7,6 +7,14 @@ from Queue import Queue, Empty
 import multiprocessing
 import time, pickle
 
+class Cell( object ):
+  def __init__( self ):
+    self.id = 0
+    self.value = 0
+    self.area = 0
+    self.cb = cb
+    self.neighbors = {}
+
 def getPossibleCBs( cb, xHelper, yHelper ):
   myList = []
   for index in [ cb[ "x0" ], cb[ "x0"] - 1, cb[ "x0" ] + 1  ]:

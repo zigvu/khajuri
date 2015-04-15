@@ -44,7 +44,7 @@ class ScaleSpaceCombiner(object):
     rescaledLocalizationMap.cellValues = maxLocalizationMap.cellValues * rescalingFactor
     return rescaledLocalizationMap
 
-  def getBestIntensityPixelMap(self):
+  def getBestIntensityPixelMap(self, zDist = 0):
     """From among all scales, select pixelMap with highest intensity
     Returns pixelMap"""
     maxIntensityScale = self.allScalingFactors[0]

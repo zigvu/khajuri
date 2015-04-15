@@ -64,21 +64,26 @@ class FramePostProcessor(object):
       for lp in localizationPatches:
         self.jsonReaderWriter.addLocalization(classId, lp['bbox'].json_format(), lp['intensity'])
       # ---------------- END: localization ---------------- 
-      # ---------------- BEGIN: curation ---------------- 
-      # get best pixelMap - result of maxPooling only
-      if self.configReader.ci_computeFrameCuration:
-        curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
-        curationPixelMap.setScale( 1.0 )
-        # extract all curation bboxes and associated intensity
-        curationPeaks = PeaksExtractor(curationPixelMap, \
-          self.configReader, self.staticBoundingBoxes.imageDim)
-        curationPatches = curationPeaks.getPatchesForCuration()
-        # save curation patches to json
-        for cp in curationPatches:
-          self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'])
-      # ---------------- END: curation ---------------- 
       # caching
       self.classPixelMaps[classId] = {'localizationMap': localizationPixelMap}
+
+    for zDist in self.configReader.pp_zDist:
+      for classId in set(classesToPostProcess):
+        if classId not in self.nonBackgroundClassIds:
+          continue
+        # ---------------- BEGIN: curation ---------------- 
+        # get best pixelMap - result of maxPooling only
+        if self.configReader.ci_computeFrameCuration:
+          curationPixelMap = scaleSpaceCombiner.getBestIntensityPixelMap()
+          curationPixelMap.setScale( 1.0 )
+          # extract all curation bboxes and associated intensity
+          curationPeaks = PeaksExtractor(curationPixelMap, \
+            self.configReader, self.staticBoundingBoxes.imageDim)
+          curationPatches = curationPeaks.getPatchesForCuration()
+          # save curation patches to json
+          for cp in curationPatches:
+            self.jsonReaderWriter.addCuration(classId, cp['bbox'].json_format(), cp['intensity'], zDist )
+        # ---------------- END: curation ---------------- 
     # save json
     self.jsonReaderWriter.saveState(compressed_json = self.compressedJSON, \
       save_patch_scores = self.savePatchScores)
