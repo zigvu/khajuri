@@ -15,6 +15,12 @@ class Frame(object):
     self.scores[ zDistThreshold ] = self.initNumpyArrayScore()
 
   def initNumpyArrayScore( self ):
+    '''
+    The patch scores are stored in a 3-d numpy array
+    1 dim => Patch itself
+    2 dim => classes
+    3 dim => scoreTypes
+    '''
     return np.zeros( ( self.totalPatches,
                        len( self.classIds ),
                        len( self.scoreTypes ) ), dtype=np.float )
