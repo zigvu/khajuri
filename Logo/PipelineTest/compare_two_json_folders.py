@@ -5,7 +5,7 @@ from collections import OrderedDict
 
 from Logo.PipelineTest.JSONFileComparer import JSONFileComparer
 
-if __name__ == '__main__':
+def main():
 	if len(sys.argv) < 4:
 		print 'Usage %s <jsonFolder1> <jsonFolder2> <compareLocCuration>' % sys.argv[ 0 ]
 		print '\n'
@@ -120,3 +120,6 @@ if __name__ == '__main__':
 		print "\n\nCuration Score Diff\nclass,score,filename"
 		for cls in classes:
 			print "%s,%0.3f,%s" % (cls, aDiffScoreOfBboxesCur[cls]['value'], aDiffScoreOfBboxesCur[cls]['filename'])
+
+if __name__ == '__main__':
+  main()
