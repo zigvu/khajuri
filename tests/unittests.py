@@ -1,44 +1,46 @@
 #!/usr/bin/python
 import unittest
-import random
+import random, os
 
-from Logo.PipelineCore.JSONReaderWriter import FrameInfo
-from Logo.PipelineCore.JSONReaderWriter import Writer
+from postprocessing.type.Frame import Frame
+from postprocessing.task.JsonWriter import JsonWriter
+from postprocessing.config.Config import Config
+from postprocessing.config.Status import Status
+
 from Logo.PipelineMath.PixelMap import PixelMap
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 
+baseScriptDir = os.path.dirname(os.path.realpath(__file__))
+
 class TestFrameInfo(unittest.TestCase):
 
   def testBasic( self ):
-    frameInfo = FrameInfo()
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
 
-    # Basic Setting of FrameInfo
-    frameInfo.frame_number = 3
-    frameInfo.frame_width = 1024
+    # Basic Setting of Frame
+    frame.frameNumber = 3
+    frame.frameDisplayTime = 10000
 
-    assert frameInfo.frame_number == 3
-    assert frameInfo.frame_width == 1024
+    assert frame.frameNumber == 3
+    assert frame.frameDisplayTime == 10000
 
   def testScores( self ):
-    frameInfo = FrameInfo()
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
 
   def testLocalization( self ):
     pass
 
   def testCurations( self ):
-    frameInfo = FrameInfo()
-    frameInfo.frame_number = 1
-
-    frameJsonWriter = Writer( frameInfo, '/tmp/save.json' )
-    frameJsonWriter.write()
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
+    config = Config( baseScriptDir + os.sep + 'config.yaml' )
+    status = Status()
+    frameJsonWriter = JsonWriter( config, status )
+    frameJsonWriter( ( frame, '/tmp/save.json' ) )
 
   def testPickle( self ):
-    frameInfo = FrameInfo()
-    frameInfo.frame_number = 3
-    frameInfo.scale = [ 1.34, 1.25, 3.45 ]
-
-    frameInfo.save( '/tmp/pickle.save' )
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
+    pass
 
 class PixelMapTest( unittest.TestCase ):
 
