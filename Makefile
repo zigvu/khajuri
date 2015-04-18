@@ -1,0 +1,8 @@
+all: test setup
+
+setup:
+	sudo python setup.py develop
+
+test:
+	python -m unittest discover
+

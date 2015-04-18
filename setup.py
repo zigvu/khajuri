@@ -21,4 +21,5 @@ setup(name='khajuri',
             'postprocess=tool.pp:main',
             'chia=tool.pp:main',
         ],
+        },
       )
