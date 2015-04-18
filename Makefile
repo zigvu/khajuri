@@ -1,4 +1,4 @@
-all: test setup
+all: setup
 
 setup:
 	sudo python setup.py develop
