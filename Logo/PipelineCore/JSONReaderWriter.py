@@ -1,123 +1,11 @@
 import yaml, json, os
 import snappy, StringIO
 from collections import OrderedDict
-import  numpy as np
-import cPickle as pickle
-
-class Rect( object ):
-  def __init__( self ):
-    self.x = None
-    self.y = None
-    self.width = None
-    self.height = None
-
-class ScoredRect( Rect ):
-  def __init__( self ):
-    self.score = None
-
-class Scale( object ):
-  def __init__( self ):
-    self.scale = None
-    self.patches = []
-
-class Patch( object ):
-  def __init__( self ):
-    self.patch_filename = None
-    self.leveldb_counter = None
-    self.rect = None
-
-    # Dictionary of scores
-    self.scores = {}
-
-class FrameInfo( object ):
-  def __init__( self ):
-    self.frame_width = None
-    self.frame_height = None
-    self.annotation_filename = None
-    self.frame_filename = None
-    self.frame_number = None
-    self.scale = None
-    self.classIds = []
-
-    self.localizations = {}
-    self.patches = {}
-    self.curations = {}
-    self.filename = None
-
-  def save( self, fileName ):
-    pickle.dump( self, open( fileName, "wb" ) )
-
-class Reader( object ):
-  def __init__( self, fileName ):
-    self.fileName = fileName
-
-  def read( self ):
-    return FrameInfo()
-
-class Writer( object ):
-  def __init__( self, frameInfo, fileName ):
-    self.frameInfo = frameInfo
-    self.fileName = fileName
-
-  def write( self ):
-    pass
-
-class BinaryReader( Reader ):
-  def __init__( self ):
-    self.fileName = fileName
-
-  def read( self ):
-    pass
-
-class BinaryWriter( Writer ):
-  def __init__( self ):
-    pass
-
-  def write( self ):
-    pass
-
-
-class ClassFilter( object ):
-  def __init__( self, classIds ):
-    self.classIds = classIds
-
-  def __call__( self, frameInfo ):
-    logging.info( 'Starting Class Filter for frame %s' % frameInfo )
-    above = set()
-    below = set()
-    assert self.classIds == frameInfo.classIds
-    for classId in self.classIds:
-      myMax = -1
-      for scale in frameInfo.scalingFactors:
-        for patch in frameInfo.getPatches( scale ):
-          patchScore = float(patch['scores'][classId])
-          myMax = max( patchScore, myMax ) 
-      if myMax >= threshold:
-        above.add( classId )
-      else:
-        below.add( classId )
-    return above, below
-  
-  def __str__( self ):
-    return '%s Task( %s )' % ( self.__class__, self.classIds )
-
-class ZDistScoreCalculator( object ):
-  def __init__( self, zDistThresholds ):
-    self.zDistThresholds = zDistThresholds
-
-  def __call__( self, frameInfo ):
-    pass
-
-  def __str__( self ):
-    return '
-
 
 class JSONReaderWriter( object ):
   def __init__( self, fileName, create_new = False ):
     self.fileName = fileName
     self.noPatchScores = False
-    self.zDistScore = False
-    self.zDistThresholdAt = 0
     if not create_new:
       self.myDict = None
       accessFileName, accessFileExt = JSONReaderWriter.getCorrectFileName(self.fileName)
@@ -152,26 +40,6 @@ class JSONReaderWriter( object ):
       else:
         below.add( classId )
     return above, below
-
-  def initzDistScore( self ):
-    for scale in self.scalingFactors:
-      for patch in self.getPatches( scale ):
-        patch[ 'zDist' ] = {}
-    self.zDistScore = True
-
-  def generatezDistScore( self, zDistThreshold ):
-    self.zDistThresholdAt = zDistThreshold
-    for scale in self.scalingFactors:
-      for patch in self.getPatches( scale ):
-        zDistScores = {}
-        sortedScores = sorted([v for k, v in patch['scores_fc8'].iteritems()],reverse=True)[:5]
-        zDist = (np.std(sortedScores) - np.std(sortedScores[1:]))
-        for classId in patch['scores']:
-          if zDist < zDistThreshold:
-            zDistScores[ classId ] = 0
-          else:
-            zDistScores[ classId ] = patch[ 'scores' ][ classId ]
-        patch [ 'zDist' ] = zDistScores
 
   def getAnnotationFileName( self ):
     return self.myDict[ 'annotation_filename' ]
@@ -233,12 +101,8 @@ class JSONReaderWriter( object ):
 
   def getScoreForPatchIdAtScale( self, patchId, classId, scale ):
     self.checkScoreExists()
-    if self.zDistScore:
-      return self.myDict['scales'][ self.scalingFactors.index( scale ) ]['patches']\
-          [patchId]['zDist'][classId]
-    else:
-      return self.myDict['scales'][ self.scalingFactors.index( scale ) ]['patches']\
-          [patchId]['scores'][classId]
+    return self.myDict['scales'][ self.scalingFactors.index( scale ) ]['patches']\
+        [patchId]['scores'][classId]
 
   def initializeJSON(self, videoId, frameId, imageDim, scales):
     self.videoId = videoId
@@ -276,7 +140,7 @@ class JSONReaderWriter( object ):
       for patchVal in scaleVal['patches']:
         if leveldbCounter == int(patchVal['leveldb_counter']):
           patchVal['scores_fc8'] = scores_fc8
-          patchVal [ 'zDist' ] = {}
+          patchVal[ 'zDist' ] = {}
           return True
     return False
           
@@ -303,8 +167,8 @@ class JSONReaderWriter( object ):
   def getCurations( self, classId ):
     return self.myDict['curations'][classId]
 
-  def addCuration( self, classId, bbox, score, zDist=0 ):
-    self.myDict['curations'][classId] += [{'bbox': bbox, 'score': score, 'zDist': zDist}]
+  def addCuration( self, classId, bbox, score ):
+    self.myDict['curations'][classId] += [{'bbox': bbox, 'score': score}]
 
   def saveState( self, compressed_json = False, save_patch_scores = True ):
     # if we don't need to save patch scores, remove scales dict
@@ -388,9 +252,3 @@ class JSONReaderWriter( object ):
       raise RuntimeError("File %s couldn't be read from disk" % fileName)
     # return values
     return accessFileName, accessFileExt
-
-if __name__ == "__main__":
-  jReader = JSONReaderWriter( '/mnt//tmp/sudip/json_issue97/wc14-BraNed-HLTS-5s_frame_11.json' )
-  jReader.initzDistScore()
-  jReader.generatezDistScore( 0 )
-  import pdb; pdb.set_trace()
