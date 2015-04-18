@@ -3,6 +3,7 @@ Installing
 - make all  -  setup and run tests
 - make test -  only test
 - make setup - only setup
+- make VideoReader - setup VideoReader
 
 Binaries
 ==========
