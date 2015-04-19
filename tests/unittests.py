@@ -1,17 +1,26 @@
 #!/usr/bin/python
 import unittest
 import random, os
+import tempfile, shutil
 
 from postprocessing.type.Frame import Frame
 from postprocessing.task.JsonWriter import JsonWriter
-from postprocessing.config.Config import Config
-from postprocessing.config.Status import Status
+from config.Config import Config
+from config.Status import Status
+from config.Version import Version
 
 from Logo.PipelineMath.PixelMap import PixelMap
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 
+from tool import pp
+
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
+
+class TestVersion( unittest.TestCase ):
+  def testVersion( self ):
+    version = Version()
+    version.logVersion()
 
 class TestFrameInfo(unittest.TestCase):
 
@@ -68,6 +77,16 @@ class PixelMapTest( unittest.TestCase ):
     ''' Test the cellMap created '''
     pass
 
+class TestPipeline( unittest.TestCase ):
+  
+  def testPipeline( self ):
+    ''' Test running the pp pipeline '''
+    configFile = baseScriptDir + os.sep + "config.yaml"
+    jsonFolder = tempfile.mkdtemp()
+    sampleJsonFile = baseScriptDir + os.sep + "sample.json"
+    for i in range( 100 ):
+      shutil.copyfile( sampleJsonFile, jsonFolder + os.sep + "sample_%d.json" % i )
+    pp.process( configFile, jsonFolder )
 
 if __name__ == '__main__':
     unittest.main()
