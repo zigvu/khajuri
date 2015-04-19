@@ -32,6 +32,8 @@ class Config:
     self.sw_folders_numpy = sw_folders['numpy_output']
 
     self.sw_frame_density = int(slidingWindow['frame_density'])
+    self.sw_frame_width = int(slidingWindow['frame_width'])
+    self.sw_frame_height = int(slidingWindow['frame_height'])
     self.sw_patchWidth = int(slidingWindow['output_width'])
     self.sw_patchHeight = int(slidingWindow['output_height'])
 

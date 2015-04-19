@@ -9,7 +9,7 @@ VideoReader:
 
 setup:
 	mkdir -p ~/site-packages/
-	export PYTHONPATH=$PYTHONPATH:~/site-packages/
+	export PYTHONPATH=$$PYTHONPATH:~/site-packages/
 	python setup.py develop --install-dir=~/site-packages/
 
 test:

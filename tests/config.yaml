@@ -20,6 +20,8 @@ sliding_window:
     video_output:                             vdo-out
     numpy_output:                             numpy
   frame_density:                              5
+  frame_width:                                1280
+  frame_height:                               720
   # Dimension of patches
   output_width:                               256
   output_height:                              256
