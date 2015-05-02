@@ -16,7 +16,9 @@ class ClassFilter( Task ):
   def splitUsingThreshold( self, frame, classIds, zDist ):
     threshold = self.config.pp_detectorThreshold
     maxArray = np.amax( frame.scores[ zDist ][ :, :, 0 ], axis=0)
+    
     above = set( np.argwhere( maxArray > threshold ).flatten() )
     logging.info( 'Reduce list size from %s to %s' %
        ( len( classIds ), len( above ) ) )
+    above = above.difference( set( map( int, self.config.ci_backgroundClassIds ) ) )
     return ( frame, above )

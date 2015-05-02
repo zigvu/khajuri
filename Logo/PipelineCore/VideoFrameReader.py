@@ -1,7 +1,7 @@
 import sys, os, time
 import logging
 
-import VideoReader
+from VideoReader import VideoReader
 
 from Logo.PipelineMath.Rectangle import Rectangle
 

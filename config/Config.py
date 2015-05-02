@@ -3,6 +3,10 @@ import yaml, json
 import scipy.ndimage as ndimage
 import logging
 
+from Logo.PipelineMath.Rectangle import Rectangle
+from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
+from Logo.PipelineMath.PixelMap import PixelMap
+
 class Config:
   """Reads YAML config file and allows easy accessor to config attributes"""
   def __init__(self, configFileName):
@@ -118,9 +122,6 @@ class Config:
     self.ce_storageLocation = cellroti['storage_location']
     self.ce_numSecondsPerSampleFrame = cellroti['num_seconds_per_sample_frame']
 
-    # Logs
-    log = config[ 'log' ]
-    self.log_file = log[ 'file' ]
 
     # PeaksExtractor config - not exposed to config.yaml
     # Connectedness of labeled example - have a full matrix structure
@@ -132,6 +133,13 @@ class Config:
     self.pe_maxSubsumedIntersectionDiff = 0.9
     # thresholds to subsample candidate labeled bbox prior to showing to user
     self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+
+
+    # Setup allCellBoundariesDict
+    imgDim = Rectangle.rectangle_from_dimensions( self.sw_frame_width, self.sw_frame_height )
+    patchDim = Rectangle.rectangle_from_dimensions( self.sw_patchWidth, self.sw_patchHeight)
+    staticbboxes = BoundingBoxes(imgDim, self.sw_xStride, self.sw_yStride, patchDim )
+    self.allCellBoundariesDict = PixelMap.getCellBoundaries(staticbboxes, self.sw_scales)
 
   @staticmethod
   def mkdir_p(start_path):

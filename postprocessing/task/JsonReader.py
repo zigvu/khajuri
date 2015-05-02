@@ -1,4 +1,4 @@
-import logging, json
+import logging, json, os
 
 from Task import Task
 from postprocessing.type.Frame import Frame
@@ -6,9 +6,15 @@ from postprocessing.type.Localization import Localization
 from postprocessing.type.Rect import Rect
 
 class JsonReader( Task ):
+  def getVideoId( self, jsonFileName ):
+    baseName = os.path.basename( jsonFileName )
+    return baseName.split( '_' )[0]
+
   def __call__( self, obj ):
     fileName = obj
     logging.info( 'Reading frameInfo from %s' % fileName )
+    if not self.config.videoId:
+      self.config.videoId = self.getVideoId( fileName )
     jsonObj = json.load( open( fileName, 'r' ) )
     frame = Frame( self.config.ci_allClassIds, 543, self.config.ci_scoreTypes.keys() )
     frame.frameDisplayTime = jsonObj[ 'frame_time' ]

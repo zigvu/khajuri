@@ -13,6 +13,7 @@ class Frame(object):
     self.classIds = classIds
     self.scores = {}
     self.scores[ zDistThreshold ] = self.initNumpyArrayScore()
+    self.cellValues = {}
 
   def initNumpyArrayScore( self ):
     '''

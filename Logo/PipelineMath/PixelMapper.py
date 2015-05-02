@@ -2,56 +2,54 @@ import math
 import numpy as np
 import scipy.ndimage as ndimage
 from PixelMap import PixelMap
+import matplotlib.pyplot as plt
 
 class PixelMapper(object):
-  def __init__(self, classId, staticBoundingBoxes, configReader, jsonReaderWriter, allCellBoundariesDict ):
+  mapAllCellCountCache = {}
+
+  def __init__(self, classId, config, frame, zDistThreshold ):
     """Initialize pixelMap according to dimensions of image and sliding window"""
     self.classId = classId
-    self.staticBoundingBoxes = staticBoundingBoxes
-    self.configReader = configReader
-    self.detectorThreshold = self.configReader.pp_detectorThreshold
-    self.sigmoidCenter = self.configReader.sw_scale_decay_sigmoid_center
-    self.sigmoidSteepness = self.configReader.sw_scale_decay_sigmoid_steepness
-
-    self.origImageShape = (staticBoundingBoxes.imageDim.height, staticBoundingBoxes.imageDim.width)
-    self.jsonReaderWriter = jsonReaderWriter
+    self.config = config
+    self.frame = frame
+    self.sigmoidCenter = self.config.sw_scale_decay_sigmoid_center
+    self.sigmoidSteepness = self.config.sw_scale_decay_sigmoid_steepness
+    self.zDistThreshold = zDistThreshold
     self.pixelMaps = []
-    self.scales = jsonReaderWriter.getScalingFactors()
-    self.allCellBoundariesDict = allCellBoundariesDict
-    for scale in self.scales:
+    patchScores = frame.scores[ self.zDistThreshold ][ :, self.classId, 0 ]
+    oneScores = np.ones( len( patchScores ), dtype=np.float )
+    self.mapAllCellCount = {}
+    for scale in self.config.sw_scales:
+      if not PixelMapper.mapAllCellCountCache.get( scale ):
+        PixelMapper.mapAllCellCountCache[ scale ] = PixelMap( self.config.allCellBoundariesDict, scale )
+        PixelMapper.mapAllCellCountCache[ scale ].addScore( oneScores )
       localizationMap, intensityMap = self.populatePixelMap(scale)
       self.pixelMaps += [{'scale': scale, \
         'localizationMap': localizationMap, \
         'intensityMap': intensityMap,\
         'decayedMap': None}]
 
+  #@profile
   def populatePixelMap(self, scale):
     """Initialize the pixel map for the class at given scale"""
-    mapAllCellCount = PixelMap( self.allCellBoundariesDict, scale )
-    mapDetectionCellCount = PixelMap( self.allCellBoundariesDict, scale )
-    intensityMap = PixelMap( self.allCellBoundariesDict, scale )
-    for patch in self.jsonReaderWriter.getPatches(scale):
-      rStart = patch['patch']['y']
-      rEnd = patch['patch']['y'] + patch['patch']['height']
-      cStart = patch['patch']['x']
-      cEnd = patch['patch']['x'] + patch['patch']['width']
-      patchScore = float(patch['scores'][self.classId])
-      # add scores to rescoring patches
-      mapAllCellCount.addScore( cStart, rStart, cEnd, rEnd, 1 ) 
-      if patchScore > self.detectorThreshold:
-        mapDetectionCellCount.addScore( cStart, rStart, cEnd, rEnd, 1) 
-      # intensity uses max pooling
-      intensityMap.addScore_max( cStart, rStart, cEnd, rEnd, patchScore )
-    # create localization from intensity
+    mapAllCellCount = PixelMapper.mapAllCellCountCache[ scale ].copy()
+    mapDetectionCellCount = PixelMap( self.config.allCellBoundariesDict, scale )
+    intensityMap = PixelMap( self.config.allCellBoundariesDict, scale )
+    
+    # Map Patch Scores to cellValues 
+    patchScores = self.frame.scores[ self.zDistThreshold ][ :, self.classId, 0 ]
+    patchScoresAboveThreshold = np.zeros( len( patchScores ), dtype=np.float )
+    patchScoresAboveThreshold[ patchScores > self.config.pp_detectorThreshold ] = 1
+    mapDetectionCellCount.addScore( patchScoresAboveThreshold )
+    intensityMap.addScore_max( patchScores )
+
+    # Massage the cellValues
     self.massageRescoringMap(mapAllCellCount, mapDetectionCellCount)
     localizationMap = mapAllCellCount * intensityMap
     return localizationMap, intensityMap
 
- 
+  #@profile
   def spikeDetection( self, mapAllCellCount ):
-    self.spikeDetectionUsingCellMap( mapAllCellCount )
-
-  def spikeDetectionUsingCellMap( self, mapAllCellCount ):
     # Zero Out all Pixels below threshold
     threshold = 1
     maxima = mapAllCellCount.copy()
@@ -73,39 +71,9 @@ class PixelMapper(object):
       maxima.cellValues[ list( neighbors ) ] = 1.0/( 1.0 
             + np.exp( -2 * ( maxima.cellValues[ list( neighbors ) ] - self.sigmoidCenter ) *
               self.sigmoidSteepness ) )
-
-    # 3. Find bounding Boxes ?
     mapAllCellCount.cellValues = maxima.cellValues
 
-  def spikeDetectionUsingNumpy( self, mapAllCellCount ):
-    npPixelMap = mapAllCellCount.toNumpyArray()
-    rescoringMap = np.zeros(np.shape(npPixelMap))
-    binaryStructure = ndimage.morphology.generate_binary_structure(2,2)
-    threshold = 1
-    # zero out all pixels below threshold
-    maxima = npPixelMap.copy()
-    diff = (maxima > threshold)
-    maxima[diff == 0] = 0
-    # label each non-contiguous area with integer values
-    labeledArray, num_objects = ndimage.label(maxima, structure= binaryStructure)
-    # find center of each labeled non-contiguous area
-    xy = np.array(ndimage.center_of_mass(maxima, labeledArray, range(1, num_objects + 1)))
-    # find bounding boxes
-    for idx, coord in enumerate(xy):
-      # zero out all pixels that don't belong to this label
-      labelArea = labeledArray == (idx + 1)
-      # find end points of the array containing label
-      labelWhere = np.argwhere(labelArea)
-      (yStart, xStart), (yEnd, xEnd) = labelWhere.min(0), labelWhere.max(0) + 1
-      # set values for the labels
-      maxDetectionCount = np.max(npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]])
-      npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]] = \
-        npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]] / maxDetectionCount
-      rescoringMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]] = \
-        1.0/(1.0 + np.exp(-2 * (npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]]\
-           - self.sigmoidCenter) * self.sigmoidSteepness))
-    mapAllCellCount.fromNumpyArray(rescoringMap)
-
+  #@profile
   def massageRescoringMap(self, mapAllCellCount, mapDetectionCellCount):
     """Rescore localization to highlight positive detections"""
     # if there is not a single detection, skip arithmetic
@@ -113,7 +81,6 @@ class PixelMapper(object):
     if maxDetectionCount <= 0:
       mapAllCellCount.cellValues = 0
       return
-    # TODO: config tuning of sigmoid values for each scale
 
     # STEP 1: 
     # adjust for patches in edges and corners
@@ -131,10 +98,7 @@ class PixelMapper(object):
     # spike detections
     self.spikeDetection( mapAllCellCount )
 
-    # maxDetectionCount = np.max(mapAllCellCount.cellValues)
-    # mapAllCellCount.cellValues /= maxDetectionCount
-    # mapAllCellCount.cellValues = 1.0/(1.0 + np.exp(-2 * (mapAllCellCount.cellValues - self.sigmoidCenter) * self.sigmoidSteepness))
-
+  #@profile
   def getScaleDecayedMap(self, scale):
     """Given decay factors, combines different scores across scales"""
     # if in cache, return
@@ -142,7 +106,7 @@ class PixelMapper(object):
       if pm['scale'] == scale and pm['decayedMap'] != None:
         return pm['decayedMap']
     # else, create map by combining decay factors
-    decayedMap = PixelMap(self.allCellBoundariesDict, scale)
+    decayedMap = PixelMap(self.config.allCellBoundariesDict, scale)
     decayFactors = None
     for df in self.allDecayFactors:
       if df['scale'] == scale:
@@ -175,6 +139,7 @@ class PixelMapper(object):
     # return
     return decayedMap
 
+  #@profile
   def setupScaleDecayedMapCache(self, allDecayFactors):
     """Set up data structure to hold all intermediate calculation
     during scale decayed maps"""
@@ -192,21 +157,6 @@ class PixelMapper(object):
         if dfAbsent:
           self.decayMultipliedPixelMaps.append({'scale': dScale, 'factor': dFactor, 'pixelMap': None})
     # done
-
-  def inferIntermediateScales(self, targetScale, scale1, scale2):
-    """Given pixelMap at two scales, infer localization of itermediate scale"""
-    # localization
-    avgLocalization = self.getLocalizationMap(scale1).copy()
-    localization2 = self.getLocalizationMap(scale2)
-    avgLocalization += localization2
-    avgLocalization.cellValues /= 2
-    # intensity
-    avgIntensity = self.getIntensityMap(scale1).copy()
-    intensity2 = self.getIntensityMap(scale2)
-    avgIntensity += intensity2
-    avgIntensity.cellValues /= 2
-    self.pixelMaps += [{'scale': targetScale, \
-      'localizationMap': avgLocalization, 'intensityMap': avgIntensity}]
 
   def getLocalizationMap(self, scale):
     """Return the localization map for this class and scale"""

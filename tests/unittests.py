@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import unittest
-import random, os
+import random, os, subprocess
 import tempfile, shutil
 
 from postprocessing.type.Frame import Frame
@@ -87,6 +87,7 @@ class TestPipeline( unittest.TestCase ):
     for i in range( 100 ):
       shutil.copyfile( sampleJsonFile, jsonFolder + os.sep + "sample_%d.json" % i )
     pp.process( configFile, jsonFolder )
+    shutil.rmtree( jsonFolder )
 
 if __name__ == '__main__':
     unittest.main()
