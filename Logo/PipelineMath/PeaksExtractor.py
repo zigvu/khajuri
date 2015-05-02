@@ -50,16 +50,13 @@ class PeaksExtractor(object):
       posValueSet.add( i[0] )
 
     # Find Islands and Number them
-    islands = []
     while len( posValueSet ) > 0:
       i = posValueSet.pop()
       neighbors, maxValue, avgValue, cb = maxima.BFS( i )
-      for n in neighbors:
-        if n != i:
-          posValueSet.discard( n )
+      posValueSet.difference_update( neighbors.difference( set( [i] ) ) )
+
       bbox = Rectangle.rectangle_from_endpoints(cb[0], cb[1], cb[2], cb[3])
       candidateBboxes.append( { 'bbox': bbox, 'intensity' : avgValue } )
-      islands.append( neighbors )
     return candidateBboxes
 
   def getPeakBboxesUsingNumpy(self, threshold):
@@ -87,7 +84,7 @@ class PeaksExtractor(object):
       # create bbox based on the label
       bbox = Rectangle.rectangle_from_endpoints(xStart, yStart, xEnd, yEnd)
       # get the average intensity of the bbox
-      avgIntensity = np.average(self.pixelMap.toNumpyArray()[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]])
+      avgIntensity = np.average(maxima[labelArea])
       candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity}]
       #candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity, 'label': ("%.2f" % avgIntensity)}]
     return candidateBboxes

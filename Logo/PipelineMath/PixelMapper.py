@@ -98,11 +98,9 @@ class PixelMapper(object):
       labelWhere = np.argwhere(labelArea)
       (yStart, xStart), (yEnd, xEnd) = labelWhere.min(0), labelWhere.max(0) + 1
       # set values for the labels
-      maxDetectionCount = np.max(npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]])
-      npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]] = \
-        npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]] / maxDetectionCount
-      rescoringMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]] = \
-        1.0/(1.0 + np.exp(-2 * (npPixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]]\
+      maxDetectionCount = np.max(maxima[labelArea])
+      maxima[labelArea] = maxima[labelArea] / maxDetectionCount
+      rescoringMap[labelArea] = 1.0/(1.0 + np.exp(-2 * (maxima[labelArea]\
            - self.sigmoidCenter) * self.sigmoidSteepness))
     mapAllCellCount.fromNumpyArray(rescoringMap)
 
