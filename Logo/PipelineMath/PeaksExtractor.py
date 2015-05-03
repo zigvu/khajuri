@@ -27,9 +27,8 @@ class PeaksExtractor(object):
     while len( posValueSet ) > 0:
       i = posValueSet.pop()
       neighbors, maxValue, avgValue, cb = maxima.BFS( i )
-      for n in neighbors:
-        if n != i:
-          posValueSet.discard( n )
+      posValueSet.difference_update( neighbors.difference( set( [i] ) ) )
+
       bbox = Rectangle.rectangle_from_endpoints(cb[0], cb[1], cb[2], cb[3])
       candidateBboxes.append( { 'bbox': bbox, 'intensity' : avgValue } )
     return candidateBboxes
