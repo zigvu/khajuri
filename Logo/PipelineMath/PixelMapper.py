@@ -73,6 +73,7 @@ class PixelMapper(object):
               self.sigmoidSteepness ) )
     mapAllCellCount.cellValues = maxima.cellValues
 
+  #@profile
   def massageRescoringMap(self, mapAllCellCount, mapDetectionCellCount):
     """Rescore localization to highlight positive detections"""
     # if there is not a single detection, skip arithmetic
