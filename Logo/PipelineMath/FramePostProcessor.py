@@ -17,7 +17,7 @@ class FramePostProcessor(object):
   def localize(self):
     """Collect and analyze detection results"""
     scaleSpaceCombiner = ScaleSpaceCombiner(self.classId, self.config, self.frame, self.zDistThreshold )
-    localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
+    localizationOrigScale, localizationPixelMap = scaleSpaceCombiner.getBestInferredPixelMap()
     localizationPixelMap.setScale( 1.0 )
     localizationPeaks = PeaksExtractor(localizationPixelMap, self.config )
     localizationPatches = localizationPeaks.getPeakBboxes()
@@ -25,6 +25,7 @@ class FramePostProcessor(object):
       logging.info( 'Localization at: %s, with intensity: %s for class %s and zDist %s'
           % ( lp['bbox'].json_format(), lp['intensity'], self.classId, self.zDistThreshold ) )
       rect = Rect( lp['bbox'].x0, lp['bbox'].y0, lp['bbox'].width, lp['bbox'].height )
-      l = Localization( self.zDistThreshold, self.classId, rect, lp[ 'intensity' ], 1 )
+      l = Localization( self.zDistThreshold, self.classId, rect,
+          lp[ 'intensity' ], localizationOrigScale )
       self.frame.addLocalization( self.classId, l )
     return localizationPatches
