@@ -16,7 +16,6 @@ class JsonWriter( Task ):
     scores = {}
     myDict = {}
     myDict[ "frame_number" ] = frame.frameNumber
-    myDict[ "frame_time" ] = frame.frameDisplayTime
     for classId in self.config.ci_allClassIds:
       scores[ classId ] = {}
       scores[ classId ] [ "fc8" ] = list( frame.scores[0][ :, classId, 1 ] )
