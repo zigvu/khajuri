@@ -31,4 +31,4 @@ class ScaleSpaceCombiner(object):
     rescalingFactor = maxPixelIntensity / maxPixelLocalization
     rescaledLocalizationMap = maxLocalizationMap.copy()
     rescaledLocalizationMap.cellValues = maxLocalizationMap.cellValues * rescalingFactor
-    return rescaledLocalizationMap
+    return maxLocalizationScale, rescaledLocalizationMap
