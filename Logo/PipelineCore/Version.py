@@ -25,6 +25,6 @@ class LogoVersion( object ):
     logging.info( commit )
 
 if __name__ == '__main__':
-  logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', level=logging.DEBUG)
+  logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', level=logging.INFO)
   v = LogoVersion()
   v.logVersion()
