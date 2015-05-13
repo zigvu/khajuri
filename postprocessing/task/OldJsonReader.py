@@ -29,7 +29,8 @@ class OldJsonReader( Task ):
     if not self.config.videoId:
       self.config.videoId = self.getVideoId( fileName )
     self.myDict = json.load( open( fileName, 'r' ) )
-    frame = Frame( self.config.ci_allClassIds, 543, self.config.ci_scoreTypes.keys() )
+    frame = Frame( self.config.ci_allClassIds, len( self.patchMapping ),
+        self.config.ci_scoreTypes.keys() )
     frame.frameNumber = self.myDict[ "frame_number" ]
     self.patchMapping = self.config.allCellBoundariesDict[ "patchMapping" ]
     self.classIds =  self.getClassIds()
