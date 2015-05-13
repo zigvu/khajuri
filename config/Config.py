@@ -3,7 +3,11 @@ import yaml, json
 import scipy.ndimage as ndimage
 import logging
 
-class ConfigReader:
+from Logo.PipelineMath.Rectangle import Rectangle
+from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
+from Logo.PipelineMath.PixelMap import PixelMap
+
+class Config:
   """Reads YAML config file and allows easy accessor to config attributes"""
   def __init__(self, configFileName):
     """Initlize config from YAML file"""
@@ -32,6 +36,8 @@ class ConfigReader:
     self.sw_folders_numpy = sw_folders['numpy_output']
 
     self.sw_frame_density = int(slidingWindow['frame_density'])
+    self.sw_frame_width = int(slidingWindow['frame_width'])
+    self.sw_frame_height = int(slidingWindow['frame_height'])
     self.sw_patchWidth = int(slidingWindow['output_width'])
     self.sw_patchHeight = int(slidingWindow['output_height'])
 
@@ -92,6 +98,7 @@ class ConfigReader:
     self.ci_backgroundClassIds = caffeInput['background_classes']
     self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds if x not in self.ci_backgroundClassIds]
     self.ci_heatMapClassIds = config[ 'heatmap' ] [ 'classes' ]
+    self.ci_scoreTypes = { 'prob' : 0, 'fc8': 1 }
 
     # Post processing
     postProcessing = config['post_processing']
@@ -116,7 +123,6 @@ class ConfigReader:
     self.ce_numSecondsPerSampleFrame = cellroti['num_seconds_per_sample_frame']
 
 
-
     # PeaksExtractor config - not exposed to config.yaml
     # Connectedness of labeled example - have a full matrix structure
     self.pe_binaryStructure = ndimage.morphology.generate_binary_structure(2,2)
@@ -127,6 +133,13 @@ class ConfigReader:
     self.pe_maxSubsumedIntersectionDiff = 0.9
     # thresholds to subsample candidate labeled bbox prior to showing to user
     self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+
+
+    # Setup allCellBoundariesDict
+    imgDim = Rectangle.rectangle_from_dimensions( self.sw_frame_width, self.sw_frame_height )
+    patchDim = Rectangle.rectangle_from_dimensions( self.sw_patchWidth, self.sw_patchHeight)
+    staticbboxes = BoundingBoxes(imgDim, self.sw_xStride, self.sw_yStride, patchDim )
+    self.allCellBoundariesDict = PixelMap.getCellBoundaries(staticbboxes, self.sw_scales)
 
   @staticmethod
   def mkdir_p(start_path):

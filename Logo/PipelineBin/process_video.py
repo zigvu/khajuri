@@ -7,7 +7,7 @@ sys.path.append( '%s/../../VideoReader'% baseScriptDir  )
 
 from Logo.PipelineThread.VideoProcessThread import VideoProcessThread
 
-if __name__ == '__main__':
+def main():
   if len(sys.argv) < 6:
     print 'Usage %s <config.yaml> <videoFileName> <baseDbFolder> <jsonFolder> <numpyFolder>' % sys.argv[ 0 ]
     sys.exit(1)
@@ -19,3 +19,7 @@ if __name__ == '__main__':
   numpyFolder = sys.argv[5]
   videoProcessThread = VideoProcessThread(configFileName, videoFileName, baseDbFolder, jsonFolder, numpyFolder)
   videoProcessThread.run()
+
+if __name__ == '__main__':
+  main()
+

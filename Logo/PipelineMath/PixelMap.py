@@ -5,23 +5,13 @@ from shapely.geometry import box
 from multiprocessing import Process, Manager
 from Queue import Queue, Empty
 import multiprocessing
-import time, pickle
+import time
+import cPickle as pickle
 
-def getPossibleCBs( cb, xHelper, yHelper ):
-  myList = []
-  for index in [ cb[ "x0" ], cb[ "x0"] - 1, cb[ "x0" ] + 1  ]:
-     if xHelper.get( index ):
-       for item in xHelper.get( index ):
-          myList.append( item )
-  for index in [ cb[ "y0" ], cb[ "y0" ] - 1, cb[ "y0" ] + 1,       ]:
-     if yHelper.get( index ):
-       for item in yHelper.get( index ):
-          myList.append( item )
-  return myList
-
-def setupNeighbor( queue, neighbors, cellBoundaries, xHelper, yHelper ):
+def setupNeighbor( queue, neighbors, cellBoundaries ):
   while True:
      index, cb = queue.get()
+     logging.info( 'Got cb : %s at index %s for setting up from queue' % ( cb, index ) )
      if not cb:
        break
      else:
@@ -82,6 +72,7 @@ class PixelMap(object):
     self.setScale(newScale)
     return self
 
+  ##@profile
   def copy(self):
     """Return a new copy of this map"""
     newPixelMap = PixelMap(self.allCellBoundariesDict, self.scaleFactor)
@@ -94,13 +85,6 @@ class PixelMap(object):
     for idx, cb in self.cellBoundaries.iteritems():
       pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]] = self.cellValues[idx]
     return pixelCount
-
-  def fromNumpyArray(self, pixelCount):
-    """Convert given numpyArray to pixelMap"""
-    if np.shape(pixelCount)[0] != self.height or np.shape(pixelCount)[1] != self.width:
-      raise RuntimeError("Input numpy array of different size than PixelMap")
-    for idx,cb in self.cellBoundaries.iteritems():
-      self.cellValues[idx] = np.max(pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]])
 
   def BFS( self, index ):
     xMin = sys.maxint
@@ -137,26 +121,38 @@ class PixelMap(object):
     return neighbors, maxValue, avgValue, ( xMin, yMin, xMax, yMax )
 
   # ********************
-  # Add scores from json
-
-  def addScore(self, x0, y0, x3, y3, score):
+  # convert from frame.scores to cellValues
+  # ********************
+  #@profile
+  def addScore(self, patchScores):
     """Add scores to cells"""
-    cells = self.cellSlidingWindows[ (x0, y0, x3, y3 ) ]
-    self.cellValues[np.array( cells )] += score
+    cellMask = self.allCellBoundariesDict[ "PatchCellMask" ][ self.scaleFactor ]
+    patchMapping = self.allCellBoundariesDict[ "patchMapping" ]
+    patchIdToBbox = {v: k for k, v in patchMapping.items()}
+    aboveZeroPatchIds = np.argwhere( patchScores > 0 )
+    if len(aboveZeroPatchIds):
+      for patchId in aboveZeroPatchIds:
+        patchBbox = patchIdToBbox[ patchId[0] ]
+        if self.scaleFactor == patchBbox[ 0 ]:
+          cells = self.cellSlidingWindows[ ( patchBbox[ 1 ],  patchBbox[ 2 ],  patchBbox[ 3 ],  patchBbox[ 4 ] ) ]
+          self.cellValues[ cells ] += patchScores[ patchId[0] ]
 
-  def addScore_average(self, x0, y0, x3, y3, score):
-    """Average score with existing cell values"""
-    cells = self.cellSlidingWindows[ (x0, y0, x3, y3 ) ]
-    self.cellValues[np.array( cells )] += score
-    self.cellValues[np.array( cells )] /= 2
-
-  def addScore_max(self, x0, y0, x3, y3, score):
+  #@profile
+  def addScore_max(self, patchScores):
     """Store max of score and existing cell values in cells"""
-    cells = self.cellSlidingWindows[ (x0, y0, x3, y3 ) ]
-    myCells = self.cellValues[np.array( cells )]
-    mask = myCells < score
-    myCells[ mask ] = score
-    self.cellValues[np.array( cells )] = myCells
+    patchMapping = self.allCellBoundariesDict[ "patchMapping" ]
+    patchIdToBbox = {v: k for k, v in patchMapping.items()}
+    aboveZeroPatchIds = np.argwhere( patchScores > 0 )
+    if len(aboveZeroPatchIds):
+      for patchId in aboveZeroPatchIds:
+        patchBbox = patchIdToBbox[ patchId[0] ]
+        if self.scaleFactor == patchBbox[ 0 ]:
+          cells = self.cellSlidingWindows[ ( patchBbox[ 1 ],  patchBbox[ 2 ],  patchBbox[ 3 ],  patchBbox[ 4 ] ) ]
+          score = patchScores[ patchId[0] ]
+          myCells = self.cellValues[ np.array( cells ) ]
+          mask = myCells < score
+          myCells[ mask ] = score
+          self.cellValues[np.array( cells )] = myCells
 
   # ********************
   # Helper functions
@@ -229,6 +225,15 @@ class PixelMap(object):
     smallestScaleRect = staticBoundingBoxes.imageDim.get_scaled_rectangle(smallestScale)
     smallestPixelCount = np.ones((smallestScaleRect.height, smallestScaleRect.width)) # row, column
     # for each scale, add in new cell information
+    patchMapping = {}
+    patchId = 0
+    for scale in scales:
+      for c in staticBoundingBoxes.getBoundingBoxes(scale):
+        rStart = c[1] ; rEnd = c[1] + c[3]
+        cStart = c[0] ; cEnd = c[0] + c[2]
+        patchMapping [ ( scale, cStart, rStart, cEnd, rEnd ) ] = patchId
+        patchId += 1
+
     for scaleFactor in allScales:
       rect = staticBoundingBoxes.imageDim.get_scaled_rectangle(scaleFactor)
       slidingWindows = staticBoundingBoxes.getBoundingBoxes(scaleFactor)
@@ -391,31 +396,40 @@ class PixelMap(object):
       if allCellBoundaries["scales"][scaleFactor]["max_cell_counter"] != maxCellCounter:
         raise RuntimeError("Cell boundaries across scales are different")
 
+    allCellBoundaries[ "patchMapping" ] = patchMapping
+    allCellBoundaries[ "PatchCellMask" ] =\
+      PixelMap.setupCellMask( patchMapping, allCellBoundaries )
     pickle.dump( allCellBoundaries, open( saveFile, "wb" ) )
     return allCellBoundaries
+
+  @staticmethod
+  def setupCellMask( patchMapping, allCellBoundaries ):
+    cellMask = {}
+    numOfPatches = len( patchMapping.keys() )
+    logging.info( 'Number of patches %s' % numOfPatches )
+    for scale in allCellBoundaries[ "scales" ].keys():
+      logging.info( 'Starting CellMask at scale %s' % scale )
+      cellSlidingWindows = allCellBoundaries[ "scales" ][ scale ][ "sw_mapping" ]
+      cellBoundaries = allCellBoundaries[ "scales" ][ scale ][ "cell_boundaries" ]
+      numOfCellValues = len( cellBoundaries )
+      cellMask[ scale ] = np.zeros( ( numOfPatches, numOfCellValues ), dtype=np.int )
+      for key, cellIds in cellSlidingWindows.iteritems():
+        row = np.zeros( numOfCellValues, dtype=np.int )
+        patchId = patchMapping[ ( scale, key[0], key[1], key[2], key[3] ) ]
+        logging.info( 'For Patch %s with id %s' % ( key , patchId ) )
+        row [ cellSlidingWindows[ key ] ] = 1
+        cellMask[scale][ patchId, : ] = row
+    assert cellMask
+    return cellMask
 
   @staticmethod
   def setupNeighbors( cellBoundaries ):
     activeProcess = Queue()
     manager = Manager()
     neighbors = manager.dict()
-    neighborXHelper = {}
-    neighborYHelper = {}
     queueOfCBs = multiprocessing.Queue()
-    for idx, cb in cellBoundaries.iteritems():
-       if not neighborXHelper.get( cb[ "x0" ] ):
-          neighborXHelper[ cb[ "x0" ] ] = []
-       neighborXHelper[ cb[ "x0" ] ].append( cb )
-       if not neighborXHelper.get( cb[ "x3" ] ):
-          neighborXHelper[ cb[ "x3" ] ] = []
-       neighborXHelper[ cb[ "x3" ] ].append( cb )
-       if not neighborYHelper.get( cb[ "y0" ] ):
-          neighborYHelper[ cb[ "y0" ] ] = []
-       neighborYHelper[ cb[ "y0" ] ].append( cb )
-       if not neighborYHelper.get( cb[ "y3" ] ):
-          neighborYHelper[ cb[ "y3" ] ] = []
-       neighborYHelper[ cb[ "y3" ] ].append( cb )
-       queueOfCBs.put( ( idx, cb ) )
+    for cb in cellBoundaries.iteritems():
+       queueOfCBs.put( cb )
 
     for _i in range( multiprocessing.cpu_count() ):
       queueOfCBs.put( ( 0, None ) )
@@ -423,9 +437,7 @@ class PixelMap(object):
           args=(
             queueOfCBs,
             neighbors,
-            cellBoundaries,
-            neighborXHelper,
-            neighborYHelper ) )
+            cellBoundaries ) )
       p.start()
       activeProcess.put( p )
     while activeProcess.qsize() > 0:

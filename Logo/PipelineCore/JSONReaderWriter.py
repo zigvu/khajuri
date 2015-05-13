@@ -24,6 +24,7 @@ class JSONReaderWriter( object ):
       else:
         self.scalingFactors = [ obj['scale'] for obj in self.myDict[ 'scales' ] ]
 
+
   def getClassesSplit( self, threshold ):
     ''' This method splits the classes into above and below'''
     above = set()
@@ -39,8 +40,6 @@ class JSONReaderWriter( object ):
       else:
         below.add( classId )
     return above, below
-    
-
 
   def getAnnotationFileName( self ):
     return self.myDict[ 'annotation_filename' ]
@@ -133,6 +132,15 @@ class JSONReaderWriter( object ):
       for patchVal in scaleVal['patches']:
         if leveldbCounter == int(patchVal['leveldb_counter']):
           patchVal['scores'] = scores
+          return True
+    return False
+
+  def addfc8Scores(self, leveldbCounter, scores_fc8):
+    for scaleVal in self.myDict['scales']:
+      for patchVal in scaleVal['patches']:
+        if leveldbCounter == int(patchVal['leveldb_counter']):
+          patchVal['scores_fc8'] = scores_fc8
+          patchVal[ 'zDist' ] = {}
           return True
     return False
           

@@ -1,62 +1,93 @@
 #!/usr/bin/python
-import khajuri.VideoPipeline
-import Controller.Config
-from Controller.Frame import FrameGroup
-from Controller.Plugin import PluginGroup
-from Controller.Result import ResultGroup
-from Controller.DetectionStrand import DetectionStrand, DetectionStrandGroup
 import unittest
-import VideoReader
+import random, os, subprocess
+import tempfile, shutil
 
-class TestVideoPipelin(unittest.TestCase):
- 
-    def setUp(self):
-        self.configFileName = '/home/regmi/khajuri/config.yaml'
-        self.videoFileName = "/home/regmi/1/short.mp4"
-	self.conf = Config.Config( self.configFileName )
-	self.fg = None
-	self.pg = None
-    
-    def testFrameGroup(self):
-        # Test FrameGroup:
-        print "#####-- Testing FrameGroup --#####"
-        self.fg = FrameGroup(4, self.conf)
-        print fg
+from postprocessing.type.Frame import Frame
+from postprocessing.task.JsonWriter import JsonWriter
+from config.Config import Config
+from config.Status import Status
+from config.Version import Version
 
-    def testPluginGroup(self):
-        print "#####-- Testing PluginGroup --#####"
-        self.pg = PluginGroup(self.conf)
-        print pg
-    
-    def testResultGroup(self):
-        print "#####-- Testing ResultGroup --#####"
-        rg = ResultGroup(self.fg, self.pg)
-        print rg
+from Logo.PipelineMath.PixelMap import PixelMap
+from Logo.PipelineMath.Rectangle import Rectangle
+from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 
-    def testDetectionStrand(self):
-        print "#####-- Testing DetectionStrand --#####"
-        ds = DetectionStrand(4, self.conf)
-        rg = ds.process()
-        print rg
+from tool import pp
 
-    def testVideoReader(self):
-        myFrameReader = VideoReader.VideoFrameReader( 40, 40, self.videoFileName )
-        print myFrameReader.fps
-        print myFrameReader.lengthInMicroSeconds
-        myFrameReader.generateFrames()
-        vFrame = True
-        i = 1
-        while not myFrameReader.eof:
-           vFrame = myFrameReader.getFrameWithFrameNumber( i )
-           if vFrame:
-             i += 1
-             print 'TimeStamp: %s' % vFrame.timeStamp
-             print 'FrameNum: %s' % vFrame.frameNum
-        myFrameReader.waitForEOF()       
+baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 
-    def testDetectionStrandGroup(self):
-        dsg = DetectionStrandGroup( self.videoFileName, self.conf )
-	dsg.runVidPipe()
-    
-    def testVideoPipeline(self):
-         VideoPipeline.processVideo( self.configFileName, self.videoFileName )
+class TestVersion( unittest.TestCase ):
+  def testVersion( self ):
+    version = Version()
+    version.logVersion()
+
+class TestFrameInfo(unittest.TestCase):
+
+  def testBasic( self ):
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
+
+    # Basic Setting of Frame
+    frame.frameNumber = 3
+    frame.frameDisplayTime = 10000
+
+    assert frame.frameNumber == 3
+    assert frame.frameDisplayTime == 10000
+
+  def testScores( self ):
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
+
+  def testLocalization( self ):
+    pass
+
+  def testCurations( self ):
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
+    config = Config( baseScriptDir + os.sep + 'config.yaml' )
+    status = Status()
+    frameJsonWriter = JsonWriter( config, status )
+    frameJsonWriter( ( frame, '/tmp/save.json' ) )
+
+  def testPickle( self ):
+    frame = Frame( [ 1, 2, 3 ], 543, [ 0, 1 ] )
+    pass
+
+class PixelMapTest( unittest.TestCase ):
+
+  def testNeighborMap( self ):
+    return
+    ''' Test NeighborMap created '''
+    imageDim = Rectangle.rectangle_from_dimensions( 1280, 720 )
+    patchDim = Rectangle.rectangle_from_dimensions( 256, 256 )
+    xStepSize = {
+      0.4 : 32,
+      1: 32,
+      1.4 : 32,
+    }
+    yStepSize = {
+      0.4 : 32,
+      1: 32,
+      1.4 : 32,
+    }
+    staticBoundingBoxes = BoundingBoxes(imageDim, xStepSize, yStepSize, patchDim)
+    allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes, [ 0.4, 1, 1.4 ])
+
+    pass
+
+  def testCellMap( self ):
+    ''' Test the cellMap created '''
+    pass
+
+class TestPipeline( unittest.TestCase ):
+  
+  def testPipeline( self ):
+    ''' Test running the pp pipeline '''
+    configFile = baseScriptDir + os.sep + "config.yaml"
+    jsonFolder = tempfile.mkdtemp()
+    sampleJsonFile = baseScriptDir + os.sep + "sample.json"
+    for i in range( 100 ):
+      shutil.copyfile( sampleJsonFile, jsonFolder + os.sep + "sample_%d.json" % i )
+    pp.process( configFile, jsonFolder )
+    shutil.rmtree( jsonFolder )
+
+if __name__ == '__main__':
+    unittest.main()

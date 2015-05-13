@@ -4,7 +4,7 @@ import sys, os, glob
 
 from Logo.PipelineTest.JSONFileComparer import JSONFileComparer
 
-if __name__ == '__main__':
+def main():
 	if len(sys.argv) < 4:
 		print 'Usage %s <jsonFileName1> <jsonFileName2> <compareLocCuration>' % sys.argv[ 0 ]
 		print '\n'
@@ -48,3 +48,5 @@ if __name__ == '__main__':
 				diffNumBboxesCur[cls], diffXPosOfBboxesCur[cls], 
 				diffYPosOfBboxesCur[cls], diffAreaOfBboxesCur[cls], diffScoreOfBboxesCur[cls])
 
+if __name__ == '__main__':
+  main()

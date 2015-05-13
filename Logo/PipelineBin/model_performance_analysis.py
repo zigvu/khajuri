@@ -45,7 +45,7 @@ class ConfusionPair( object ):
     else:
       return False
 
-if __name__ == '__main__':
+def main():
   if len( sys.argv ) < 6:
     print 'Usage %s <csv_folder> <score_threshold> <count_threshold> <class_mapping> <output_folder> [ <patchImageFolder> ]' % sys.argv[ 0 ]
     print detailedUsage
@@ -180,3 +180,5 @@ if __name__ == '__main__':
        f.write( '%s, %s : %s\n' % ( p.key[0], p.key[1], p.value ) )
 
     
+if __name__ == '__main__':
+  main()

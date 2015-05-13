@@ -1,47 +1,183 @@
-# YAML describing default plugins and settings in khajuri
+# running with khajuri branch: Development (w/ lmdb circular buffer)
 
-# Configuration for various plugins
-# Note: The plugin names should match the directory
-#       under which they are created
-# Configuration for windowing
-window: 
-  frame: 
-    size             : 5
-    spacing          : 2
-    width            : 800
-    height           : 600
+# in increasing level of severity: DEBUG, INFO, ERROR
+log_level:                                  DEBUG
 
-campaign:
-  id                 : 5
-  name               : 'Fifth Campaign'
+# Count to multiply with the number of cores available in machine
+# if using fraction, will round down to nearest integer after multiplication
+# Example: 16 core machine and 1.4 factor = 22 threads to run in parallel
+# use 31 out of 32 cores
+multiple_of_cpu_count:                        1
 
-plugins: 
-  FrameExtraction:
-    defaultOrder     : 1
-    required         : true
-  BlankDetection:
-    defaultOrder     : 2
-    required         : true
-    threshold        : 0.1
-  BlurDetection:
-    defaultOrder     : 3
-    required         : true
-    threshold        : 5.0
-  SelectSingleFrame:
-    defaultOrder     : 4
-    required         : true
-  ModelDetection0:
-      defaultOrder     : 6
-      threshold        : 0.6
-      modelName        : "skiingBoarding"
-      id               : 59
-  ModelDetection1:
-      defaultOrder     : 7
-      threshold        : 0.6
-      modelName        : "washingDishes"
-      id               : 42
-  ModelDetection2:
-      defaultOrder     : 7
-      threshold        : 0.6
-      modelName        : "washingDishes"
-      id               : 73
+# Sliding window configurations
+sliding_window:
+  is_test:                                    false
+  folders:
+    frame_output:                             frames
+    patch_output:                             patches
+    json_output:                              json
+    levedb_output:                            /mnt/tmp/lmdb
+    video_output:                             vdo-out
+    numpy_output:                             numpy
+  frame_density:                              5
+  frame_width:                                1280
+  frame_height:                               720
+  # Dimension of patches
+  output_width:                               256
+  output_height:                              256
+  x_stride:
+    - 32
+    - 64
+    - 64
+    - 128
+    - 128
+  y_stride:
+    - 16
+    - 32
+    - 64
+    - 64
+    - 128
+  scaling:
+    - 0.4
+    - 0.7
+    - 1.0
+    - 1.3
+    - 1.6
+
+# put in same folder as this config.yaml file - no absolute path here
+  scale_decayed_factors_file:                "config_scale_decay_factors.json"
+
+# Caffe input
+caffe_input:
+  model_file:                                 "/mnt/data/wc14cls/training/0seed/runResults/networkModels/caffe_logo_train_iter_5000"
+  video_prototxt_file:                        "/mnt/data/wc14cls/training/0seed/runResults/prototxt/logo_video.prototxt"
+  deploy_prototxt_file:                       "/mnt/data/wc14cls/training/0seed/runResults/prototxt/logo_deploy.prototxt"
+
+# for processing vdo in older setup with leveldb
+  # number of frames to put in one leveldb
+  num_frames_per_leveldb:                    30
+  num_concurrent_leveldbs:                   2
+  # leveldb might be maintained in TEMPFS - if exceed this size, pause leveldb creation
+  # if want to ignore the size limit, set to zero
+  max_leveldb_size_mb:                       20000
+
+  # lmdb circular buffers - look at issue65 for setting these
+  lmdb_buffer_max_size:                      6
+  lmdb_buffer_min_size:                      4
+  lmdb_num_frames_per_buffer:                1
+
+  # frame number to start video processing on
+  video_frame_number_start:                  1
+  use_gpu:                                   true
+  gpu_devices:                               
+    - 0
+    - 1
+  save_video_heatmap:                        false 
+  compute_frame_curation:                    false
+
+# for processing vdo in older setup with leveldb
+  run_caffe_postprocess_in_parallel:         true
+
+  run_caffe:                                 true
+  run_postprocess:                           true
+  all_classes:
+    - '0'
+    - '1'
+    - '2'
+    - '3'
+    - '4'
+    - '5'
+    - '6'
+    - '7'
+    - '8'
+    - '9'
+    - '10'
+    - '11'
+    - '12'
+    - '13'
+    - '14'
+    - '15'
+    - '16'
+    - '17'
+    - '18'
+    - '19'
+    - '20'
+    - '21'
+    - '22'
+    - '23'
+    - '24'
+    - '25'
+    - '26'
+    - '27'
+    - '28'
+    - '29'
+    - '30'
+    - '31'
+    - '32'
+    - '33'
+    - '34'
+    - '35'
+    - '36'
+    - '37'
+    - '38'
+    - '39'
+    - '40'
+    - '41'
+    - '42'
+    - '43'
+    - '44'
+    - '45'
+    - '46'
+    - '47'
+    - '48'
+
+  background_classes:
+    - '4'
+    - '15'
+    - '43'
+    - '44'
+
+# Post processing
+post_processing:
+  detector_threshold:                         0.8
+  # Note: to avoid losing caffe scores permanently, `save_patch_scores = false` 
+  # is ONLY considered when saving JSON after post-processing stage
+  save_patch_scores:                          true
+  # this uses the snappy library - to unzip a file from the command line
+  # issue: python -m snappy -d <filename.snappy>
+  compressed_json:                            false
+  z_dist_thresholds:
+    - 0
+    - 2
+    - 4
+    - 6
+    - 8
+
+# Curation
+curation:
+  # total patches/frames per class = num_of_sets * num_of_items_per_set
+  num_of_sets:                                10
+  num_of_items_per_set:                       500
+
+heatmap:
+  classes:
+   - '22'
+
+# Cellroti
+cellroti:
+  # url to connect to cellroti; auth in env. vars.
+  urls:
+    get_detectables:                          '158.85.211.84:3000/api/v1/data/detectables'
+    post_results:                             '158.85.211.84:3000/api/v1/data/videos'
+  storage_selection:                          'SOFTLAYER' # alternative is s3
+  # for softlayer, the location is username@IP/folder; auth in env. vars.
+  storage_location:                           'sftpuser@158.85.211.84/uploads' # alternative is s3 bucket 'cellroti-data-production'
+  # determine number of seconds one sample frame will cover.
+  # for example, a value of 10 indicates that there will be only 
+  # 1 sample frame in cellroti per 10 seconds worth of video
+  num_seconds_per_sample_frame:               5
+
+
+log:
+  file:       /tmp/pp.log
+

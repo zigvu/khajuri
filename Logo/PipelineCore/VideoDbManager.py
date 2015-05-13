@@ -3,7 +3,7 @@ from collections import OrderedDict
 import json
 import logging
 
-import VideoReader
+from VideoReader import VideoReader
 
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes

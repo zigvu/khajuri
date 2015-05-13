@@ -6,7 +6,7 @@ from Logo.PipelineMath.PixelMap import PixelMap
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 
-if __name__ == '__main__':
+def main():
   if len(sys.argv) < 4:
     print 'Usage %s <config.yaml> <frame.width> <frame.height>' % sys.argv[ 0 ]
     sys.exit(1)
@@ -29,3 +29,5 @@ if __name__ == '__main__':
   logging.info( 'Done with calculating cell boundaries.' )
 
 
+if __name__ == '__main__':
+  main()
