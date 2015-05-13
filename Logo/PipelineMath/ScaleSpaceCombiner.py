@@ -5,29 +5,35 @@ from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.PixelMapper import PixelMapper
 
 class ScaleSpaceCombiner(object):
-  def __init__(self, classId, staticBoundingBoxes, jsonReaderWriter, allCellBoundariesDict):
+  def __init__(self, classId, staticBoundingBoxes, configReader, jsonReaderWriter, allCellBoundariesDict):
     """Initialize class"""
     self.classId = classId
-    self.pixelMapper = PixelMapper(classId, staticBoundingBoxes, jsonReaderWriter, allCellBoundariesDict)
+    self.configReader = configReader
+    self.pixelMapper = PixelMapper(classId, staticBoundingBoxes, configReader, \
+      jsonReaderWriter, allCellBoundariesDict)
     # infer scaling factors
     self.allScalingFactors = None
     self.originalScalingFactors = np.unique(np.sort(jsonReaderWriter.getScalingFactors()).copy())
     self.allScalingFactors, self.inferredScalingFactors = self.getAllScalingFactors()
+    # decay scores across scales
+    scaleDecayFactors = self.configReader.sw_scale_decay_factors
+    self.pixelMapper.setupScaleDecayedMapCache(scaleDecayFactors)
+
 
   def getBestInferredPixelMap(self):
     """From among the inferred scales, select best pixelMap based on 
     (a) localization and then (b) rescaled by intensity at the highest localization
     Returns pixelMap"""
     # first, find best localization
-    maxLocalizationScale = self.inferredScalingFactors[0]
-    maxLocalizationMap = self.pixelMapper.getLocalizationMap(maxLocalizationScale)
+    maxLocalizationScale = self.originalScalingFactors[0]
+    maxLocalizationMap = self.pixelMapper.getScaleDecayedMap(maxLocalizationScale)
     maxPixelLocalization = 1E-10
-    for inferredScale in self.inferredScalingFactors:
-      curLocalizationMap = self.pixelMapper.getLocalizationMap(inferredScale)
+    for scale in self.originalScalingFactors:
+      curLocalizationMap = self.pixelMapper.getScaleDecayedMap(scale)
       curMaxPixelValue = np.max(curLocalizationMap.cellValues)
       if curMaxPixelValue > maxPixelLocalization:
         maxPixelLocalization = curMaxPixelValue
-        maxLocalizationScale = inferredScale
+        maxLocalizationScale = scale
         maxLocalizationMap = curLocalizationMap
     localizationPixelMask = maxLocalizationMap.cellValues >= maxPixelLocalization
     # now, re-calculate intensity

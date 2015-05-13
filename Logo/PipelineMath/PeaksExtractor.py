@@ -28,7 +28,38 @@ class PeaksExtractor(object):
     subsumedBboxes = self.subsumeRectangles(candidateBboxes)
     return subsumedBboxes
 
-  def getPeakBboxes(self, threshold):
+  def getPeakBboxes( self, threshold ):
+    return self.getPeakBboxesUsingCellMap( threshold )
+
+  def getPeakBboxesUsingCellMap(self, threshold):
+    """Get bounding boxes for peaks above given threshold such that
+    (a) if two peaks are not contiguous as determined by threshold and 
+    binaryStructure, then two different bbox are returned
+    (b) the intensity of the returned bbox is average for the whole box
+    Returns an array of bounding box rectangles and associated average intensity"""
+    candidateBboxes = []
+
+    # zero out all pixels below threshold
+    maxima = self.pixelMap.copy()
+    diff = (maxima.cellValues > threshold)
+    maxima.cellValues[diff == 0] = 0
+
+    # Find cell Indexes with a positive value
+    posValueSet = set()
+    for i in np.argwhere( diff ):
+      posValueSet.add( i[0] )
+
+    # Find Islands and Number them
+    while len( posValueSet ) > 0:
+      i = posValueSet.pop()
+      neighbors, maxValue, avgValue, cb = maxima.BFS( i )
+      posValueSet.difference_update( neighbors.difference( set( [i] ) ) )
+
+      bbox = Rectangle.rectangle_from_endpoints(cb[0], cb[1], cb[2], cb[3])
+      candidateBboxes.append( { 'bbox': bbox, 'intensity' : avgValue } )
+    return candidateBboxes
+
+  def getPeakBboxesUsingNumpy(self, threshold):
     """Get bounding boxes for peaks above given threshold such that
     (a) if two peaks are not contiguous as determined by threshold and 
     binaryStructure, then two different bbox are returned
@@ -36,7 +67,7 @@ class PeaksExtractor(object):
     Returns an array of bounding box rectangles and associated average intensity"""
     candidateBboxes = []
     # zero out all pixels below threshold
-    maxima = self.pixelMap.copy()
+    maxima = self.pixelMap.toNumpyArray().copy()
     diff = (maxima > threshold)
     maxima[diff == 0] = 0
     # label each non-contiguous area with integer values
@@ -53,7 +84,7 @@ class PeaksExtractor(object):
       # create bbox based on the label
       bbox = Rectangle.rectangle_from_endpoints(xStart, yStart, xEnd, yEnd)
       # get the average intensity of the bbox
-      avgIntensity = np.average(self.pixelMap[yStart:yEnd, xStart:xEnd][labelArea[yStart:yEnd, xStart:xEnd]])
+      avgIntensity = np.average(maxima[labelArea])
       candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity}]
       #candidateBboxes += [{'bbox': bbox, 'intensity': avgIntensity, 'label': ("%.2f" % avgIntensity)}]
     return candidateBboxes

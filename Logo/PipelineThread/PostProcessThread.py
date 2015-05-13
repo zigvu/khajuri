@@ -120,7 +120,7 @@ class PostProcessThread( object ):
 
     logging.info("Done putting %d JSON files in queue - waiting for threads to join" % len(jsonFiles))
 
-    while postProcessQueue.qsize() > 1:
+    while not postProcessQueue.empty():
       logging.info("Post processing %d percent done" % (int(100 - \
         100.0 * postProcessQueue.qsize()/len(jsonFiles))))
       time.sleep(self.updateStatusSleepTime)
