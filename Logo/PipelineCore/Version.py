@@ -21,8 +21,8 @@ class LogoVersion( object ):
     for line in gitBranch.split('\n'):
       if line.startswith( '*' ):
         branch = line
-    logging.debug( 'Branch: %s' % branch )
-    logging.debug( commit )
+    logging.info( 'Branch: %s' % branch )
+    logging.info( commit )
 
 if __name__ == '__main__':
   logging.basicConfig(format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s', level=logging.DEBUG)
