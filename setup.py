@@ -22,8 +22,8 @@ setup(name='khajuri',
             'processvideo=Logo.PipelineBin.process_video:main',
             'modelperformance=Logo.PipelineBin.model_performance_analysis:main',
             'generatecellmap=Logo.PipelineBin.generate_cell_boundary_cache:main',
-            'compareJsonFiles=Logo.PipelineTest.compare_two_json_files:main',
-            'compareJsonFolders=Logo.PipelineTest.compare_two_json_folders:main',
+            'compareJsonFiles=tool.cc:main',
+            'compareJsonFolders=tool.ccfolder:main'
         ],
         },
       )
