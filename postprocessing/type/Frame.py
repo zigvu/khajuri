@@ -51,7 +51,8 @@ class Frame(object):
       diff[ classId ] [ 'avg' ] = 0
       diff[ classId ] [ 'max' ] = -1
       scoreDiffForClass = \
-          self.scores[ 0 ] [ int( classId ) ] - frame.scores[ 0 ][ int( classId ) ]
+          self.scores[ 0 ] [ :, int( classId ) , 0 ] - frame.scores[ 0 ][ :, int( classId ), 0 ]
+      assert len( scoreDiffForClass ) == self.totalPatches
       if scoreDiffForClass.any():
         diff[ classId ] [ 'min' ] = np.min(scoreDiffForClass)
         diff[ classId ] [ 'avg' ] = np.average(scoreDiffForClass)
@@ -65,22 +66,31 @@ class Frame(object):
       diff[ classId ] = {}
       localizationListA = self.localizations.get( int( classId ) )
       localizationListB = frame.localizations.get( int( classId ) )
+      filteredA = []
+      filteredB = []
       if not localizationListA:
         localizationListA = []
       if not localizationListB:
         localizationListB = []
-      diff[ classId ] [ 'bbox' ] = abs ( len( localizationListA ) - 
-          len( localizationListB ) )
+      for l in localizationListA:
+        if l.zDistThreshold == 0:
+          filteredA.append( l )
+      for l in localizationListB:
+        if l.zDistThreshold == 0:
+          filteredB.append( l )
+
+      diff[ classId ] [ 'bbox' ] = abs ( len( filteredA ) - 
+          len( filteredB ) )
       diff[ classId ] [ 'maxX' ] = 0
       diff[ classId ] [ 'maxY' ] = 0
       diff[ classId ] [ 'maxA' ] = 0
       diff[ classId ] [ 'maxS' ] = -1
-      if diff[ classId ] [ 'bbox' ] == 0 and len( localizationListA ) > 0:
+      if diff[ classId ] [ 'bbox' ] == 0 and len( filteredA ) > 0:
         # Check further when the number of bboxes match
-        for lA in localizationListA:
+        for lA in filteredA:
           bestMetric = sys.maxint
           match = None
-          for lB in localizationListB:
+          for lB in filteredB:
             current = lA.matchClosestLocalization( lB )
             if current < bestMetric:
               match = lB

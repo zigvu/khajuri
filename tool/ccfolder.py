@@ -96,7 +96,7 @@ def main():
   # Glob all files from the first folder, match it with the second one, put into the queue
   num_jobs = 0
   for j in glob.glob( os.path.join( f1, "*.json" ) ):
-    k = os.path.join( f1, os.path.basename( j ) )
+    k = os.path.join( f2, os.path.basename( j ) )
     inputs.put( ( j, f1Format, k, f2Format ) )
     num_jobs +=1 
 

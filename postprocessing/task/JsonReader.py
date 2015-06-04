@@ -35,7 +35,7 @@ class JsonReader( Task ):
         r = Rect( bbox[ 'x' ], bbox[ 'y' ], bbox[ 'width' ], bbox[ 'height' ] )
         l = Localization( zDist, classId, r, score, scale )
         logging.info( 'Adding localization %s' % l )
-        frame.addLocalization( classId, l )
+        frame.addLocalization( int( classId ), l )
 
 
     return ( frame, jsonObj[ 'scores' ].keys() )
