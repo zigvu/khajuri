@@ -15,18 +15,16 @@ def process( configFileName, videoFolder, videoId ):
 
   # config = Config( configFileName )
   # baseFolder = config.hdf5_base_folder
-  # numFrameInQuanta = config.hdf5_quanta_frame_count
-  # videoQuantaMapFilename = os.path.join( videoFolder, config.video_quanta_map_filename )
+  # videoClipsMapFilename = os.path.join( videoFolder, config.video_clips_map_filename )
   baseFolder = '/home/evan/RoR/kheer/public/data'
-  numFrameInQuanta = 1024
-  videoQuantaMapFilename = os.path.join( videoFolder, 'quanta_map.json' )
+  videoClipsMapFilename = os.path.join( videoFolder, 'clips_map.json' )
 
   videoDataPath = VideoDataPath( baseFolder, videoId, 0 )
-  quantaFolderPath = videoDataPath.quanta_folder_path
+  clipsFolderPath = videoDataPath.clips_folder_path
 
   # TODO: get from config file
   amqp_url = 'localhost'
-  serverQueueName = 'vm2.kheer.development.video_id.request'
+  serverQueueName = 'vm2.kheer.development.clip_id.request'
 
 
   # STEP 1:
@@ -36,23 +34,23 @@ def process( configFileName, videoFolder, videoId ):
   rpcClient = RpcClient( amqp_url, serverQueueName )
 
   # STEP 2:
-  # as each quanta is created, we get a quanta id from kheer
-  # and use this to push the newly created quanta to VM2
+  # as each clip is created, we get a clip_id from kheer
+  # and use this to push the newly created clip to VM2
   # note: currently, no such queue exists - files are copied instead
-  videoQuantaMap = json.load( open( videoQuantaMapFilename, "r" ) )
-  sortedQuantaIds = sorted([int(x) for x in videoQuantaMap.keys()])
+  videoClipsMap = json.load( open( videoClipsMapFilename, "r" ) )
+  sortedClipsIds = sorted([int(x) for x in videoClipsMap.keys()])
 
-  for qId in sortedQuantaIds:
-    vData = videoQuantaMap[str(qId)]
-    headers = Headers.quantaId( videoId )
+  for qId in sortedClipsIds:
+    vData = videoClipsMap[str(qId)]
+    headers = Headers.clipId( videoId )
     message = {
       'video_id': videoId,
       'frame_number_start': vData[ 'frame_number_start' ],
       'frame_number_end': vData[ 'frame_number_end' ]
     }
     response = json.loads( rpcClient.call( headers, json.dumps( message ) ) )
-    srcVideoFile = os.path.join( videoFolder, vData[ 'video_filename' ] )
-    dstVideoFile = os.path.join( quantaFolderPath, "%s.mp4" % response[ 'quanta_id' ] )
+    srcVideoFile = os.path.join( videoFolder, vData[ 'clip_filename' ] )
+    dstVideoFile = os.path.join( clipsFolderPath, "%s.mp4" % response[ 'clip_id' ] )
     shutil.copy(srcVideoFile, dstVideoFile)
     print "Adding video: %s" % ( dstVideoFile )
 

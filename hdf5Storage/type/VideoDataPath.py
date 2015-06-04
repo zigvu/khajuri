@@ -11,8 +11,8 @@ class VideoDataPath( object ):
     self.scores_path = os.path.join( self.scores_folder_path, "%d.hdf5" % chiaVersionId )
     Config.mkdir_p( self.scores_folder_path )
 
-    self.quanta_folder_path = os.path.join( self.base_path, "quanta" )
-    Config.mkdir_p( self.quanta_folder_path )
+    self.clips_folder_path = os.path.join( self.base_path, "clips" )
+    Config.mkdir_p( self.clips_folder_path )
 
   def __str__( self ):
     return self.base_path

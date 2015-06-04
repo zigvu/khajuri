@@ -6,8 +6,8 @@ class FrameData( object ):
     self.scores = None
     self.localizations = None
 
-  # Note: this format corresponds to mongo schema in
-  # kheer/app/models/khajuri_data/localization.rb
+  # Note: this format corresponds to formatter in
+  # kheer/app/data_importers/formatters/localization_formatter.rb
   def getLocalizationArr( self ):
     lArr = []
     if self.localizations != None:

@@ -13,7 +13,7 @@ class Headers( object ):
   #     storage
   #       start
   #       end
-  #     quanta_id
+  #     clip_id
 
 
   # status headers
@@ -81,10 +81,10 @@ class Headers( object ):
     return headers
 
   @staticmethod
-  def quantaId( videoId ):
+  def clipId( videoId ):
     headers = {
       'type': 'data',
-      'state': 'video.quanta_id',
+      'state': 'video.clip_id',
       'props': { 'video_id': videoId }
     }
     return headers

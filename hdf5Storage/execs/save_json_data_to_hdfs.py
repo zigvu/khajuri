@@ -19,7 +19,7 @@ def process( configFileName, jsonFolder, videoId, chiaVersionId ):
   config.videoId = 1 # strangely, without this, JsonReader will break
   config.hdf5_base_folder = '/home/evan/RoR/kheer/public/data'
   # config.hdf5_base_folder = '/home/evan/Vision/temp/RabbitMQ/data'
-  config.hdf5_quanta_frame_count = 1024
+  config.hdf5_clip_frame_count = 1024
   config.ci_allClassIds = range( 0,49 )
   config.total_num_of_patches = 543
   jsonReader = JsonReader( config, None )
@@ -63,7 +63,7 @@ def process( configFileName, jsonFolder, videoId, chiaVersionId ):
     response = json.loads( rpcClient.call( headers, message ) )
 
     # STEP 4:
-    # video quanta needs to be pushed to another queue
+    # clip needs to be pushed to another queue
     # the mechanism is TBD - use another executable for now
 
   # STEP 5:

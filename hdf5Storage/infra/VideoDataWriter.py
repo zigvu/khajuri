@@ -7,7 +7,7 @@ class VideoDataWriter( object ):
     self.config = config
 
     self.baseFolder = self.config.hdf5_base_folder
-    self.numFrameInQuanta = self.config.hdf5_quanta_frame_count
+    self.numFrameInClip = self.config.hdf5_clip_frame_count
     self.numClassIds = len( self.config.ci_allClassIds )
     self.numTotalPatches = self.config.total_num_of_patches
     self.frameDensity = self.config.sw_frame_density
@@ -33,7 +33,7 @@ class VideoDataWriter( object ):
     '''
     self.scoresDataSet = self.videoScoresFile.create_dataset(
       'scores',
-      ( self.numTotalPatches, self.numClassIds, self.numFrameInQuanta ),
+      ( self.numTotalPatches, self.numClassIds, self.numFrameInClip ),
       maxshape=( self.numTotalPatches, self.numClassIds, None ),
       dtype='float16',
       chunks=( self.numTotalPatches, self.numClassIds, 1 ),
@@ -48,8 +48,8 @@ class VideoDataWriter( object ):
  
     # if we are at the size limit of dataset, resize
     if frameNumber >= self.scoresDataSet.shape[ 2 ]:
-      # resize to the nearest quanta boundary
-      newSizeNum = frameNumber - ( frameNumber % self.numFrameInQuanta ) + self.numFrameInQuanta
+      # resize to the nearest clip boundary
+      newSizeNum = frameNumber - ( frameNumber % self.numFrameInClip ) + self.numFrameInClip
       self.scoresDataSet.resize( (
         self.numTotalPatches,
         self.numClassIds,

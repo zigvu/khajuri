@@ -1,4 +1,4 @@
-import json
+import json, logging
 
 from messaging.type.Headers import Headers
 from hdf5Storage.infra.VideoDataReader import VideoDataReader
@@ -21,6 +21,9 @@ class HeatmapDataHandler( object ):
 
       responseHeaders = Headers.statusSuccess()
       responseMessage = json.dumps( data )
+      logging.info( "Heatmap supplied for: VideoId: %d, ChiaVersionId: %d, FrameNumber: %d, Scale: %f, ChiaClassId: %s" % 
+        ( videoId, chiaVersionid, frameNumber, scale, chiaClassId) )
+
       return responseHeaders, responseMessage
 
   # both input/output are JSON
