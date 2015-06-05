@@ -33,14 +33,16 @@ class ProcessWorker(multiprocessing.Process):
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.task = task
+        logging.info( 'Constructing Process %s with pid %s task as %s' % ( self.name, self.pid, self.task ) )
+        self.task_done = False
 
     def run(self):
+        logging.info( 'Starting Process %s with pid %s task as %s' % ( self.name, self.pid, self.task ) )
         proc_name = self.name
         while True:
             next_object = self.input_queue.get()
             if next_object is None:
                 # Poison pill means shutdown
-                logging.info( '%s: Exiting' % self )
                 self.input_queue.task_done()
                 self.output_queue.put(None)
                 break
@@ -48,10 +50,12 @@ class ProcessWorker(multiprocessing.Process):
             answer = self.task( next_object )
             self.input_queue.task_done()
             self.output_queue.put(answer)
+        logging.info( '%s: Exiting from Worker' % self )
+        self.task_done = True
         return
 
     def __str__( self ):
-      return '( %s )' % self.task
+      return '( %s, %s )' % ( self.task, self.pid )
 
 class Worker( ProcessWorker ):
   pass
