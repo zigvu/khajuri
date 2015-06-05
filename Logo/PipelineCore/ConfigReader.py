@@ -3,7 +3,7 @@ import yaml, json
 import scipy.ndimage as ndimage
 import logging
 
-class ConfigReader:
+class ConfigReader_delete:
   """Reads YAML config file and allows easy accessor to config attributes"""
   def __init__(self, configFileName):
     """Initlize config from YAML file"""
