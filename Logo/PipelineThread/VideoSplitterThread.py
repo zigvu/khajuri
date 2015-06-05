@@ -103,6 +103,7 @@ class VideoSplitterThread( object ):
       videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
       imgManipulator = ImageManipulator(imageFileName)
       # Add to clip and remove temp file
+      imgManipulator.embedFrameNumber(currentFrameNum)
       clipWriter.addFrame(imgManipulator)
       os.remove(imageFileName)
       # increment frame number

@@ -48,6 +48,31 @@ class ImageManipulator( object ):
     patch = cv2.resize(patch, (patchWidth, patchHeight))
     cv2.imwrite(outputPatchName, patch)
 
+  def embedFrameNumber(self, frameNumber):
+    """Embeds frame number using color coded squares"""
+    # Explanation of color<->frame_number can be found in kheer issue 
+    # https://github.com/zigvu/kheer/issues/10
+    colors = self.getEmbedColors(frameNumber)
+    squareWH = 5
+    sqDem = [
+      [[0, 0],               [squareWH, squareWH]],
+      [[squareWH, 0],        [2 * squareWH, squareWH]],
+      [[0, squareWH],        [squareWH, 2 * squareWH]],
+      [[squareWH, squareWH], [2 * squareWH, 2 * squareWH]],
+    ]
+    for idx, sq in enumerate(sqDem):
+      # opencv uses bgr
+      bgrColor = (colors[idx][2], colors[idx][1], colors[idx][0])
+      cv2.rectangle(self.image, (sq[0][0],sq[0][1]), (sq[1][0],sq[1][1]), bgrColor, -1)
+
+  def getEmbedColors(self, frameNumber):
+    """Get color for squares that represent binary value of frameNumber"""
+    # Assumes that there are four rectangles to be embedded in image
+    fnBin = [int(x) for x in bin(frameNumber)[2:]]
+    fnBin = [int(0) for x in range(0, 12 - len(fnBin))] + fnBin
+    f = [255 * x for x in fnBin]
+    return [(f[0],f[1],f[2]), (f[3],f[4],f[5]), (f[6],f[7],f[8]), (f[9],f[10],f[11])]
+
   def resize_image(self, scale):
     """Resize image to new scale"""
     self.image = cv2.resize(self.image, (0,0), fx=scale, fy=scale)
