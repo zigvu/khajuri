@@ -22,6 +22,7 @@ class Pipeline( object ):
       inputQueue = interMediateQueue
       interMediateQueue = multiprocessing.JoinableQueue()
 
+    interMediateQueue.join()
     for w in self.workers[ task ]:
        w.output_queue = self.output
 
@@ -31,5 +32,21 @@ class Pipeline( object ):
          w.start()
 
   def join( self ):
+    logging.info( 'Joining all inputQueues' )
     for inputQueue in self.inputQueues:
       inputQueue.join()
+    logging.info( 'Done with Joining all inputQueues' )
+    logging.info( 'Joining all outputQueues' )
+    while not self.output.empty():
+      logging.info( 'Results in not empty - extracing item' )
+      logging.info( 'Result %s' % str( self.output.get_nowait() ) )
+    logging.info( 'Done with Joining all outputQueues' )
+    logging.info( 'Joining all workers' )
+    for t, workers in self.workers.items():
+      logging.info( 'Joining for task %s' % t )
+      for w in workers:
+        logging.info( 'Joining %s' % w )
+        if not w.task_done:
+          logging.info( 'Not Done = State is alive %s, exitcode: %s' % ( w.is_alive, w.exitcode ) )
+        w.terminate()
+        logging.info( 'Joined' )
