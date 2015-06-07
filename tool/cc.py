@@ -41,11 +41,22 @@ def main():
     frame2, classIds = JsonReader( config, status ) ( f2 )
 
   compare = CompareFrame( config, status )
-  diff = compare( ( frame1, frame2 ) )
-  if diff:
-    print 'Diff is %s' % diff
-  else:
-    print 'Same Frame'
+  frame1, sDiff, lDiff = compare( ( frame1, frame2 ) )
+  print "\n\nSummary: Patch score differences"
+  print "class,diffMax,diffAvg,diffMin"
+  for cls in sDiff.keys():
+    print "%s,%0.3f,%0.3f,%0.3f" % (cls, sDiff[cls]['max'], sDiff[cls]['max'], sDiff[cls]['min'])
 
+  print "\n\nSummary: Localization score differences"
+  print "class,diffNumBboxes,diffXPosOfBboxes,diffYPosOfBboxes,diffAreaOfBboxes,diffScoreOfBboxes"
+  for cls in lDiff.keys():
+    print "%s,%d,%d,%d,%d,%0.3f" % (
+        cls, 
+        lDiff[cls]['bbox'],
+        lDiff[cls]['maxX'], 
+        lDiff[cls]['maxY'],
+        lDiff[cls]['maxA'],
+        lDiff[cls]['maxS']
+        )
 if __name__ == '__main__':
   main()
