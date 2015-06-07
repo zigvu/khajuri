@@ -114,12 +114,8 @@ class VideoCaffeManager( object ):
     probablities = output['prob']
     probablities_fc8 = self.caffe_net.blobs['fc8_logo'].data
     for k in range(0, output['label'].size):
-      printStr = ""
-      scores = {}
-      scores_fc8 = {}
-      scores = probablities[k].item(0)
-      scores_fc8 = probablities_fc8[k].item(0)
-      # print 'scores: %s, type %s, shape: %s' % ( scores, type( scores ), scores.shape )
+      scores = probablities[ k, :, 0, 0 ]
+      scores_fc8 = probablities_fc8[ k, :, 0, 0 ]
       # Note: if number of patches is not multiple of batch size, then caffe
       #  displays results for patches in the begining of db
       if patchCounter <= maxPatchCounter:
@@ -128,7 +124,7 @@ class VideoCaffeManager( object ):
         # Add scores to json
         infoDict = dbBatchMapping[str(curPatchNumber)]
         frames[ infoDict[ 'jsonFile' ] ].addScores( infoDict[ 'patchNum' ], scores )
-        frames[ infoDict[ 'jsonFile' ] ].addfc8Scores( infoDict[ 'patchNum' ], scores )
+        frames[ infoDict[ 'jsonFile' ] ].addfc8Scores( infoDict[ 'patchNum' ], scores_fc8 )
         # logging.debug("%s" % printStr)
       patchCounter += 1
 
