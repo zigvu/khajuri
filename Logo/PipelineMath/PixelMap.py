@@ -87,10 +87,11 @@ class PixelMap(object):
     return pixelCount
 
   def BFS( self, index ):
-    xMin = sys.maxint
-    yMin = sys.maxint
-    xMax = 0
-    yMax = 0
+    cb = self.cellBoundaries[ index ]
+    xMin = cb[ "x0" ]
+    yMin = cb[ "y0" ]
+    xMax = cb[ "x3" ]
+    yMax = cb[ "y3" ]
     neighbors = set()
     unvisitedCells = set()
     unvisitedCells.add( index )
