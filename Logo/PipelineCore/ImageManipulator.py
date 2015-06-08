@@ -53,12 +53,12 @@ class ImageManipulator( object ):
     # Explanation of color<->frame_number can be found in kheer issue 
     # https://github.com/zigvu/kheer/issues/10
     colors = self.getEmbedColors(frameNumber)
-    squareWH = 5
+    squareWH = 10
     sqDem = [
-      [[0, 0],               [squareWH, squareWH]],
-      [[squareWH, 0],        [2 * squareWH, squareWH]],
-      [[0, squareWH],        [squareWH, 2 * squareWH]],
-      [[squareWH, squareWH], [2 * squareWH, 2 * squareWH]],
+      [[0, 0],                            [squareWH, squareWH]],
+      [[1280 - squareWH, 0],              [1280, squareWH]],
+      [[0, 720 - squareWH],               [squareWH, 720]],
+      [[1280 - squareWH, 720 - squareWH], [1280, 720]],
     ]
     for idx, sq in enumerate(sqDem):
       # opencv uses bgr

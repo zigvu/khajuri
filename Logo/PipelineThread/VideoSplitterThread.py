@@ -35,7 +35,8 @@ class VideoSplitterThread( object ):
     self.configReader = ConfigReader(configFileName)
     self.videoFileName = videoFileName
     self.clipsOutputFolder = clipsOutputFolder
-    self.tempFolder = '/mnt/tmp'
+    self.tempFolder = os.path.join('/mnt/tmp', os.path.basename(videoFileName).split('.')[0])
+    ConfigReader.mkdir_p(self.tempFolder)
 
     # TODO: get from config/kheer
     self.numFrameInClip = 1024    
@@ -103,7 +104,7 @@ class VideoSplitterThread( object ):
       videoFrameReader.savePngWithFrameNumber(int(currentFrameNum), str(imageFileName))
       imgManipulator = ImageManipulator(imageFileName)
       # Add to clip and remove temp file
-      imgManipulator.embedFrameNumber(currentFrameNum)
+      imgManipulator.embedFrameNumber(currentFrameNum % self.numFrameInClip)
       clipWriter.addFrame(imgManipulator)
       os.remove(imageFileName)
       # increment frame number
