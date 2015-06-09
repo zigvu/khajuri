@@ -2,6 +2,7 @@
 
 import time, os, logging
 import sys, glob, json
+import numpy as np
 
 from config.Config import Config
 from postprocessing.task.JsonReader import JsonReader
@@ -17,16 +18,12 @@ def process( configFileName, jsonFolder, videoId, chiaVersionId ):
 
   # TODO: get from config file
   config.videoId = 1 # strangely, without this, JsonReader will break
-  config.hdf5_base_folder = '/home/evan/RoR/kheer/public/data'
-  # config.hdf5_base_folder = '/home/evan/Vision/temp/RabbitMQ/data'
-  config.hdf5_clip_frame_count = 1024
-  config.ci_allClassIds = range( 0,49 )
-  config.total_num_of_patches = 543
+  config.total_num_of_patches = 543 # read this from config instead
   jsonReader = JsonReader( config, None )
 
-  # TODO: get from config file
-  amqp_url = 'localhost'
-  serverQueueName = 'vm2.kahjuri.development.video_data'
+
+  amqp_url = config.mes_amqp_url
+  serverQueueName = config.mes_q_vm2_kahjuri_development_video_data
 
   # STEP 1:
   # this client needs to be defined at the begining of
@@ -53,7 +50,7 @@ def process( configFileName, jsonFolder, videoId, chiaVersionId ):
     # extract data that needs to pass through network
     frameData = FrameData( videoId, chiaVersionId, frame.frameNumber )
     # get prob scores for zdist 0
-    frameData.scores = frame.scores[ 0 ][ :, :, 0 ]
+    frameData.scores = frame.scores[ 0 ][ :, :, 0 ].astype(np.float16)
     # get localizations for all zdist
     frameData.localizations = frame.localizations
 

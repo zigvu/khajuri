@@ -11,21 +11,14 @@ from messaging.type.Headers import Headers
 from messaging.infra.RpcClient import RpcClient
 
 def process( configFileName, videoFolder, videoId ):
-  # TODO: get from config file
-
-  # config = Config( configFileName )
-  # baseFolder = config.hdf5_base_folder
-  # videoClipsMapFilename = os.path.join( videoFolder, config.video_clips_map_filename )
-  baseFolder = '/home/evan/RoR/kheer/public/data'
-  videoClipsMapFilename = os.path.join( videoFolder, 'clips_map.json' )
+  config = Config( configFileName )
+  baseFolder = config.hdf5_base_folder
+  videoClipsMapFilename = os.path.join( videoFolder, config.hdf5_video_clips_map_filename )
+  amqp_url = config.mes_amqp_url
+  serverQueueName = config.mes_q_vm2_kheer_development_clip_id_request
 
   videoDataPath = VideoDataPath( baseFolder, videoId, 0 )
   clipsFolderPath = videoDataPath.clips_folder_path
-
-  # TODO: get from config file
-  amqp_url = 'localhost'
-  serverQueueName = 'vm2.kheer.development.clip_id.request'
-
 
   # STEP 1:
   # this client needs to be defined at the begining of

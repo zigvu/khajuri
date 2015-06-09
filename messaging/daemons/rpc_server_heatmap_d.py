@@ -1,19 +1,31 @@
 #!/usr/bin/env python
 
-import logging
+import logging, sys
+
+from config.Config import Config
 
 from messaging.handlers.HeatmapDataHandler import HeatmapDataHandler
 from messaging.infra.RpcServer import RpcServer
 
-amqp_url = 'localhost'
-serverQueueName = 'vm2.kheer.development.heatmap_rpc.request'
 
-# TODO: change based on config
-logging.basicConfig(
-  format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-  level=logging.INFO, datefmt="%Y-%m-%d--%H:%M:%S")
+def process( configFileName ):
+  config = Config( configFileName )
 
-logging.info( "Heatmap rpc server started" )
+  amqp_url = config.mes_amqp_url
+  serverQueueName = config.mes_q_vm2_kheer_development_heatmap_rpc_request
 
-heatmapDataHandler = HeatmapDataHandler()
-rpc = RpcServer( amqp_url, serverQueueName, heatmapDataHandler )
+  logging.basicConfig(
+    format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+    level=config.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
+
+  logging.info( "Heatmap rpc server started" )
+
+  heatmapDataHandler = HeatmapDataHandler()
+  rpc = RpcServer( amqp_url, serverQueueName, heatmapDataHandler )
+
+
+if __name__ == '__main__':
+  if len( sys.argv ) < 2:
+    print 'Usage %s <config.yaml>' % sys.argv[ 0 ]
+    sys.exit( 1 )
+  process( sys.argv[ 1 ])

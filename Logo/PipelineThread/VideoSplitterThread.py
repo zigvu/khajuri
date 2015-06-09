@@ -38,11 +38,9 @@ class VideoSplitterThread( object ):
     self.tempFolder = os.path.join('/mnt/tmp', os.path.basename(videoFileName).split('.')[0])
     ConfigReader.mkdir_p(self.tempFolder)
 
-    # TODO: get from config/kheer
-    self.numFrameInClip = 1024    
-    self.videoClipsMapFilename = os.path.join( self.clipsOutputFolder, 'clips_map.json' )
-    # self.numFrameInClip = self.configReader.hdf5_clip_frame_count
-    # self.videoClipsMapFilename = os.path.join( self.clipsOutputFolder, self.configReader.video_clips_map_filename )
+    self.numFrameInClip = self.configReader.hdf5_clip_frame_count
+    self.videoClipsMapFilename = os.path.join( self.clipsOutputFolder, \
+      self.configReader.hdf5_video_clips_map_filename )
     self.frameDensity = self.configReader.sw_frame_density
 
     ConfigReader.mkdir_p(self.clipsOutputFolder)

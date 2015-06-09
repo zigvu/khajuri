@@ -141,6 +141,21 @@ class Config:
     staticbboxes = BoundingBoxes(imgDim, self.sw_xStride, self.sw_yStride, patchDim )
     self.allCellBoundariesDict = PixelMap.getCellBoundaries(staticbboxes, self.sw_scales)
 
+    # HDF5 settings
+    hdf5 = config['hdf5']
+    self.hdf5_clip_frame_count = 1024
+    self.hdf5_video_clips_map_filename = 'clips_map.json'
+    self.hdf5_base_folder = hdf5['hdf5_base_folder']
+
+    # Messaging settings
+    messaging = config['messaging']
+    self.mes_amqp_url = messaging['amqp_url']
+    queueNames = messaging['queue_names']
+    self.mes_q_vm2_kahjuri_development_video_data = queueNames['vm2_kahjuri_development_video_data']
+    self.mes_q_vm2_kheer_development_clip_id_request = queueNames['vm2_kheer_development_clip_id_request']
+    self.mes_q_vm2_kheer_development_heatmap_rpc_request = queueNames['vm2_kheer_development_heatmap_rpc_request']
+    self.mes_q_vm2_kheer_development_localization_request = queueNames['vm2_kheer_development_localization_request']
+
   @staticmethod
   def mkdir_p(start_path):
     """Util to make path"""
