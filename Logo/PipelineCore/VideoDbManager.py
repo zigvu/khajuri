@@ -8,17 +8,15 @@ from VideoReader import VideoReader
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
 
-from Logo.PipelineCore.ConfigReader import ConfigReader
-from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
-from Logo.PipelineCore.CaffeNet import CaffeNet
+from config.Config import Config
 
 class VideoDbManager( object ):
   """Class for extracting frames from video to db"""
-  def __init__(self, configFileName):
-    self.configReader = ConfigReader(configFileName)
-    self.scales = self.configReader.sw_scales
-    self.maxProducedQueueSize = self.configReader.ci_lmdbBufferMaxSize
-    self.compressedJSON = self.configReader.pp_compressedJSON
+  def __init__(self, config ):
+    self.config = config
+    self.scales = self.config.sw_scales
+    self.maxProducedQueueSize = self.config.ci_lmdbBufferMaxSize
+    self.compressedJSON = self.config.pp_compressedJSON
     
   def setupFolders(self, dbFolder, jsonFolder):
     """Setup folders"""
@@ -27,9 +25,9 @@ class VideoDbManager( object ):
     self.jsonFolder = None
 
     self.dbFolder = dbFolder
-    #ConfigReader.mkdir_p(self.dbFolder) # this is made in C++    
+    #config.mkdir_p(self.dbFolder) # this is made in C++    
     self.jsonFolder = jsonFolder
-    ConfigReader.mkdir_p(self.jsonFolder)
+    Config.mkdir_p(self.jsonFolder)
 
 
   def setupVideoFrameReader(self, videoFileName):
@@ -44,7 +42,9 @@ class VideoDbManager( object ):
     # Load video
     self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
     self.videoFrameReader.generateFrames()
-    self.videoFrameReader.startLogger()
+    if not self.config.logStarted:
+      self.videoFrameReader.startLogger()
+      self.config.logStarted = True
 
     # since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
@@ -56,9 +56,9 @@ class VideoDbManager( object ):
       frame = self.videoFrameReader.getFrameWithFrameNumber(1)
     self.imageDim = Rectangle.rectangle_from_dimensions(frame.width, frame.height)
     patchDimension = Rectangle.rectangle_from_dimensions(\
-      self.configReader.sw_patchWidth, self.configReader.sw_patchHeight)
+      self.config.sw_patchWidth, self.config.sw_patchHeight)
     self.staticBoundingBoxes = BoundingBoxes(\
-      self.imageDim, self.configReader.sw_xStride, self.configReader.sw_yStride, patchDimension)
+      self.imageDim, self.config.sw_xStride, self.config.sw_yStride, patchDimension)
 
     fps = self.videoFrameReader.fps
     lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
@@ -77,7 +77,7 @@ class VideoDbManager( object ):
     self.deviceId = deviceId
 
     # create new prototxt
-    prototxtFile = self.configReader.ci_video_prototxtFile
+    prototxtFile = self.config.ci_video_prototxtFile
     self.newPrototxtFile = newPrototxtFile
 
     # calculate batch size from bounding boxes
@@ -85,7 +85,7 @@ class VideoDbManager( object ):
       self.caffeBatchSize += len(self.staticBoundingBoxes.getBoundingBoxes(scale))
 
     # if we want multiple frames per batch, change
-    self.caffeBatchSize = self.caffeBatchSize * self.configReader.ci_lmdbNumFramesPerBuffer
+    self.caffeBatchSize = self.caffeBatchSize * self.config.ci_lmdbNumFramesPerBuffer
 
     # ensure backend is lmdb
     isDbLMDB = False
@@ -149,23 +149,19 @@ class VideoDbManager( object ):
         logging.info("%d percent video processed" % (int(100.0 * currentFrameNum/self.totalNumOfFrames)))
 
       # Start json annotation file
-      jsonName = os.path.join(self.jsonFolder, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
-      jsonAnnotation = JSONReaderWriter(jsonName, create_new=True)
-      jsonAnnotation.initializeJSON(self.videoId, currentFrameNum, self.imageDim, self.scales)
+      jsonFile = os.path.join(self.jsonFolder, "%s_frame_%s.json" % (self.videoId, currentFrameNum))
       # Put patch into db
+      patchNum = 0
       for scale in self.scales:
-        patchNum = 0
         for box in self.staticBoundingBoxes.getBoundingBoxes(scale):
           # Generate db patch and add to json
           dbPatchCounter = videoDb.savePatch(currentFrameNum, scale, \
             box[0], box[1], box[2], box [3])
-          jsonAnnotation.addPatch(scale, patchNum, dbPatchCounter, \
-            box[0], box[1], box[2], box [3])
-          dbBatchMapping[dbPatchCounter] = jsonName
+          dbBatchMapping[dbPatchCounter] = { 'jsonFile' : jsonFile,
+              'frameNum' : currentFrameNum, 'patchNum' : patchNum }
           # Increment counters
           patchNum += 1
       # Save annotation file
-      jsonAnnotation.saveState(compressed_json = self.compressedJSON)
       currentFrameNum += frameStep
     # end while
 
@@ -211,4 +207,4 @@ class VideoDbManager( object ):
       videoDb.deletePatch(int(patchCounter))
       videoDb.saveDb()
     # delete file
-    ConfigReader.rm_rf(dbBatchMappingFileToDelete)
+    Config.rm_rf(dbBatchMappingFileToDelete)

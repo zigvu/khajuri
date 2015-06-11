@@ -21,6 +21,7 @@ class Config:
       self.log_level = logging.ERROR
     # for recurring logs, set interval to print
     self.logIntervalSeconds = 5
+    self.logStarted = False
 
     # CPU count
     self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])

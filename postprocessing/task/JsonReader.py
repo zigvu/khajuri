@@ -19,6 +19,7 @@ class JsonReader( Task ):
     frame = Frame( self.config.ci_allClassIds, 543, self.config.ci_scoreTypes.keys() )
     frame.frameDisplayTime = jsonObj[ 'frame_time' ]
     frame.frameNumber = jsonObj[ 'frame_number' ]
+    frame.filename = None
 
     # Patch Scores
     for classId, scores in jsonObj[ 'scores' ].iteritems():
@@ -26,16 +27,17 @@ class JsonReader( Task ):
         frame.addScore( classId, self.config.ci_scoreTypes[ scoreType ], 0, scores )
 
     # Localizations
-    for classId, localizationList in jsonObj[ 'localizations' ].iteritems():
-      for l in localizationList:
-        score = l[ 'score' ]
-        scale = l[ 'scale' ]
-        bbox = l[ 'bbox' ]
-        zDist = l[ 'zdist_thresh' ]
-        r = Rect( bbox[ 'x' ], bbox[ 'y' ], bbox[ 'width' ], bbox[ 'height' ] )
-        l = Localization( zDist, classId, r, score, scale )
-        logging.info( 'Adding localization %s' % l )
-        frame.addLocalization( classId, l )
+    if jsonObj.get( 'localizations' ):
+      for classId, localizationList in jsonObj[ 'localizations' ].iteritems():
+        for l in localizationList:
+          score = l[ 'score' ]
+          scale = l[ 'scale' ]
+          bbox = l[ 'bbox' ]
+          zDist = l[ 'zdist_thresh' ]
+          r = Rect( bbox[ 'x' ], bbox[ 'y' ], bbox[ 'width' ], bbox[ 'height' ] )
+          l = Localization( zDist, classId, r, score, scale )
+          logging.info( 'Adding localization %s' % l )
+          frame.addLocalization( classId, l )
 
 
     return ( frame, jsonObj[ 'scores' ].keys() )

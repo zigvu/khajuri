@@ -45,7 +45,8 @@ class JsonWriter( Task ):
 
     myDict[ "scores" ] = scores
     myDict[ "localizations" ] = localizations
-    filename = os.path.join( self.config.json_output_folder,
-        "%s_frame_%s.json" % ( self.config.videoId, frame.frameNumber ) )
-    json.dump( myDict, open( filename, 'w' ), indent=2 )
+    if not frame.filename:
+      frame.filename = os.path.join( self.config.json_output_folder,
+          "%s_frame_%s.json" % ( self.config.videoId, frame.frameNumber ) )
+    json.dump( myDict, open( frame.filename, 'w' ), indent=2 )
     return ( frame, classIds )
