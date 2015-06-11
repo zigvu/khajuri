@@ -20,7 +20,7 @@ def process( configFileName ):
 
   logging.info( "Heatmap rpc server started" )
 
-  heatmapDataHandler = HeatmapDataHandler()
+  heatmapDataHandler = HeatmapDataHandler( config )
   rpc = RpcServer( amqp_url, serverQueueName, heatmapDataHandler )
 
 
