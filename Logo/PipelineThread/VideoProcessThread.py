@@ -94,11 +94,11 @@ class VideoProcessThread( object ):
     if self.config.pp_resultWriterRabbit:
       amqp_url = self.config.mes_amqp_url
       serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
+      self.rabbitWriter = RpcClient( amqp_url, serverQueueName )
       # TODO: find a better way
       # For now, tag along variables in config
       self.config.videoId = videoId
       self.config.chiaVersionId = chiaVersionId
-      self.config.rabbitWriter = RpcClient( amqp_url, serverQueueName )
 
     # More than 1 GPU Available?
     self.gpu_devices = self.config.ci_gpu_devices
@@ -128,7 +128,7 @@ class VideoProcessThread( object ):
       # inform rabbit consumer that video processing is ready to start
       message = Pickler.pickle( {} )
       headers = Headers.videoStorageStart( self.videoId, self.chiaVersionId )
-      response = json.loads( self.config.rabbitWriter.call( headers, message ) )
+      response = json.loads( self.rabbitWriter.call( headers, message ) )
       # TODO: error check
 
     # Share state with other processes - since objects need to be pickled
@@ -240,8 +240,8 @@ class VideoProcessThread( object ):
       logging.info("Writing output to RabbitMq")
       message = Pickler.pickle( {} )
       headers = Headers.videoStorageEnd( self.videoId, self.chiaVersionId )
-      response = json.loads( self.config.rabbitWriter.call( headers, message ) )
-      self.config.rabbitWriter.close();
+      response = json.loads( self.rabbitWriter.call( headers, message ) )
+      self.rabbitWriter.close();
 
     # print runtime as multiple of video length
     if self.runCaffe:

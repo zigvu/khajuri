@@ -23,7 +23,8 @@ class RpcServer( object ):
     if props.reply_to != None:
       properties = pika.BasicProperties(
         correlation_id = props.correlation_id, 
-        headers = responseHeaders
+        headers = responseHeaders,
+        delivery_mode=1
       )
 
       ch.basic_publish(
