@@ -5,7 +5,6 @@ import logging
 
 import caffe
 from Logo.PipelineCore.ConfigReader import ConfigReader
-from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
 
 class CaffeNet( object ):
   def __init__(self, configReader, deviceId):
