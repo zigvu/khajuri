@@ -15,10 +15,8 @@ from messaging.type.Headers import Headers
 class RabbitWriter( Task ):
   def __call__( self, obj ):
     frame, classIds = obj
-    logging.info( 'Saving frameInfo on %s for classes %s' %
+    logging.info( 'RabbitWriter: Saving frameInfo on %s for classes %s' %
         ( frame, classIds ) )
-    localizations = {}
-    scores = {}
     
     # extract data that needs to pass through network
     frameData = FrameData( self.config.videoId, self.config.chiaVersionId, frame.frameNumber )

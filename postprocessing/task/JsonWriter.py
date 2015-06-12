@@ -10,7 +10,7 @@ from postprocessing.type.Rect import Rect
 class JsonWriter( Task ):
   def __call__( self, obj ):
     frame, classIds = obj
-    logging.info( 'Saving frameInfo on %s for classes %s' %
+    logging.info( 'JsonWriter: Saving frameInfo on %s for classes %s' %
         ( frame, classIds ) )
     localizations = {}
     scores = {}

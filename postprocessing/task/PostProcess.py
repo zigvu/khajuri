@@ -21,12 +21,7 @@ class PostProcess( Task ):
     self.classFilter = ClassFilter( config, status ),
     self.zDist = ZDistFilter( config, status ),
     self.localization = Localization( config, status )
-    # allow for multiple writers
-    self.frameSavers = []
-    if self.config.pp_resultWriterJSON:
-      self.frameSavers += [ JsonWriter( config, status ) ]
-    if self.config.pp_resultWriterRabbit:
-      self.frameSavers += [ RabbitWriter( config, status ) ]
+    self.frameSaver = JsonWriter( config, status )
 
   #@profile
   def __call__( self, obj ):
@@ -34,6 +29,5 @@ class PostProcess( Task ):
     classFilterResults = self.classFilter[0]( readerResults )
     zDistResult = self.zDist[0]( classFilterResults )
     localizationResult = self.localization( zDistResult )
-    for frameSaver in self.frameSavers:
-      frameSaver( localizationResult )
+    self.frameSaver( localizationResult )
     return ( obj )

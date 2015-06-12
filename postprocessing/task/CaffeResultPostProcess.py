@@ -11,6 +11,7 @@ from postprocessing.task.ClassFilter import ClassFilter
 from postprocessing.task.ZDistFilter import ZDistFilter
 from postprocessing.task.JsonReader import JsonReader
 from postprocessing.task.JsonWriter import JsonWriter
+from postprocessing.task.RabbitWriter import RabbitWriter
 from postprocessing.task.OldJsonReader import OldJsonReader
 from postprocessing.task.Localization import Localization
 
@@ -20,7 +21,12 @@ class CaffeResultPostProcess( Task ):
     self.classFilter = ClassFilter( config, status ),
     self.zDist = ZDistFilter( config, status ),
     self.localization = Localization( config, status )
-    self.frameSaver = JsonWriter( config, status )
+    # allow for multiple writers
+    self.frameSavers = []
+    if self.config.pp_resultWriterJSON:
+      self.frameSavers += [ JsonWriter( config, status ) ]
+    if self.config.pp_resultWriterRabbit:
+      self.frameSavers += [ RabbitWriter( config, status ) ]
 
   #@profile
   def __call__( self, obj ):
@@ -28,5 +34,6 @@ class CaffeResultPostProcess( Task ):
     classFilterResults = self.classFilter[0]( obj )
     zDistResult = self.zDist[0]( classFilterResults )
     localizationResult = self.localization( zDistResult )
-    self.frameSaver( localizationResult )
+    for frameSaver in self.frameSavers:
+      frameSaver( localizationResult )
     return ( obj )

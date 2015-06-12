@@ -11,13 +11,12 @@ from messaging.infra.RpcClient import RpcClient
 
 def process( configFileName ):
   config = Config( configFileName )
+  config.total_num_of_patches = 543 # read this from config instead
 
   amqp_url = config.mes_amqp_url
 
   khajuriDataQueueName = config.mes_q_vm2_kahjuri_development_video_data
   kheerQueueName = config.mes_q_vm2_kheer_development_localization_request
-  # khajuriDataQueueName = 'vm2.kahjuri.development.video_data'
-  # kheerQueueName = 'vm2.kheer.development.localization.request'
 
   logging.basicConfig(
     format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
@@ -29,7 +28,7 @@ def process( configFileName ):
   logging.info( "Starting RPC server to read video data" )
 
   # this server runs in VM2 and listens to data from GPU1/GPU2
-  videoDataHandler = VideoDataHandler( kheerRpcClient )
+  videoDataHandler = VideoDataHandler( kheerRpcClient, config )
   rpc = RpcServer( amqp_url, khajuriDataQueueName, videoDataHandler )
 
 

@@ -7,13 +7,15 @@ from messaging.infra.Pickler import Pickler
 from messaging.type.Headers import Headers
 
 class VideoDataHandler( object ):
-  def __init__( self, kheerRpcClient ):
+  def __init__( self, kheerRpcClient, config ):
     self.kheerRpcClient = kheerRpcClient
+    self.config = config
+
     # hash format:
     # {chia_version_id: {video_id: hdf5Storage.infra.VideoDataWriter}}
     self.videoDataWriters = {}
 
-  def startNewVideoStorage( self, videoId, chiaVersionId, config ):
+  def startNewVideoStorage( self, videoId, chiaVersionId ):
     logging.info( "Start data import for video_id %d and chia_version_id %d" % ( videoId, chiaVersionId ) )
     if not chiaVersionId in self.videoDataWriters.keys():
       self.videoDataWriters[ chiaVersionId ] = {}
@@ -22,7 +24,7 @@ class VideoDataHandler( object ):
         ( videoId, chiaVersionId )
       )
     # create new writer
-    self.videoDataWriters[ chiaVersionId ][ videoId ] = VideoDataWriter( config, videoId, chiaVersionId )
+    self.videoDataWriters[ chiaVersionId ][ videoId ] = VideoDataWriter( self.config, videoId, chiaVersionId )
     # inform kheer of incoming data
     message = {}
     headers = Headers.videoStorageStart( videoId, chiaVersionId )
@@ -53,7 +55,7 @@ class VideoDataHandler( object ):
     chiaVersionId = Headers.getPropsChiaVersionId( headers )
 
     if Headers.isVideoStorageStart( headers ):
-      self.startNewVideoStorage( videoId, chiaVersionId, message )
+      self.startNewVideoStorage( videoId, chiaVersionId )
     elif Headers.isVideoStorageEnd( headers ):
       self.endExistingVideoStorage( videoId, chiaVersionId )
     elif Headers.isVideoStorageSave( headers ):
