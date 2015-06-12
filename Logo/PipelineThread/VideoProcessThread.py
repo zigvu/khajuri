@@ -19,6 +19,9 @@ from Logo.PipelineCore.Version import LogoVersion
 from postprocessing.task.CaffeResultPostProcess import CaffeResultPostProcess
 from infra.Pipeline import Pipeline
 
+from messaging.infra.Pickler import Pickler
+from messaging.type.Headers import Headers
+from messaging.infra.RpcClient import RpcClient
 
 config = None
 
@@ -55,14 +58,13 @@ def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
 
 class VideoProcessThread( object ):
   """Class responsible for starting and running caffe on video"""
-  def __init__(self, configFileName, videoFileName, baseDbFolder, jsonFolder, numpyFolder):
+  def __init__(self, configFileName, videoFileName, \
+    baseDbFolder, jsonFolder, numpyFolder, videoId, chiaVersionId):
     """Initialize values"""
     self.configFileName = configFileName
     self.videoFileName = videoFileName
-    logging.basicConfig(
-      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO, datefmt="%Y-%m-%d--%H:%M:%S"
-      )
+    self.videoId = videoId
+    self.chiaVersionId = chiaVersionId
 
     global config 
     config = Config(configFileName)
@@ -71,18 +73,32 @@ class VideoProcessThread( object ):
     self.runPostProcessor = self.config.ci_runPostProcess
     self.frameStartNumber = self.config.ci_videoFrameNumberStart
 
+    # Logging levels
+    logging.basicConfig(
+      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+      level=self.config.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
+
     # Folder to save files
     self.baseDbFolder = baseDbFolder
     self.jsonFolder = jsonFolder
     self.numpyFolder = numpyFolder
     Config.rm_rf(self.baseDbFolder)
     Config.mkdir_p(self.baseDbFolder)
-    Config.mkdir_p(self.jsonFolder)
-    Config.mkdir_p(self.numpyFolder)
-    # Logging levels
-    logging.basicConfig(
-      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=self.config.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
+
+    # if JSON writer is enabled
+    if self.config.pp_resultWriterJSON:
+      Config.mkdir_p(self.jsonFolder)
+      Config.mkdir_p(self.numpyFolder)
+
+    # if rabbit writer is enabled, we need to setup communication mechanism
+    if self.config.pp_resultWriterRabbit:
+      amqp_url = self.config.mes_amqp_url
+      serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
+      # TODO: find a better way
+      # For now, tag along variables in config
+      self.config.videoId = videoId
+      self.config.chiaVersionId = chiaVersionId
+      self.config.rabbitWriter = RpcClient( amqp_url, serverQueueName )
 
     # More than 1 GPU Available?
     self.gpu_devices = self.config.ci_gpu_devices
@@ -105,6 +121,15 @@ class VideoProcessThread( object ):
       logging.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
       logging.info("Setting up post-processing to run in parallel")
+    if config.pp_resultWriterJSON:
+      logging.info("Writing output to JSON files")
+    if config.pp_resultWriterRabbit:
+      logging.info("Writing output to RabbitMq")
+      # inform rabbit consumer that video processing is ready to start
+      message = Pickler.pickle( {} )
+      headers = Headers.videoStorageStart( self.videoId, self.chiaVersionId )
+      response = json.loads( self.config.rabbitWriter.call( headers, message ) )
+      # TODO: error check
 
     # Share state with other processes - since objects need to be pickled
     # only put primitives where possible
@@ -123,11 +148,11 @@ class VideoProcessThread( object ):
     videoDbManagerProcesses = []
     videoCaffeManagerProcesses = []
     postProcessQueue = JoinableQueue()
-    results = multiprocessing.Queue()
+    resultsQueue = multiprocessing.Queue()
 
     myPostProcessPipeline = Pipeline( [
                               CaffeResultPostProcess( self.config, None )
-                            ], postProcessQueue, results )
+                            ], postProcessQueue, resultsQueue )
     myPostProcessPipeline.start()
 
     startTime = time.time()
@@ -210,6 +235,13 @@ class VideoProcessThread( object ):
     myPostProcessPipeline.join()
     postProcessQueue.join()
 
+    # Inform rabbit writer that this video processing has completed
+    if config.pp_resultWriterRabbit:
+      logging.info("Writing output to RabbitMq")
+      message = Pickler.pickle( {} )
+      headers = Headers.videoStorageEnd( self.videoId, self.chiaVersionId )
+      response = json.loads( self.config.rabbitWriter.call( headers, message ) )
+      self.config.rabbitWriter.close();
 
     # print runtime as multiple of video length
     if self.runCaffe:

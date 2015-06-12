@@ -107,6 +107,9 @@ class Config:
     self.pp_savePatchScores = postProcessing['save_patch_scores'] == True
     self.pp_compressedJSON = postProcessing['compressed_json'] == True
     self.pp_zDistThresholds = postProcessing['z_dist_thresholds']
+    ppResultWriters = postProcessing['result_writers']
+    self.pp_resultWriterJSON = ppResultWriters['json_writer'] == True
+    self.pp_resultWriterRabbit = ppResultWriters['rabbit_writer'] == True
 
     # Curation
     curation = config['curation']

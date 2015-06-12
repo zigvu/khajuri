@@ -49,9 +49,9 @@ sliding_window:
 
 # Caffe input
 caffe_input:
-  model_file:                                 "/mnt/data/wc14cls/training/0seed-cleaned/runResults/networkModels/caffe_logo_train_iter_5000"
-  video_prototxt_file:                        "/mnt/data/wc14cls/training/0seed-cleaned/runResults/prototxt/logo_video.prototxt"
-  deploy_prototxt_file:                       "/mnt/data/wc14cls/training/0seed-cleaned/runResults/prototxt/logo_deploy.prototxt"
+  model_file:                                 "/mnt/data/wc14itr/set04/runResults/caffe_logo_train_iter_5000"
+  video_prototxt_file:                        "/mnt/data/wc14itr/set04/runResults/prototxt/logo_video.prototxt"
+  deploy_prototxt_file:                       "/mnt/data/wc14itr/set04/runResults/prototxt/logo_deploy.prototxt"
 
 # for processing vdo in older setup with leveldb
   # number of frames to put in one leveldb
@@ -80,7 +80,7 @@ caffe_input:
 # for processing vdo in older setup with leveldb
   run_caffe_postprocess_in_parallel:         false
 
-  run_caffe:                                 false
+  run_caffe:                                 true
   run_postprocess:                           true
   all_classes:
     - '0'
@@ -152,6 +152,9 @@ post_processing:
     - 0
     - 2
     - 4
+  result_writers:
+    json_writer:                              true
+    rabbit_writer:                            true
 
 # Curation
 curation:
