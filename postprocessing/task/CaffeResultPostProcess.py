@@ -21,6 +21,8 @@ class CaffeResultPostProcess( Task ):
     self.zDist = ZDistFilter( config, status ),
     self.localization = Localization( config, status )
     self.frameSaver = JsonWriter( config, status )
+    _cellBoundaries = self.config.allCellBoundariesDict
+    _neighborMap = self.config.neighborMap
 
   #@profile
   def __call__( self, obj ):

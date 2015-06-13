@@ -21,7 +21,7 @@ class PixelMapper(object):
     self.mapAllCellCount = {}
     for scale in self.config.sw_scales:
       if not PixelMapper.mapAllCellCountCache.get( scale ):
-        PixelMapper.mapAllCellCountCache[ scale ] = PixelMap( self.config.allCellBoundariesDict, scale )
+        PixelMapper.mapAllCellCountCache[ scale ] = PixelMap( self.config.allCellBoundariesDict, self.config.neighborMap, scale )
         PixelMapper.mapAllCellCountCache[ scale ].addScore( oneScores )
       localizationMap, intensityMap = self.populatePixelMap(scale)
       self.pixelMaps += [{'scale': scale, \
@@ -33,8 +33,8 @@ class PixelMapper(object):
   def populatePixelMap(self, scale):
     """Initialize the pixel map for the class at given scale"""
     mapAllCellCount = PixelMapper.mapAllCellCountCache[ scale ].copy()
-    mapDetectionCellCount = PixelMap( self.config.allCellBoundariesDict, scale )
-    intensityMap = PixelMap( self.config.allCellBoundariesDict, scale )
+    mapDetectionCellCount = PixelMap( self.config.allCellBoundariesDict, self.config.neighborMap, scale )
+    intensityMap = PixelMap( self.config.allCellBoundariesDict, self.config.neighborMap, scale )
     
     # Map Patch Scores to cellValues 
     patchScores = self.frame.scores[ self.zDistThreshold ][ :, self.classId, 0 ]
@@ -106,7 +106,7 @@ class PixelMapper(object):
       if pm['scale'] == scale and pm['decayedMap'] != None:
         return pm['decayedMap']
     # else, create map by combining decay factors
-    decayedMap = PixelMap(self.config.allCellBoundariesDict, scale)
+    decayedMap = PixelMap(self.config.allCellBoundariesDict, self.config.neighborMap, scale)
     decayFactors = None
     for df in self.allDecayFactors:
       if df['scale'] == scale:
