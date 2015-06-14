@@ -21,16 +21,17 @@ class CaffeResultPostProcess( Task ):
     self.classFilter = ClassFilter( config, status ),
     self.zDist = ZDistFilter( config, status ),
     self.localization = Localization( config, status )
-    # allow for multiple writers
     self.frameSavers = []
-    if self.config.pp_resultWriterJSON:
-      self.frameSavers += [ JsonWriter( config, status ) ]
-    if self.config.pp_resultWriterRabbit:
-      self.frameSavers += [ RabbitWriter( config, status ) ]
 
   #@profile
   def __call__( self, obj ):
-    print 'Processing %s' % str(obj)
+    # allow for multiple writers
+    if len(self.frameSavers) == 0:
+      if self.config.pp_resultWriterJSON:
+        self.frameSavers += [ JsonWriter( self.config, self.status ) ]
+      if self.config.pp_resultWriterRabbit:
+        self.frameSavers += [ RabbitWriter( self.config, self.status ) ]
+
     classFilterResults = self.classFilter[0]( obj )
     zDistResult = self.zDist[0]( classFilterResults )
     localizationResult = self.localization( zDistResult )

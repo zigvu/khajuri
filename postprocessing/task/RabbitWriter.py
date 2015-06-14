@@ -16,6 +16,7 @@ from messaging.infra.RpcClient import RpcClient
 class RabbitWriter( Task ):
   def __init__( self, config, status ):
     Task.__init__( self, config, status )
+    logging.debug( 'RabbitWriter: Starting writer' )
     amqp_url = self.config.mes_amqp_url
     serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
     self.rabbitWriter = RpcClient( amqp_url, serverQueueName, expectReply = False )
