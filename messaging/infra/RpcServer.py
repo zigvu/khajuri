@@ -7,7 +7,8 @@ class RpcServer( object ):
     self.rpcHandlerObj = rpcHandlerObj
 
     # blocking connection allows us to avoid using callbacks in every step
-    self.connection = pika.BlockingConnection( pika.ConnectionParameters( host = amqp_url ) )
+    self.connection = pika.BlockingConnection( pika.ConnectionParameters( 
+      host = amqp_url, heartbeat_interval = ( 60 * 10 ) ) )
 
     channel = self.connection.channel()
     channel.queue_declare( queue = serverQueueName )

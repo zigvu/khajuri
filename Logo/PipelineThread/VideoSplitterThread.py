@@ -3,10 +3,11 @@ import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 import logging
 
+from config.Config import Config
+
 from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
-from Logo.PipelineCore.ConfigReader import ConfigReader
 
 def runAviToMp4Converter( conversionQueue ):
   """Process to convert avi to mp4 file"""
@@ -32,22 +33,22 @@ class VideoSplitterThread( object ):
   """Class to draw split video into clips"""
   def __init__(self, configFileName, videoFileName, clipsOutputFolder):
     """Initialize values"""
-    self.configReader = ConfigReader(configFileName)
+    self.config = Config(configFileName)
     self.videoFileName = videoFileName
     self.clipsOutputFolder = clipsOutputFolder
     self.tempFolder = os.path.join('/mnt/tmp', os.path.basename(videoFileName).split('.')[0])
-    ConfigReader.mkdir_p(self.tempFolder)
+    Config.mkdir_p(self.tempFolder)
 
-    self.numFrameInClip = self.configReader.hdf5_clip_frame_count
+    self.numFrameInClip = self.config.hdf5_clip_frame_count
     self.videoClipsMapFilename = os.path.join( self.clipsOutputFolder, \
-      self.configReader.hdf5_video_clips_map_filename )
-    self.frameDensity = self.configReader.sw_frame_density
+      self.config.hdf5_video_clips_map_filename )
+    self.frameDensity = self.config.sw_frame_density
 
-    ConfigReader.mkdir_p(self.clipsOutputFolder)
+    Config.mkdir_p(self.clipsOutputFolder)
 
     # Logging levels
     logging.basicConfig(format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s', 
-      level=self.configReader.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
+      level=self.config.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
 
   def run( self ):
     """Split video into clips"""
@@ -61,7 +62,7 @@ class VideoSplitterThread( object ):
     conversionQueue = JoinableQueue()
     conversionProcesses = []
     # num_consumers = 1
-    num_consumers = max(int(self.configReader.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
+    num_consumers = max(int(self.config.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
     for i in xrange(num_consumers):
       conversionProcess = Process(\
         target=runAviToMp4Converter,\
@@ -79,7 +80,7 @@ class VideoSplitterThread( object ):
     outClipFileName = None
     currentFrameNum = 0 # frame number being extracted
 
-    frame = videoFrameReader.getFrameWithFrameNumber(int(self.configReader.ci_videoFrameNumberStart))
+    frame = videoFrameReader.getFrameWithFrameNumber(int(self.config.ci_videoFrameNumberStart))
     while frame != None:
       if ((currentFrameNum % self.numFrameInClip) == 0):
         if clipWriter != None:

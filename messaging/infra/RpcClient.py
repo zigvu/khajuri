@@ -7,7 +7,8 @@ class RpcClient( object ):
     self.expectReply = expectReply
 
     # blocking connection allows us to avoid using callbacks in every step
-    self.connection = pika.BlockingConnection( pika.ConnectionParameters( host = amqp_url ) )
+    self.connection = pika.BlockingConnection( pika.ConnectionParameters( 
+      host = amqp_url, heartbeat_interval = ( 60 * 10 ) ) )
 
     self.channel = self.connection.channel()
 

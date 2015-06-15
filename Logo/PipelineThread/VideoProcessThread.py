@@ -90,11 +90,7 @@ class VideoProcessThread( object ):
       Config.mkdir_p(self.jsonFolder)
       Config.mkdir_p(self.numpyFolder)
 
-    # if rabbit writer is enabled, we need to setup communication mechanism
     if self.config.pp_resultWriterRabbit:
-      amqp_url = self.config.mes_amqp_url
-      serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
-      self.rabbitWriter = RpcClient( amqp_url, serverQueueName )
       # TODO: find a better way
       # For now, tag along variables in config
       self.config.videoId = videoId
@@ -125,11 +121,16 @@ class VideoProcessThread( object ):
       logging.info("Writing output to JSON files")
     if config.pp_resultWriterRabbit:
       logging.info("Writing output to RabbitMq")
+      amqp_url = self.config.mes_amqp_url
+      serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
+      self.rabbitWriter = RpcClient( amqp_url, serverQueueName )
       # inform rabbit consumer that video processing is ready to start
       message = Pickler.pickle( {} )
       headers = Headers.videoStorageStart( self.videoId, self.chiaVersionId )
       response = json.loads( self.rabbitWriter.call( headers, message ) )
       # TODO: error check
+      # since finishing post-processing will take a long time, close connection
+      self.rabbitWriter.close()
 
     # Share state with other processes - since objects need to be pickled
     # only put primitives where possible
@@ -237,7 +238,10 @@ class VideoProcessThread( object ):
 
     # Inform rabbit writer that this video processing has completed
     if config.pp_resultWriterRabbit:
-      logging.info("Writing output to RabbitMq")
+      logging.info("Finished writing output to RabbitMq")
+      amqp_url = self.config.mes_amqp_url
+      serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
+      self.rabbitWriter = RpcClient( amqp_url, serverQueueName )
       message = Pickler.pickle( {} )
       headers = Headers.videoStorageEnd( self.videoId, self.chiaVersionId )
       response = json.loads( self.rabbitWriter.call( headers, message ) )
