@@ -7,10 +7,13 @@ from postprocessing.type.Frame import Frame
 from postprocessing.type.Localization import Localization
 from postprocessing.type.Rect import Rect
 
+from postprocessing.type.Localization import Localization
+from postprocessing.type.Rect import Rect
+
 class OldJsonReader( Task ):
 
-  def getVideoId( self, jsonFileName ):
-    baseName = os.path.basename( jsonFileName )
+  def getVideoId( self, filename ):
+    baseName = os.path.basename( filename )
     return baseName.split( '_' )[0]
 
   def getPatches( self, scale ):
@@ -44,8 +47,25 @@ class OldJsonReader( Task ):
         patchId = self.patchMapping[ ( scale, x, y, x + w , y + h  ) ]
         for classId in self.classIds:
           scores[ patchId, classId ] = patch[ "scores" ] [ classId ]
-          fc8scores[ patchId, classId ] = patch[ "scores_fc8" ] [ classId ]
+          if patch.get( "scores_fc8" ):
+            fc8scores[ patchId, classId ] = patch[ "scores_fc8" ] [ classId ]
 
     frame.scores[ 0 ][ :, :, 0 ] = scores
     frame.scores[ 0 ][ :, :, 1 ] = fc8scores
+
+    logging.info( 'Reading localizations from file %s' % fileName ) 
+    if self.myDict.get( 'localizations' ):
+      for classId in self.classIds:
+        lList = self.myDict[ 'localizations' ].get( classId )
+        for lDict in lList:
+          logging.info( 'Got the localization dict %s' % lDict )
+          rect = Rect( lDict[ "bbox" ] [ "x" ],
+              lDict[ "bbox" ] [ "y" ],
+              lDict[ "bbox" ] [ "width" ],
+              lDict[ "bbox" ] [ "height" ] )
+          l = Localization( 0, classId, rect, lDict[ "score" ], 1 )
+          logging.info( 'Adding localization %s to frame from file %s' % ( l, fileName ) )
+          frame.addLocalization( int( classId ), l )
+    else:
+      logging.info( 'Localization is not present in file %s' % fileName )
     return ( frame, self.classIds )
