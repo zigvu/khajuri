@@ -4,8 +4,9 @@ import scipy.ndimage as ndimage
 import logging
 
 from Logo.PipelineMath.Rectangle import Rectangle
-from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
-from Logo.PipelineMath.PixelMap import PixelMap
+from Logo.PipelineMath.PixelMap import CellBoundaries
+from Logo.PipelineMath.PixelMap import NeighborsCache
+
 
 class Config:
   """Reads YAML config file and allows easy accessor to config attributes"""
@@ -138,12 +139,21 @@ class Config:
     # thresholds to subsample candidate labeled bbox prior to showing to user
     self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
 
+    self.cachedCellBoundariesDict = None
+    self.cachedNeighborMap = None
 
-    # Setup allCellBoundariesDict
-    imgDim = Rectangle.rectangle_from_dimensions( self.sw_frame_width, self.sw_frame_height )
-    patchDim = Rectangle.rectangle_from_dimensions( self.sw_patchWidth, self.sw_patchHeight)
-    staticbboxes = BoundingBoxes(imgDim, self.sw_xStride, self.sw_yStride, patchDim )
-    self.allCellBoundariesDict = PixelMap.getCellBoundaries(staticbboxes, self.sw_scales)
+  @property
+  def allCellBoundariesDict( self ):
+    if not self.cachedCellBoundariesDict:
+      self.cachedCellBoundariesDict = CellBoundaries( self ).allCellBoundariesDict
+    return self.cachedCellBoundariesDict
+
+  @property
+  def neighborMap( self ):
+    if not self.cachedNeighborMap:
+      neighborCache = NeighborsCache( self )
+      self.cachedNeighborMap = neighborCache.neighborMapAllScales( self.allCellBoundariesDict )
+    return self.cachedNeighborMap
 
     # HDF5 settings
     hdf5 = config['hdf5']
