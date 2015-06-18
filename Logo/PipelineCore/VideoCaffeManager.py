@@ -1,24 +1,27 @@
-import os, shutil, re, time
-import json, math
+import json
 from collections import OrderedDict
 import logging
 
 import caffe
-from postprocessing.type.Frame import Frame
-from postprocessing.task.JsonWriter import JsonWriter
+
 from config.Config import Config
 
-class VideoCaffeManager( object ):
+from postprocessing.type.Frame import Frame
+from postprocessing.task.JsonWriter import JsonWriter
+
+
+class VideoCaffeManager(object):
   """Class for running patches through Caffe"""
+
   def __init__(self, config):
+    """Initialization"""
     self.config = config
     self.classes = self.config.ci_allClassIds
     self.numOfClasses = len(self.classes)
     self.runPostProcessor = self.config.ci_runPostProcess
     self.compressedJSON = self.config.pp_compressedJSON
-    self.patchMapping = self.config.allCellBoundariesDict[ "patchMapping" ]
-    self.totalPatches = len ( self.patchMapping )
-
+    self.patchMapping = self.config.allCellBoundariesDict["patchMapping"]
+    self.totalPatches = len(self.patchMapping)
 
   def setupNet(self, newPrototxtFile, deviceId):
     """Setup caffe network"""
@@ -34,7 +37,8 @@ class VideoCaffeManager( object ):
         if "batch_size:" in line:
           self.caffeBatchSize = int(line.strip(" \n").split("batch_size: ")[1])
     if self.caffeBatchSize == None:
-      raise RuntimeError("Couldn't read batch size from file %s" % newPrototxtFile)
+      raise RuntimeError(
+          "Couldn't read batch size from file %s" % newPrototxtFile)
 
     logging.info("Setup caffe network for device id %d" % self.deviceId)
     useGPU = self.config.ci_useGPU
@@ -43,19 +47,19 @@ class VideoCaffeManager( object ):
     # HACK: without reinitializing caffe_net twice, it won't give reproducible results
     # Seems to happen in both CPU and GPU runs:
     self.caffe_net = caffe.Net(newPrototxtFile, modelFile)
-    self.caffe_net.set_phase_test() 
+    self.caffe_net.set_phase_test()
     if useGPU:
       self.caffe_net.set_mode_gpu()
-      self.caffe_net.set_device( self.deviceId )
+      self.caffe_net.set_device(self.deviceId)
     else:
       self.caffe_net.set_mode_cpu()
     logging.debug("Reinitializing caffe_net")
 
     self.caffe_net = caffe.Net(newPrototxtFile, modelFile)
-    self.caffe_net.set_phase_test() 
+    self.caffe_net.set_phase_test()
     if useGPU:
       self.caffe_net.set_mode_gpu()
-      self.caffe_net.set_device( self.deviceId )
+      self.caffe_net.set_device(self.deviceId)
     else:
       self.caffe_net.set_mode_cpu()
     logging.debug("Done initializing caffe_net")
@@ -77,12 +81,15 @@ class VideoCaffeManager( object ):
         # poison pill means done with evaluations
         break
       # producer is not finished producing, so consume
-      logging.debug("Caffe working on batch %s on device %d" % (dbBatchMappingFile, self.deviceId))
+      logging.debug(
+          "Caffe working on batch %s on device %d" % 
+          (dbBatchMappingFile, self.deviceId))
       self.forward(dbBatchMappingFile)
       # once scores are saved, put it in deletion queue
       self.consumedQueue.put(dbBatchMappingFile)
       self.producedQueue.task_done()
-    logging.info("Caffe finished working all batches on device %d" % (self.deviceId))
+    logging.info(
+        "Caffe finished working all batches on device %d" % (self.deviceId))
 
   def forward(self, dbBatchMappingFile):
     """Forward call in caffe"""
@@ -94,18 +101,19 @@ class VideoCaffeManager( object ):
     for patchCounter, infoDict in dbBatchMapping.iteritems():
       if maxPatchCounter < int(patchCounter):
         maxPatchCounter = int(patchCounter)
-      jsonFile = infoDict[ 'jsonFile' ]
+      jsonFile = infoDict['jsonFile']
       if jsonFile not in frames.keys():
-        frames[jsonFile] = Frame( self.classes, self.totalPatches, 
-                                  self.config.ci_scoreTypes.keys() )
+        frames[jsonFile] = Frame(
+            self.classes, self.totalPatches, self.config.ci_scoreTypes.keys())
         frames[jsonFile].filename = jsonFile
-        frames[jsonFile].frameNumber = infoDict[ 'frameNum' ]
+        frames[jsonFile].frameNumber = infoDict['frameNum']
         frames[jsonFile].frameDisplayTime = 0
 
     # We do ONLY ONE forward pass - we expect to get only 1 batch of data
     # (which of course could be configured to do multiple frames)
 
-    # we start our patch counting from label equals to one batch size minus the maxPatchCounter
+    # we start our patch counting from label equals to one batch size minus 
+    # the maxPatchCounter
     patchCounter = maxPatchCounter - self.caffeBatchSize + 1
     if patchCounter < 0:
       patchCounter = 0
@@ -115,22 +123,23 @@ class VideoCaffeManager( object ):
     probablities_fc8 = self.caffe_net.blobs['fc8_logo'].data
     for k in range(0, output['label'].size):
       printStr = ""
-      scores = probablities[ k, :, 0, 0 ]
-      scores_fc8 = probablities_fc8[ k, :, 0, 0 ]
+      scores = probablities[k, :, 0, 0]
+      scores_fc8 = probablities_fc8[k, :, 0, 0]
       # Note: if number of patches is not multiple of batch size, then caffe
       #  displays results for patches in the begining of db
       if patchCounter <= maxPatchCounter:
         curPatchNumber = int(output['label'].item(k))
         # Add scores to json
         infoDict = dbBatchMapping[str(curPatchNumber)]
-        frames[ infoDict[ 'jsonFile' ] ].addScores( infoDict[ 'patchNum' ], scores )
-        frames[ infoDict[ 'jsonFile' ] ].addfc8Scores( infoDict[ 'patchNum' ], scores_fc8 )
+        frames[infoDict['jsonFile']].addScores(infoDict['patchNum'], scores)
+        frames[infoDict['jsonFile']].addfc8Scores(
+            infoDict['patchNum'], scores_fc8)
         # logging.debug("%s" % printStr)
       patchCounter += 1
 
     # Save and put json files in post processing queue
     for jsonFile, frame in frames.iteritems():
       if self.runPostProcessor:
-        self.postProcessQueue.put(( frame, self.classes ) )
+        self.postProcessQueue.put((frame, self.classes))
       else:
-        JsonWriter( self.config, None )(( frame, self.classes ) )
+        JsonWriter(self.config, None)((frame, self.classes))

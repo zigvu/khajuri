@@ -1,2 +1,2 @@
-class Status( object ):
+class Status(object):
   pass

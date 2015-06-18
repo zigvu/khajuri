@@ -1,22 +1,21 @@
-import os, time, sys, glob
+import os, time
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
-from threading import Thread
 from collections import OrderedDict
-import json, pickle
+import json
 import logging
-import Queue
 
 import VideoReader
 
-from config.Config import Config
 from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
-
 from Logo.PipelineCore.VideoDbManager import VideoDbManager
 from Logo.PipelineCore.VideoCaffeManager import VideoCaffeManager
-from Logo.PipelineCore.Version import LogoVersion
+
+from config.Config import Config
+from config.Version import Version
 
 from postprocessing.task.CaffeResultPostProcess import CaffeResultPostProcess
+
 from infra.Pipeline import Pipeline
 
 from messaging.infra.Pickler import Pickler
@@ -24,6 +23,7 @@ from messaging.type.Headers import Headers
 from messaging.infra.RpcClient import RpcClient
 
 config = None
+
 
 def runVideoDbManager(sharedDict, producedQueue, consumedQueue, \
   deviceId, frmStrt, frmStp, dbFolder, newPrototxtFile):
@@ -40,12 +40,15 @@ def runVideoDbManager(sharedDict, producedQueue, consumedQueue, \
   # finally start producing
   videoDbManager.startVideoDb(frmStrt, frmStp)
 
+
 def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
   postProcessQueue, deviceId, newPrototxtFile):
   """Run single videoCaffeManager process"""
   maxProducedQueueSize = sharedDict['maxProducedQueueSize']
-  
-  logging.info("Waiting for videoDb queue to grow before starting VideoCaffeManager for deviceId %d" % deviceId)
+
+  logging.info(
+      "Waiting for videoDb queue to grow before starting " + \
+      "VideoCaffeManager for deviceId %d" % deviceId)
   while producedQueue.qsize() < maxProducedQueueSize:
     time.sleep(5)
 
@@ -56,8 +59,10 @@ def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
   # finally start consuming
   videoCaffeManager.startForwards()
 
-class VideoProcessThread( object ):
+
+class VideoProcessThread(object):
   """Class responsible for starting and running caffe on video"""
+
   def __init__(self, configFileName, videoFileName, \
     baseDbFolder, jsonFolder, numpyFolder, videoId, chiaVersionId):
     """Initialize values"""
@@ -66,7 +71,7 @@ class VideoProcessThread( object ):
     self.videoId = videoId
     self.chiaVersionId = chiaVersionId
 
-    global config 
+    global config
     config = Config(configFileName)
     self.config = config
     self.runCaffe = self.config.ci_runCaffe
@@ -75,8 +80,10 @@ class VideoProcessThread( object ):
 
     # Logging levels
     logging.basicConfig(
-      format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=self.config.log_level, datefmt="%Y-%m-%d--%H:%M:%S")
+        format=
+        '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+        level=self.config.log_level,
+        datefmt="%Y-%m-%d--%H:%M:%S")
 
     # Folder to save files
     self.baseDbFolder = baseDbFolder
@@ -98,16 +105,17 @@ class VideoProcessThread( object ):
 
     # More than 1 GPU Available?
     self.gpu_devices = self.config.ci_gpu_devices
-    self.version = LogoVersion()
+    self.version = Version()
 
     self.maxProducedQueueSize = self.config.ci_lmdbBufferMaxSize
     self.maxConsumedQueueSize = \
         self.config.ci_lmdbBufferMaxSize - self.config.ci_lmdbBufferMinSize
     if self.maxConsumedQueueSize <= 0:
-      raise RuntimeError("LMDB buffer min size must be smaller than lmdb buffer max size")
+      raise RuntimeError(
+          "LMDB buffer min size must be smaller than lmdb buffer max size")
     self.logIntervalSeconds = self.config.logIntervalSeconds
 
-  def run( self ):
+  def run(self):
     """Run the video through caffe"""
     videoTimeLengthSeconds = 0
     videoFrameReader = None
@@ -123,11 +131,11 @@ class VideoProcessThread( object ):
       logging.info("Writing output to RabbitMq")
       amqp_url = self.config.mes_amqp_url
       serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
-      self.rabbitWriter = RpcClient( amqp_url, serverQueueName )
+      self.rabbitWriter = RpcClient(amqp_url, serverQueueName)
       # inform rabbit consumer that video processing is ready to start
-      message = Pickler.pickle( {} )
-      headers = Headers.videoStorageStart( self.videoId, self.chiaVersionId )
-      response = json.loads( self.rabbitWriter.call( headers, message ) )
+      message = Pickler.pickle({})
+      headers = Headers.videoStorageStart(self.videoId, self.chiaVersionId)
+      response = json.loads(self.rabbitWriter.call(headers, message))
       # TODO: error check
       # since finishing post-processing will take a long time, close connection
       self.rabbitWriter.close()
@@ -151,54 +159,62 @@ class VideoProcessThread( object ):
     postProcessQueue = JoinableQueue()
     resultsQueue = multiprocessing.Queue()
 
-    myPostProcessPipeline = Pipeline( [
-                              CaffeResultPostProcess( self.config, None )
-                            ], postProcessQueue, resultsQueue )
+    myPostProcessPipeline = Pipeline(
+        [CaffeResultPostProcess(self.config, None)], postProcessQueue,
+        resultsQueue)
     myPostProcessPipeline.start()
 
     startTime = time.time()
     if self.runCaffe:
       # get length of video
       videoFrameReader = VideoFrameReader(self.videoFileName)
-      videoTimeLengthSeconds = videoFrameReader.getLengthInMicroSeconds() * 1.0/1000000
+      videoTimeLengthSeconds = videoFrameReader.getLengthInMicroSeconds() * \
+          1.0 / 1000000
       # Calculate frameStep from density and fps
-      self.frameStep = int( round ( ( 1.0 * videoFrameReader.fps )/self.config.sw_frame_density) ) 
-      logging.info( "Frame Step will be %s, as fps is: %s and density is %s"
-          % ( self.frameStep, videoFrameReader.fps, self.config.sw_frame_density ) )
+      self.frameStep = int(round(
+          (1.0 * videoFrameReader.fps) / self.config.sw_frame_density))
+      logging.info(
+          "Frame Step will be %s, as fps is: %s and density is %s" % (
+              self.frameStep, videoFrameReader.fps, self.config.sw_frame_density
+          ))
 
       deviceCount = 0
       for deviceId in self.gpu_devices:
         # producer/consumer queues
         producedQueues[deviceId] = JoinableQueue(self.maxProducedQueueSize)
         consumedQueues[deviceId] = JoinableQueue(self.maxConsumedQueueSize)
-        
+
         # start and step for frames differ by GPU
         frmStrt = self.frameStartNumber + (deviceCount * self.frameStep)
         frmStp = self.frameStep * len(self.gpu_devices)
         # folders and prototxt by GPU
         dbFolder = os.path.join(self.baseDbFolder, "id_%d" % deviceId)
-        newPrototxtFile = os.path.join(self.baseDbFolder, 'prototxt_%s.prototxt' % os.path.basename(dbFolder))
+        newPrototxtFile = os.path.join(
+            self.baseDbFolder,
+            'prototxt_%s.prototxt' % os.path.basename(dbFolder))
         # patch producer - save to DB
-        videoDbManagerProcess = Process(\
-          target=runVideoDbManager,\
-          args=(sharedDict, producedQueues[deviceId], consumedQueues[deviceId], \
-            deviceId, frmStrt, frmStp, dbFolder, newPrototxtFile))
+        videoDbManagerProcess = Process(
+            target=runVideoDbManager,
+            args=(
+                sharedDict, producedQueues[deviceId], consumedQueues[deviceId],
+                deviceId, frmStrt, frmStp, dbFolder, newPrototxtFile))
         videoDbManagerProcesses += [videoDbManagerProcess]
         videoDbManagerProcess.start()
-        
+
         # patch consumer - run caffe
-        videoCaffeManagerProcess = Process(\
-          target=runVideoCaffeManager,\
-          args=(sharedDict, producedQueues[deviceId], consumedQueues[deviceId], \
-            postProcessQueue, deviceId, newPrototxtFile))
+        videoCaffeManagerProcess = Process(
+            target=runVideoCaffeManager,
+            args=(
+                sharedDict, producedQueues[deviceId], consumedQueues[deviceId],
+                postProcessQueue, deviceId, newPrototxtFile))
         videoCaffeManagerProcesses += [videoCaffeManagerProcess]
         videoCaffeManagerProcess.start()
         deviceCount += 1
 
-    # closing videoFrameReader might take a while - so last statment prior to joining
+    # closing videoFrameReader might take a while
+    # so last statment prior to joining
     if self.runCaffe:
       videoFrameReader.close()
-
 
     # ----------------------
     # PROCESS MANAGEMENT
@@ -226,12 +242,15 @@ class VideoProcessThread( object ):
     # clean up db folder
     Config.rm_rf(self.baseDbFolder)
     endTime = time.time()
-    logging.info( 'It took VideoProcessThread %s seconds to complete' % ( endTime - startTime ) )
+    logging.info(
+        'It took VideoProcessThread %s seconds to complete' %
+        (endTime - startTime))
+
     # Add a poison pill for each PostProcessWorker
     num_consumers = multiprocessing.cpu_count()
     for i in xrange(num_consumers):
-        postProcessQueue.put(None)
-    
+      postProcessQueue.put(None)
+
     # Wait for all of the inputs to finish
     myPostProcessPipeline.join()
     postProcessQueue.join()
@@ -241,14 +260,15 @@ class VideoProcessThread( object ):
       logging.info("Finished writing output to RabbitMq")
       amqp_url = self.config.mes_amqp_url
       serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
-      self.rabbitWriter = RpcClient( amqp_url, serverQueueName )
-      message = Pickler.pickle( {} )
-      headers = Headers.videoStorageEnd( self.videoId, self.chiaVersionId )
-      response = json.loads( self.rabbitWriter.call( headers, message ) )
-      self.rabbitWriter.close();
+      self.rabbitWriter = RpcClient(amqp_url, serverQueueName)
+      message = Pickler.pickle({})
+      headers = Headers.videoStorageEnd(self.videoId, self.chiaVersionId)
+      response = json.loads(self.rabbitWriter.call(headers, message))
+      self.rabbitWriter.close()
 
     # print runtime as multiple of video length
     if self.runCaffe:
       multiFactor = (endTime - startTime) / videoTimeLengthSeconds
-      logging.info( 'The total runtime was (%0.2f x) of video length (%0.2f seconds)' % \
-        (multiFactor, videoTimeLengthSeconds))
+      logging.info(
+          'The total runtime was (%0.2f x) of video length (%0.2f seconds)' %
+          (multiFactor, videoTimeLengthSeconds))

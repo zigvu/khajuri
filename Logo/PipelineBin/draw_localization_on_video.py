@@ -3,13 +3,20 @@
 import sys, os, glob
 
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
-sys.path.append( '%s/../../VideoReader'% baseScriptDir  )
+sys.path.append('%s/../../VideoReader' % baseScriptDir)
 
 from Logo.PipelineThread.VideoLocalizationThread import VideoLocalizationThread
 
-if __name__ == '__main__':
+description = \
+"""
+This script will draw localization on a video
+"""
+
+def main():
   if len(sys.argv) < 5:
-    print 'Usage %s <config.yaml> <videoFileName> <jsonFolder> <videoOutputFolder>' % sys.argv[ 0 ]
+    print 'Usage %s ' % sys.argv[0] + \
+      '<config.yaml> <videoFileName> <jsonFolder> <videoOutputFolder>'
+    print description
     sys.exit(1)
 
   configFileName = sys.argv[1]
@@ -17,6 +24,10 @@ if __name__ == '__main__':
   jsonFolder = sys.argv[3]
   videoOutputFolder = sys.argv[4]
 
-  videoLocalizationThread = VideoLocalizationThread(configFileName, \
-  	videoFileName, jsonFolder, videoOutputFolder)
+  videoLocalizationThread = VideoLocalizationThread(
+      configFileName, videoFileName, jsonFolder, videoOutputFolder)
   videoLocalizationThread.run()
+
+
+if __name__ == '__main__':
+  main()

@@ -1,11 +1,12 @@
 import numpy as np
 from shapely.geometry import Polygon
-from shapely.geometry import Point
 from matplotlib.path import Path
 import matplotlib.patches as patches
 
+
 class Rectangle(Polygon):
-  """Treat rectangle as a special polygon"""
+  """General purpose rectangle"""
+
   def __init__(self, polyArray):
     """Initialize class"""
     Polygon.__init__(self, polyArray)
@@ -23,10 +24,10 @@ class Rectangle(Polygon):
     """
     b = np.asarray(self.exterior)
     scaledRect = Rectangle([
-      (b[0][0]              , b[0][1]),
-      (b[1][0] * scaleFactor, b[1][1]),
-      (b[2][0] * scaleFactor, b[2][1] * scaleFactor),
-      (b[3][0]              , b[2][1] * scaleFactor)])
+        (b[0][0], b[0][1]), (b[1][0] * scaleFactor, b[1][1]),
+        (b[2][0] * scaleFactor, b[2][1] * scaleFactor),
+        (b[3][0], b[2][1] * scaleFactor)
+    ])
     return scaledRect
 
   def numpy_format(self):
@@ -38,17 +39,15 @@ class Rectangle(Polygon):
     """Convert shapely polygon to cv2 polygon points"""
     ext = np.asarray(self.exterior)
     b = np.array(ext[0:4, :], np.int32)
-    return b.reshape((-1,1,2))
+    return b.reshape((-1, 1, 2))
 
   def matplotlib_format(self):
     """Convert shapely polygon to matplotlib patch"""
     b = np.asarray(self.exterior)
     verts = [
-      (b[3][0], b[3][1]),
-      (b[0][0], b[0][1]),
-      (b[1][0], b[1][1]),
-      (b[2][0], b[2][1]),
-      (b[3][0], b[3][1])]
+        (b[3][0], b[3][1]), (b[0][0], b[0][1]), (b[1][0], b[1][1]),
+        (b[2][0], b[2][1]), (b[3][0], b[3][1])
+    ]
     codes = [Path.MOVETO, Path.LINETO, Path.LINETO, Path.LINETO, Path.CLOSEPOLY]
     path = Path(verts, codes)
     patch = patches.PathPatch(path, edgecolor='red', lw=1, fill=False)
@@ -56,30 +55,35 @@ class Rectangle(Polygon):
 
   def json_format(self):
     """Convert shapely polygon to json format"""
-    return {'x': self.x0, 'y': self.y0, 'width': self.width, 'height': self.height}
+    return {
+        'x': self.x0,
+        'y': self.y0,
+        'width': self.width,
+        'height': self.height
+    }
 
   @staticmethod
   def rectangle_from_endpoints(x0, y0, x2, y2):
     """Get rectangle based on end points"""
-    rect = Rectangle([(x0,y0), (x2,y0), (x2,y2), (x0,y2)])
+    rect = Rectangle([(x0, y0), (x2, y0), (x2, y2), (x0, y2)])
     return rect
 
   @staticmethod
   def rectangle_from_dimensions(width, height):
-    """Get rectangle based on dimension starting at 0,0
-    """
-    rect = Rectangle([(0,0), (width,0), (width,height), (0,height)])
+    """Get rectangle based on dimension starting at 0,0"""
+    rect = Rectangle([(0, 0), (width, 0), (width, height), (0, height)])
     return rect
 
   @staticmethod
   def rectangle_from_json(bbox):
-    """Get rectangle based on bbox json
-    """
+    """Get rectangle based on bbox json"""
     rect = Rectangle([
-      (int(bbox['x']),                      int(bbox['y'])), 
-      (int(bbox['x']) + int(bbox['width']), int(bbox['y'])), 
-      (int(bbox['x']) + int(bbox['width']), int(bbox['y']) + int(bbox['height'])), 
-      (int(bbox['x']),                      int(bbox['y']) + int(bbox['height']))])
+        (int(bbox['x']), int(bbox['y'])),
+        (int(bbox['x']) + int(bbox['width']), int(bbox['y'])), (
+            int(bbox['x']) + int(bbox['width']),
+            int(bbox['y']) + int(bbox['height'])
+        ), (int(bbox['x']), int(bbox['y']) + int(bbox['height']))
+    ])
     return rect
 
   @staticmethod
@@ -87,16 +91,16 @@ class Rectangle(Polygon):
     """Get rectangle based on dimension centered on X,Y
     Optionally, specify largerRect if returned rectangle needs to be within
     """
-    x0 = x3 = int(centerX - width/2)
-    x1 = x2 = int(centerX + width/2)
-    y0 = y1 = int(centerY - height/2)
-    y2 = y3 = int(centerY + height/2)
+    x0 = x3 = int(centerX - width / 2)
+    x1 = x2 = int(centerX + width / 2)
+    y0 = y1 = int(centerY - height / 2)
+    y2 = y3 = int(centerY + height / 2)
 
     if x0 < 0:
-      x1 = x2 = int(centerX + width/2) + abs(x0)
+      x1 = x2 = int(centerX + width / 2) + abs(x0)
       x0 = x3 = 0
     if y0 < 0:
-      y2 = y3 = int(centerY + height/2) + abs(y0)
+      y2 = y3 = int(centerY + height / 2) + abs(y0)
       y0 = y1 = 0
 
     if largerRect != None:

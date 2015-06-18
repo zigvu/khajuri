@@ -10,6 +10,7 @@ from Logo.PipelineMath.PixelMap import NeighborsCache
 
 class Config:
   """Reads YAML config file and allows easy accessor to config attributes"""
+
   def __init__(self, configFileName):
     """Initlize config from YAML file"""
     config = yaml.load(open(configFileName, "r"))
@@ -46,17 +47,17 @@ class Config:
     self.sw_scales = []
     sw_temp_scales = slidingWindow['scaling']
     # Check length
-    assert len( slidingWindow['x_stride'] ) == len( sw_temp_scales ),\
+    assert len(slidingWindow['x_stride']) == len(sw_temp_scales),\
         "Stride scale array and image arrays do not match"
-    assert len( slidingWindow['y_stride'] ) == len( sw_temp_scales ),\
+    assert len(slidingWindow['y_stride']) == len(sw_temp_scales),\
         "Stride scale array and image arrays do not match"
-    i = 0 
+    i = 0
     self.sw_xStride = {}
     self.sw_yStride = {}
     for sw_scale in sw_temp_scales:
       self.sw_scales = self.sw_scales + [float(sw_scale)]
-      self.sw_xStride[ float(sw_scale) ] = slidingWindow['x_stride'][ i ] 
-      self.sw_yStride[ float(sw_scale) ] = slidingWindow['y_stride'][ i ] 
+      self.sw_xStride[float(sw_scale)] = slidingWindow['x_stride'][i]
+      self.sw_yStride[float(sw_scale)] = slidingWindow['y_stride'][i]
       i += 1
 
     # Scale decay factors
@@ -69,13 +70,12 @@ class Config:
     # check that JSON decay has all scale combinations
     sdfScales = []
     for sd in self.sw_scale_decay_factors:
-        sdfScales += [sd['scale']]
-        sdScales = []
-        for sdFactor in sd['factors']:
-            sdScales += [sdFactor['scale']]
-        assert sdScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
+      sdfScales += [sd['scale']]
+      sdScales = []
+      for sdFactor in sd['factors']:
+        sdScales += [sdFactor['scale']]
+      assert sdScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
     assert sdfScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
-
 
     # Caffe input
     caffeInput = config['caffe_input']
@@ -93,14 +93,17 @@ class Config:
     self.ci_gpu_devices = caffeInput['gpu_devices']
     self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
     self.ci_computeFrameCuration = caffeInput['compute_frame_curation'] == True
-    self.ci_runCaffePostProcessInParallel = caffeInput['run_caffe_postprocess_in_parallel'] == True
+    self.ci_runCaffePostProcessInParallel = caffeInput[
+        'run_caffe_postprocess_in_parallel'
+    ] == True
     self.ci_runCaffe = caffeInput['run_caffe'] == True
     self.ci_runPostProcess = caffeInput['run_postprocess'] == True
     self.ci_allClassIds = caffeInput['all_classes']
     self.ci_backgroundClassIds = caffeInput['background_classes']
-    self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds if x not in self.ci_backgroundClassIds]
-    self.ci_heatMapClassIds = config[ 'heatmap' ] [ 'classes' ]
-    self.ci_scoreTypes = { 'prob' : 0, 'fc8': 1 }
+    self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds
+                                     if x not in self.ci_backgroundClassIds]
+    self.ci_heatMapClassIds = config['heatmap']['classes']
+    self.ci_scoreTypes = {'prob': 0, 'fc8': 1}
 
     # Post processing
     postProcessing = config['post_processing']
@@ -117,43 +120,17 @@ class Config:
     self.cr_curationNumOfSets = curation['num_of_sets']
     self.cr_curationNumOfItemsPerSet = curation['num_of_items_per_set']
 
-    # Cellroti
-    cellroti = config['cellroti']
-    ce_urls = cellroti['urls']
-    self.ce_urls_getDetectables = ce_urls['get_detectables']
-    self.ce_urls_postResults = ce_urls['post_results']
-
-    self.ce_storageSelection = cellroti['storage_selection']
-    self.ce_storageLocation = cellroti['storage_location']
-    self.ce_numSecondsPerSampleFrame = cellroti['num_seconds_per_sample_frame']
-
-
     # PeaksExtractor config - not exposed to config.yaml
     # Connectedness of labeled example - have a full matrix structure
-    self.pe_binaryStructure = ndimage.morphology.generate_binary_structure(2,2)
+    self.pe_binaryStructure = ndimage.morphology.generate_binary_structure(2, 2)
     # if the intersection between candidate labeled bbox and proposed subsume bbox
     # is more than 70%, then subsume the candidate labeled bbox
     self.pe_maxCandidateIntersectionDiff = 0.7
     # allow no more than 90% of intersection between subsumed boxes
     self.pe_maxSubsumedIntersectionDiff = 0.9
     # thresholds to subsample candidate labeled bbox prior to showing to user
-    self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-
-    self.cachedCellBoundariesDict = None
-    self.cachedNeighborMap = None
-
-  @property
-  def allCellBoundariesDict( self ):
-    if not self.cachedCellBoundariesDict:
-      self.cachedCellBoundariesDict = CellBoundaries( self ).allCellBoundariesDict
-    return self.cachedCellBoundariesDict
-
-  @property
-  def neighborMap( self ):
-    if not self.cachedNeighborMap:
-      neighborCache = NeighborsCache( self )
-      self.cachedNeighborMap = neighborCache.neighborMapAllScales( self.allCellBoundariesDict )
-    return self.cachedNeighborMap
+    self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3,
+                                       0.2, 0.1]
 
     # HDF5 settings
     hdf5 = config['hdf5']
@@ -165,17 +142,43 @@ class Config:
     messaging = config['messaging']
     self.mes_amqp_url = messaging['amqp_url']
     queueNames = messaging['queue_names']
-    self.mes_q_vm2_kahjuri_development_video_data = queueNames['vm2_kahjuri_development_video_data']
-    self.mes_q_vm2_kheer_development_clip_id_request = queueNames['vm2_kheer_development_clip_id_request']
-    self.mes_q_vm2_kheer_development_heatmap_rpc_request = queueNames['vm2_kheer_development_heatmap_rpc_request']
-    self.mes_q_vm2_kheer_development_localization_request = queueNames['vm2_kheer_development_localization_request']
+    self.mes_q_vm2_kahjuri_development_video_data = queueNames[
+        'vm2_kahjuri_development_video_data'
+    ]
+    self.mes_q_vm2_kheer_development_clip_id_request = queueNames[
+        'vm2_kheer_development_clip_id_request'
+    ]
+    self.mes_q_vm2_kheer_development_heatmap_rpc_request = queueNames[
+        'vm2_kheer_development_heatmap_rpc_request'
+    ]
+    self.mes_q_vm2_kheer_development_localization_request = queueNames[
+        'vm2_kheer_development_localization_request'
+    ]
+
+    # load memory heavy dictionaries on demand
+    self.cachedCellBoundariesDict = None
+    self.cachedNeighborMap = None
+
+  @property
+  def allCellBoundariesDict(self):
+    if not self.cachedCellBoundariesDict:
+      self.cachedCellBoundariesDict = CellBoundaries(self).allCellBoundariesDict
+    return self.cachedCellBoundariesDict
+
+  @property
+  def neighborMap(self):
+    if not self.cachedNeighborMap:
+      neighborCache = NeighborsCache(self)
+      self.cachedNeighborMap = neighborCache.neighborMapAllScales(
+          self.allCellBoundariesDict)
+    return self.cachedNeighborMap
 
   @staticmethod
   def mkdir_p(start_path):
     """Util to make path"""
     try:
       os.makedirs(start_path)
-    except OSError as exc: # Python >2.5
+    except OSError as exc:  # Python >2.5
       if exc.errno == errno.EEXIST and os.path.isdir(start_path):
         pass
 

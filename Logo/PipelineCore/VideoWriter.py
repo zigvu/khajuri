@@ -1,7 +1,10 @@
 import cv2
 import cv2.cv as cv
 
-class VideoWriter( object ):
+
+class VideoWriter(object):
+  """Create an AVI video by adding frames one by one"""
+
   def __init__(self, videoFileName, fps, imageDim):
     """Initialize writer"""
     fourcc = cv.CV_FOURCC('M', 'J', 'P', 'G')
