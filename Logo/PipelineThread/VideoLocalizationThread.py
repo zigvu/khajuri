@@ -23,9 +23,13 @@ class VideoLocalizationThread(object):
     self.jsonFolder = jsonFolder
     self.videoOutputFolder = videoOutputFolder
 
+    # TODO: remove - currently this is a bug which causes
+    # JSONReader to crash
+    self.config.videoId = 1
+
     self.jsonReader = JsonReader(self.config, None)
 
-    config.mkdir_p(self.videoOutputFolder)
+    Config.mkdir_p(self.videoOutputFolder)
 
     # Logging levels
     logging.basicConfig(
@@ -62,7 +66,7 @@ class VideoLocalizationThread(object):
     videoWriter = VideoWriter(outVideoFileName, fps, imageDim)
 
     # pre-fill video with frames that didn't get evaluated
-    for currentFrameNum in range(0, self.configReader.ci_videoFrameNumberStart):
+    for currentFrameNum in range(0, self.config.ci_videoFrameNumberStart):
       frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
       if frame != None:
         # Save each frame
@@ -82,7 +86,7 @@ class VideoLocalizationThread(object):
     # Go through evaluated video frame by frame
 
     # frame number being extracted
-    currentFrameNum = self.configReader.ci_videoFrameNumberStart
+    currentFrameNum = self.config.ci_videoFrameNumberStart
     frameObj = None
     frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
     while frame != None:
@@ -98,8 +102,8 @@ class VideoLocalizationThread(object):
       imgLclz = ImageManipulator(imageFileName)
 
       # Add bounding boxes
-      for classId in self.configReader.ci_nonBackgroundClassIds:
-        for lclzPatch in frameObj.localization(classId):
+      for classId, lclzPatches in frameObj.localizations.iteritems():
+        for lclzPatch in lclzPatches:
           rect = lclzPatch.rect
           bbox = Rectangle.rectangle_from_endpoints(
               rect.x, rect.y, rect.x + rect.w, rect.y + rect.h)

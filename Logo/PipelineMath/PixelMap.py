@@ -219,8 +219,11 @@ class CellBoundaries(object):
       return allCellBoundaries
     else:
       logging.info("Calculating new cellMap and saving to file %s" % saveFile)
-      os.remove("/tmp/savedBoundaries.p")
-      os.remove("/tmp/savedNeighbors.p")
+      try:
+        os.remove( "/tmp/savedBoundaries.p" )
+        os.remove( "/tmp/savedNeighbors.p" )
+      except OSError as exc:  # Python >2.5
+        pass
 
     # -------------------------------------------------------------
     # Part (a) : Create and combine cells at each scale
