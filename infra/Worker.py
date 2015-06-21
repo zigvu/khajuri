@@ -1,5 +1,8 @@
 import multiprocessing, time, os, logging
 import math, sys, threading
+import gc
+import objgraph
+import resource
 
 class ThreadWorker(threading.Thread):
     def __init__(self, task, input_queue, output_queue):
@@ -16,12 +19,14 @@ class ThreadWorker(threading.Thread):
                 # Poison pill means shutdown
                 logging.info( '%s: Exiting' % self )
                 self.input_queue.task_done()
-                self.output_queue.put(None)
+                if self.output_queue:
+                  self.output_queue.put(None)
                 break
             logging.info( '%s processing : %s' % (self, next_object) )
             answer = self.task( next_object )
             self.input_queue.task_done()
-            self.output_queue.put(answer)
+            if self.output_queue:
+              self.output_queue.put(answer)
         return
 
     def __str__( self ):
@@ -42,12 +47,16 @@ class ProcessWorker(multiprocessing.Process):
                 # Poison pill means shutdown
                 logging.info( '%s: Exiting' % self )
                 self.input_queue.task_done()
-                self.output_queue.put(None)
+                if self.output_queue:
+                  self.output_queue.put(None)
                 break
             logging.info( '%s processing : %s' % (self, next_object) )
             answer = self.task( next_object )
             self.input_queue.task_done()
-            self.output_queue.put(answer)
+            if self.output_queue:
+              self.output_queue.put(answer)
+            gc.collect()
+            print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
         return
 
     def __str__( self ):
