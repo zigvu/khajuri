@@ -13,5 +13,5 @@ setup:
 	python setup.py develop --install-dir=~/site-packages/
 
 test:
-	python -m unittest discover tests '*tests.py'
+	py.test
 
