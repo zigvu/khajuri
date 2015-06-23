@@ -82,7 +82,7 @@ class VideoProcessThread(object):
     logging.basicConfig(
         format=
         '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-        level=self.config.log_level,
+        level=self.config.lg_log_level,
         datefmt="%Y-%m-%d--%H:%M:%S")
 
     # Folder to save files
@@ -113,7 +113,6 @@ class VideoProcessThread(object):
     if self.maxConsumedQueueSize <= 0:
       raise RuntimeError(
           "LMDB buffer min size must be smaller than lmdb buffer max size")
-    self.logIntervalSeconds = self.config.logIntervalSeconds
 
   def run(self):
     """Run the video through caffe"""

@@ -16,14 +16,19 @@ class Config:
     config = yaml.load(open(configFileName, "r"))
 
     # Logging
-    self.log_level = logging.DEBUG
-    if config['log_level'] == 'INFO':
-      self.log_level = logging.INFO
-    if config['log_level'] == 'ERROR':
-      self.log_level = logging.ERROR
-    # for recurring logs, set interval to print
-    self.logIntervalSeconds = 5
-    self.logStarted = False
+    logs = config['logging']
+    self.lg_log_level = logging.DEBUG
+    if logs['log_level'] == 'INFO':
+      self.lg_log_level = logging.INFO
+    if logs['log_level'] == 'ERROR':
+      self.lg_log_level = logging.ERROR
+    if logs['log_level'] == 'CRITICAL':
+      self.lg_log_level = logging.CRITICAL
+    self.lg_rabbit_logger = logs['rabbit_logger'] == True
+    self.lg_local_logger = logs['local_logger'] == True
+    self.lg_cpp_log_started = False
+
+
 
     # CPU count
     self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])

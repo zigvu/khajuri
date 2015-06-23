@@ -46,9 +46,9 @@ class VideoDbManager(object):
     # Load video
     self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
     self.videoFrameReader.generateFrames()
-    if not self.config.logStarted:
+    if not self.config.lg_cpp_log_started:
       self.videoFrameReader.startLogger()
-      self.config.logStarted = True
+      self.config.lg_cpp_log_started = True
 
     # since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds

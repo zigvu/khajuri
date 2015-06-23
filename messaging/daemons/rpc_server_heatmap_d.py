@@ -24,7 +24,7 @@ def process(configFileName):
   logging.basicConfig(
       format=
       '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=config.log_level,
+      level=config.lg_log_level,
       datefmt="%Y-%m-%d--%H:%M:%S")
 
   logging.info("Heatmap rpc server started")

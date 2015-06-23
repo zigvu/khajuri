@@ -57,7 +57,7 @@ class VideoSplitterThread(object):
     logging.basicConfig(
         format=
         '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s',
-        level=self.config.log_level,
+        level=self.config.lg_log_level,
         datefmt="%Y-%m-%d--%H:%M:%S")
 
   def run(self):

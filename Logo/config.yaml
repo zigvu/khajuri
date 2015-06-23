@@ -1,7 +1,10 @@
 # running with khajuri branch: Development (w/ lmdb circular buffer)
 
-# in increasing level of severity: DEBUG, INFO, ERROR
-log_level:                                  DEBUG
+# in increasing level of severity: DEBUG, INFO, ERROR, CRITICAL
+logging:
+  log_level:                                  DEBUG
+  rabbit_logger:                              false
+  local_logger:                               true
 
 # Count to multiply with the number of cores available in machine
 # if using fraction, will round down to nearest integer after multiplication
