@@ -24,15 +24,16 @@ def main():
 
 
 def process( configFileName, jsonFolder, jsonOutputFolder ):
-  logging.basicConfig(
-    format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-    level=logging.INFO, datefmt="%Y-%m-%d--%H:%M:%S"
-    )
+  #logging.basicConfig(
+  #  format='{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+  #  level=logging.INFO, datefmt="%Y-%m-%d--%H:%M:%S"
+  #  )
   config = Config( configFileName )
   config.json_output_folder = jsonOutputFolder
   inputs = multiprocessing.JoinableQueue()
   results = multiprocessing.Queue()
   status = Status()
+  multiprocessing.log_to_stderr()
 
 
   #Uncomment for serial run
@@ -55,7 +56,7 @@ def process( configFileName, jsonFolder, jsonOutputFolder ):
   config.videoId = None
   myPipeline = Pipeline( [
                           PostProcess( config, status )
-                          ], inputs, results )
+                          ], inputs, None )
 
   Version().logVersion()
   startTime = time.time()
@@ -63,9 +64,12 @@ def process( configFileName, jsonFolder, jsonOutputFolder ):
   
   # Enqueue jobs
   num_jobs = 0
+  import pdb; pdb.set_trace()
   for jsonFile in glob.glob( jsonFolder + os.sep + "*.json" ):
     inputs.put( jsonFile )
     num_jobs += 1
+    #if num_jobs % 10 == 0:
+    #  import pdb; pdb.set_trace()
   
   # Add a poison pill for each Worker
   num_consumers = multiprocessing.cpu_count()

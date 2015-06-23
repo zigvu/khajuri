@@ -38,15 +38,15 @@ class ProcessWorker(multiprocessing.Process):
         self.input_queue = input_queue
         self.output_queue = output_queue
         self.task = task
+        logging.info( 'Constructing Process %s with pid %s task as %s' % ( self.name, self.pid, self.task ) )
 
     def run(self):
+        logging.info( 'Starting Process %s with pid %s task as %s' % ( self.name, self.pid, self.task ) )
         proc_name = self.name
         while True:
             next_object = self.input_queue.get()
             if next_object is None:
                 # Poison pill means shutdown
-                logging.info( '%s: Exiting' % self )
-                self.input_queue.task_done()
                 if self.output_queue:
                   self.output_queue.put(None)
                 break
@@ -57,10 +57,11 @@ class ProcessWorker(multiprocessing.Process):
               self.output_queue.put(answer)
             gc.collect()
             print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        logging.info( '%s: Exiting from Worker' % self )
         return
 
     def __str__( self ):
-      return '( %s )' % self.task
+      return '( %s, %s )' % ( self.task, self.pid )
 
 class Worker( ProcessWorker ):
   pass

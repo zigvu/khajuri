@@ -2,7 +2,7 @@ import yaml, json, os
 import snappy, StringIO
 from collections import OrderedDict
 
-class JSONReaderWriter( object ):
+class JSONReaderWriter_delete( object ):
   def __init__( self, fileName, create_new = False ):
     self.fileName = fileName
     self.noPatchScores = False

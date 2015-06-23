@@ -126,7 +126,7 @@ class PixelMap(object):
   #@profile
   def addScore(self, patchScores):
     """Add scores to cells"""
-    cellMask = self.allCellBoundariesDict[ "PatchCellMask" ][ self.scaleFactor ]
+    #cellMask = self.allCellBoundariesDict[ "PatchCellMask" ][ self.scaleFactor ]
     patchMapping = self.allCellBoundariesDict[ "patchMapping" ]
     patchIdToBbox = {v: k for k, v in patchMapping.items()}
     aboveZeroPatchIds = np.argwhere( patchScores > 0 )

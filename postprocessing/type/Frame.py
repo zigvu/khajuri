@@ -40,8 +40,16 @@ class Frame(object):
   def addScore( self, classId, scoreType, zDistThreshold, scores ):
     self.scores[ zDistThreshold ][ :, classId, scoreType ] = scores
 
+  def addScores( self, patchId, scores ):
+    ''' Incoming scores from caffe '''
+    self.scores[ 0 ] [ patchId, :, 0 ] = scores
+
+  def addfc8Scores( self, patchId, scores ):
+    ''' Incoming fc8 scores from caffe '''
+    self.scores[ 0 ] [ patchId, :, 1 ] = scores
+
   def __str__( self ):
-    return 'Frame(%s)' % ( self.localizations.items() )
+    return 'Frame(%s)-(%s)' % ( self.frameNumber, self.localizations.items() )
 
   def getScoreDiff( self, frame ):
     diff = {}

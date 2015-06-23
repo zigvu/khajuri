@@ -4,17 +4,20 @@ from collections import OrderedDict
 import logging
 
 import caffe
-from Logo.PipelineCore.ConfigReader import ConfigReader
-from Logo.PipelineCore.JSONReaderWriter import JSONReaderWriter
+from postprocessing.type.Frame import Frame
+from postprocessing.task.JsonWriter import JsonWriter
+from config.Config import Config
 
 class VideoCaffeManager( object ):
   """Class for running patches through Caffe"""
-  def __init__(self, configFileName):
-    self.configReader = ConfigReader(configFileName)
-    self.classes = self.configReader.ci_allClassIds
+  def __init__(self, config):
+    self.config = config
+    self.classes = self.config.ci_allClassIds
     self.numOfClasses = len(self.classes)
-    self.runPostProcessor = self.configReader.ci_runPostProcess
-    self.compressedJSON = self.configReader.pp_compressedJSON
+    self.runPostProcessor = self.config.ci_runPostProcess
+    self.compressedJSON = self.config.pp_compressedJSON
+    self.patchMapping = self.config.allCellBoundariesDict[ "patchMapping" ]
+    self.totalPatches = len ( self.patchMapping )
 
 
   def setupNet(self, newPrototxtFile, deviceId):
@@ -34,8 +37,8 @@ class VideoCaffeManager( object ):
       raise RuntimeError("Couldn't read batch size from file %s" % newPrototxtFile)
 
     logging.info("Setup caffe network for device id %d" % self.deviceId)
-    useGPU = self.configReader.ci_useGPU
-    modelFile = self.configReader.ci_modelFile
+    useGPU = self.config.ci_useGPU
+    modelFile = self.config.ci_modelFile
 
     # HACK: without reinitializing caffe_net twice, it won't give reproducible results
     # Seems to happen in both CPU and GPU runs:
@@ -85,16 +88,19 @@ class VideoCaffeManager( object ):
     """Forward call in caffe"""
     # Read mapping and json output files
     dbBatchMapping = json.load(open(dbBatchMappingFile, "r"))
-    jsonFiles = []
-    jsonRWs = OrderedDict()
+    frames = OrderedDict()
     maxPatchCounter = 0
 
-    for patchCounter, jsonFile in dbBatchMapping.iteritems():
+    for patchCounter, infoDict in dbBatchMapping.iteritems():
       if maxPatchCounter < int(patchCounter):
         maxPatchCounter = int(patchCounter)
-      if jsonFile not in jsonFiles:
-        jsonFiles += [jsonFile]
-        jsonRWs[jsonFile] = JSONReaderWriter(jsonFile)
+      jsonFile = infoDict[ 'jsonFile' ]
+      if jsonFile not in frames.keys():
+        frames[jsonFile] = Frame( self.classes, self.totalPatches, 
+                                  self.config.ci_scoreTypes.keys() )
+        frames[jsonFile].filename = jsonFile
+        frames[jsonFile].frameNumber = infoDict[ 'frameNum' ]
+        frames[jsonFile].frameDisplayTime = 0
 
     # We do ONLY ONE forward pass - we expect to get only 1 batch of data
     # (which of course could be configured to do multiple frames)
@@ -109,25 +115,24 @@ class VideoCaffeManager( object ):
     probablities_fc8 = self.caffe_net.blobs['fc8_logo'].data
     for k in range(0, output['label'].size):
       printStr = ""
-      scores = {}
-      scores_fc8 = {}
-      for j in range(0, self.numOfClasses):
-        scores[self.classes[j]] = probablities[k][j].item(0)
-        scores_fc8[self.classes[j]] = probablities_fc8[k][j].item(0)
-        printStr = "%s,%f" % (printStr, scores[self.classes[j]])
+      scores = probablities[ k, :, 0, 0 ]
+      scores_fc8 = probablities_fc8[ k, :, 0, 0 ]
       # Note: if number of patches is not multiple of batch size, then caffe
       #  displays results for patches in the begining of db
       if patchCounter <= maxPatchCounter:
         curPatchNumber = int(output['label'].item(k))
-        printStr = "%s%s" % (dbBatchMapping[str(curPatchNumber)], printStr)
         # Add scores to json
-        jsonRWs[dbBatchMapping[str(curPatchNumber)]].addScores(curPatchNumber, scores)
-        jsonRWs[dbBatchMapping[str(curPatchNumber)]].addfc8Scores(curPatchNumber, scores_fc8)
+        infoDict = dbBatchMapping[str(curPatchNumber)]
+        frames[ infoDict[ 'jsonFile' ] ].addScores( infoDict[ 'patchNum' ], scores )
+        frames[ infoDict[ 'jsonFile' ] ].addfc8Scores( infoDict[ 'patchNum' ], scores_fc8 )
         # logging.debug("%s" % printStr)
       patchCounter += 1
 
     # Save and put json files in post processing queue
-    for jsonFile, jsonRW in jsonRWs.iteritems():
-      jsonRW.saveState(compressed_json = self.compressedJSON)
+    for jsonFile, frame in frames.iteritems():
       if self.runPostProcessor:
-        self.postProcessQueue.put(jsonFile)
+        self.postProcessQueue.put(( frame, self.classes ) )
+        logging.info( 'Caffe --> PostProcess Queue is of Size %s' %
+            self.postProcessQueue.qsize() )
+      else:
+        JsonWriter( self.config, None )(( frame, self.classes ) )

@@ -5,7 +5,6 @@ from PixelMap import PixelMap
 import matplotlib.pyplot as plt
 
 class PixelMapper(object):
-  mapAllCellCountCache = {}
 
   def __init__(self, classId, config, frame, zDistThreshold ):
     """Initialize pixelMap according to dimensions of image and sliding window"""
@@ -19,10 +18,11 @@ class PixelMapper(object):
     patchScores = frame.scores[ self.zDistThreshold ][ :, self.classId, 0 ]
     oneScores = np.ones( len( patchScores ), dtype=np.float )
     self.mapAllCellCount = {}
+    self.mapAllCellCountCache = {}
     for scale in self.config.sw_scales:
-      if not PixelMapper.mapAllCellCountCache.get( scale ):
-        PixelMapper.mapAllCellCountCache[ scale ] = PixelMap( self.config.allCellBoundariesDict, scale )
-        PixelMapper.mapAllCellCountCache[ scale ].addScore( oneScores )
+      if not self.mapAllCellCountCache.get( scale ):
+        self.mapAllCellCountCache[ scale ] = PixelMap( self.config.allCellBoundariesDict, scale )
+        self.mapAllCellCountCache[ scale ].addScore( oneScores )
       localizationMap, intensityMap = self.populatePixelMap(scale)
       self.pixelMaps += [{'scale': scale, \
         'localizationMap': localizationMap, \
@@ -32,7 +32,7 @@ class PixelMapper(object):
   #@profile
   def populatePixelMap(self, scale):
     """Initialize the pixel map for the class at given scale"""
-    mapAllCellCount = PixelMapper.mapAllCellCountCache[ scale ].copy()
+    mapAllCellCount = self.mapAllCellCountCache[ scale ].copy()
     mapDetectionCellCount = PixelMap( self.config.allCellBoundariesDict, scale )
     intensityMap = PixelMap( self.config.allCellBoundariesDict, scale )
     

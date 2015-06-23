@@ -14,10 +14,9 @@ from postprocessing.task.JsonWriter import JsonWriter
 from postprocessing.task.OldJsonReader import OldJsonReader
 from postprocessing.task.Localization import Localization
 
-class PostProcess( Task ):
+class CaffeResultPostProcess( Task ):
   def __init__( self, config, status ):
     Task.__init__( self, config, status )
-    self.reader = JsonReader( config, status ),
     self.classFilter = ClassFilter( config, status ),
     self.zDist = ZDistFilter( config, status ),
     self.localization = Localization( config, status )
@@ -25,8 +24,8 @@ class PostProcess( Task ):
 
   #@profile
   def __call__( self, obj ):
-    readerResults = self.reader[0]( obj )
-    classFilterResults = self.classFilter[0]( readerResults )
+    print 'Processing %s' % str(obj)
+    classFilterResults = self.classFilter[0]( obj )
     zDistResult = self.zDist[0]( classFilterResults )
     localizationResult = self.localization( zDistResult )
-    self.frameSaver( localizationResult )
+    #self.frameSaver( localizationResult )
