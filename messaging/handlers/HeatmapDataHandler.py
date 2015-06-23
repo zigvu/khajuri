@@ -32,7 +32,8 @@ class HeatmapDataHandler(object):
 
     try:
       # construct PixelMap
-      pixelMap = PixelMap(self.config.allCellBoundariesDict, scale)
+      pixelMap = PixelMap(
+              self.config.allCellBoundariesDict, self.config.neighborMap, scale)
       with VideoDataReader(self.config, videoId, chiaVersionId) as vdr:
         frameData = vdr.getFrameData(frameNumber)
         patchScores = frameData.scores[:, chiaClassId]
