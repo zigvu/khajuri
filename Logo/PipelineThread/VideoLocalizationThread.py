@@ -7,6 +7,8 @@ from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
 
 from config.Config import Config
+from config.Version import Version
+from config.Status import Status
 
 from postprocessing.task.JsonReader import JsonReader
 
@@ -18,7 +20,13 @@ class VideoLocalizationThread(object):
                videoOutputFolder):
     """Initialize values"""
     self.config = Config(configFileName)
+
     self.logger = self.config.logger
+    branch, commit = Version().getGitVersion()
+    self.logger.info('Branch: %s' % branch)
+    self.logger.info('Commit: %s' % commit)
+
+    self.status = Status(self.logger)
 
     self.videoFileName = videoFileName
     self.jsonFolder = jsonFolder
@@ -28,7 +36,7 @@ class VideoLocalizationThread(object):
     # JSONReader to crash
     self.config.videoId = 1
 
-    self.jsonReader = JsonReader(self.config, None)
+    self.jsonReader = JsonReader(self.config, self.status)
 
     Config.mkdir_p(self.videoOutputFolder)
 

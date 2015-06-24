@@ -37,6 +37,9 @@ class ZLoggingStreamHandler(logging.StreamHandler):
   """Handler to write to std io"""
   def __init__(self, formatMsg):
     logging.StreamHandler.__init__(self)
+    # since this is directly going to stdio, we don't
+    # need to explicitely format the message - formatter
+    # will take care of that
     self.setFormatter(ZFormatter(formatMsg))
 
 
@@ -46,28 +49,30 @@ class ZLoggingQueueHandler(logging.Handler):
   def __init__(self, logQueue, formatMsg):
     logging.Handler.__init__(self)
     self.logQueue = logQueue
-    self.setFormatter(ZFormatter(formatMsg))
+    # rather than sending LogRecord object to our queue,
+    # we send the formatted strings
+    # self.setFormatter(ZFormatter(formatMsg))
+    self.zformatter = ZFormatter(formatMsg)
 
   def emit(self, record):
     """Write to queue"""
-    self.logQueue.put(record)
+    self.logQueue.put(self.zformatter.format(record))
 
 
 
 class ZLoggingQueueProducer(object):
   """Produce logs from non-main process/threads"""
   def __init__(self, logQueue, logLevel, formatMsg):
-    self.logQueue = logQueue
     self.logger = logging.getLogger('zigvu.khajuri')
     self.logger.setLevel(logLevel)
-    self.formatMsg = formatMsg
 
     for handler in self.logger.handlers:
       assert not isinstance(handler, ZLoggingQueueHandler)
       self.logger.removeHandler(handler)
     # add the queue handler
-    handler = ZLoggingQueueHandler(self.logQueue, self.formatMsg)
-    self.logger.addHandler(ZLoggingStreamHandler(formatMsg))
+    handler = ZLoggingQueueHandler(logQueue, formatMsg)
+    self.logger.addHandler(handler)
+    self.logger.propagate = False
 
   def getLogger(self):
     return self.logger

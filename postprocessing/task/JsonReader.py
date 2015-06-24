@@ -15,7 +15,7 @@ class JsonReader(Task):
 
   def __call__(self, obj):
     fileName = obj
-    self.logger.debug('Reading frameInfo from %s' % fileName)
+    self.logger.debug('JsonReader: %s' % fileName)
     if not self.config.videoId:
       self.config.videoId = self.getVideoId(fileName)
     jsonObj = json.load(open(fileName, 'r'))

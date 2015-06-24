@@ -8,7 +8,7 @@ class ClassFilter(Task):
   def __call__(self, obj):
     frame, classIds = obj
     self.logger.debug(
-        'Starting Class Filter on %s for classes %s' % (frame, classIds))
+        'Frame Number: %d, Classes: %s' % (frame.frameNumber, classIds))
     return self.splitUsingThreshold(frame, classIds, 0)
 
   def splitUsingThreshold(self, frame, classIds, zDist):

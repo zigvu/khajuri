@@ -22,16 +22,16 @@ def main():
     sys.exit(1)
   configFileName = sys.argv[1]
   config = Config(configFileName)
-  self.logger = config.logger
+  logger = config.logger
 
-  self.logger.info('Start: Get cell boundaries')
+  logger.info('Start: Get cell boundaries')
   cellBoundaries = CellBoundaries(config)
-  self.logger.info('Done: Getting cell boundaries.')
-  self.logger.info('Start: Get cell neighbors.')
+  logger.info('Done: Getting cell boundaries.')
+  logger.info('Start: Get cell neighbors.')
   neighborCache = NeighborsCache(config)
   neighbors = neighborCache.neighborMapAllScales(
       cellBoundaries.allCellBoundariesDict)
-  self.logger.info('Done: Getting cell neighbors.')
+  logger.info('Done: Getting cell neighbors.')
 
 
 if __name__ == '__main__':

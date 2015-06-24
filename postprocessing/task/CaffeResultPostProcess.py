@@ -33,4 +33,5 @@ class CaffeResultPostProcess(Task):
     localizationResult = self.localization(zDistResult)
     for frameSaver in self.frameSavers:
       frameSaver(localizationResult)
-    return (obj)
+    # return (obj)
+    self.logger.info("Frame Number: %d: Post-processed" % obj[0].frameNumber)

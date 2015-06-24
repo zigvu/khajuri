@@ -36,6 +36,10 @@ class Config:
       # TODO: get from kheer
       self.formatMsg = { 'kheer_job_id': 1 }
       self.logQueue = JoinableQueue()
+      # force only INFO and higher logs
+      self.lg_log_level = logging.INFO
+
+    self.cachedLogger = None
 
     # CPU count
     self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])
@@ -161,11 +165,14 @@ class Config:
 
   @property
   def logger(self):
-    if self.lg_enable_queue_write:
-      return ZLoggingQueueProducer(
-        self.logQueue, self.lg_log_level, self.formatMsg).getLogger()
-    else:
-      return ZLogging(self.lg_log_level, self.formatMsg).getLogger()
+    if not self.cachedLogger:
+      if self.lg_enable_queue_write:
+        self.cachedLogger = ZLoggingQueueProducer(
+          self.logQueue, self.lg_log_level, self.formatMsg).getLogger()
+      else:
+        self.cachedLogger = ZLogging(
+          self.lg_log_level, self.formatMsg).getLogger()
+    return self.cachedLogger
 
   @property
   def allCellBoundariesDict(self):

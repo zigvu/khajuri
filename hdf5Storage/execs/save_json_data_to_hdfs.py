@@ -26,7 +26,7 @@ which pulls data out of RabbitMq and saves to HDF5.
 
 def process(configFileName, jsonFolder, videoId, chiaVersionId):
   config = Config(configFileName)
-  self.logger = config.logger
+  logger = config.logger
 
   # TODO: get from config file
   config.videoId = 1  # strangely, without this, JsonReader will break
@@ -55,7 +55,7 @@ def process(configFileName, jsonFolder, videoId, chiaVersionId):
   # note: order of frame processing doesn't matter
   jsonFolderFiles = glob.glob(os.path.join(jsonFolder, "*json"))
   for jsonFileName in jsonFolderFiles:
-    self.logger.info("Adding: %s" % jsonFileName)
+    logger.info("Adding: %s" % jsonFileName)
     frame, classIds = jsonReader(jsonFileName)
 
     # extract data that needs to pass through network

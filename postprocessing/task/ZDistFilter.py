@@ -7,7 +7,7 @@ class ZDistFilter(Task):
 
   def __call__(self, obj):
     frame, classIds = obj
-    self.logger.debug('Starting ZDist on %s for classes %s' % (frame, classIds))
+    # self.logger.debug('Starting ZDist on %s for classes %s' % (frame, classIds))
     for zDistThreshold in self.config.pp_zDistThresholds[1:]:
       frame.scores[zDistThreshold] = frame.initNumpyArrayScore()
     self.zDistScore(frame, zDistThreshold)

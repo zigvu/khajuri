@@ -20,9 +20,7 @@ class RabbitWriter(Task):
 
   def __call__(self, obj):
     frame, classIds = obj
-    self.logger.debug(
-        'RabbitWriter: Saving frameInfo on %s for classes %s' %
-        (frame, classIds))
+    self.logger.debug('RabbitWriter: Frame Number: %d' % (frame.frameNumber))
 
     # extract data that needs to pass through network
     frameData = FrameData(

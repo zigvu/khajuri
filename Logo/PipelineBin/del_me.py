@@ -5,57 +5,52 @@ from multiprocessing import JoinableQueue, Process, Manager
 
 
 from config.Config import Config
-from config.ZLogging import ZLoggingQueueProducer
+from config.ZLogging import ZLoggingQueueProducer, ZFormatter
 
-def generateLogs(logQueue):
-  logLevel = logging.DEBUG
-  formatMsg = {
-    'kheer_job_id': 1
-  }
-  logger = ZLoggingQueueProducer(logQueue, logLevel, formatMsg).getLogger()
+def generateLogs(config):
+  logger = config.logger
   for i in range(0,10):
     logger.info("Run ID: %d" % i)
     time.sleep(1)
 
-def printLogs(logQueue):
+def printLogs(config):
   while True:
-    logMsg = logQueue.get()
+    logMsg = config.logQueue.get()
     # all logs are generated
     if logMsg is None:
-      logQueue.task_done()
+      config.logQueue.task_done()
       # poison pill means done with logging
       break
     # generated logs
     print "%s" % logMsg
-    logQueue.task_done()
+    config.logQueue.task_done()
 
 def main():
   if len(sys.argv) < 2:
     print 'Usage %s <config.yaml>' % sys.argv[0]
     sys.exit(1)
 
-  # logQueue = JoinableQueue()
-  # printLogProcess = Process(target=printLogs, args=(logQueue, ))
-  # printLogProcess.start()
-
-  # generateLogProcess1 = Process(target=generateLogs, args=(logQueue, ))
-  # generateLogProcess1.start()
-
-  # generateLogProcess2 = Process(target=generateLogs, args=(logQueue, ))
-  # generateLogProcess2.start()
-
-  # logQueue.put(None)
-
-  # printLogProcess.join()
-  # generateLogProcess1.join()
-  # generateLogProcess2.join()
-  # logQueue.join()
-
   configFileName = sys.argv[1]
   config = Config(configFileName)
   two = 2
   logger = config.logger
   logger.info('Loaded logging infrastructure %d' % two + " ha.")
+
+  printLogProcess = Process(target=printLogs, args=(config, ))
+  printLogProcess.start()
+
+  generateLogProcess1 = Process(target=generateLogs, args=(config, ))
+  generateLogProcess1.start()
+
+  generateLogProcess2 = Process(target=generateLogs, args=(config, ))
+  generateLogProcess2.start()
+
+  generateLogProcess1.join()
+  generateLogProcess2.join()
+
+  config.logQueue.put(None)
+  printLogProcess.join()
+  config.logQueue.join()
 
 
 if __name__ == '__main__':

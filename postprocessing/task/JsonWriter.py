@@ -8,8 +8,7 @@ class JsonWriter(Task):
 
   def __call__(self, obj):
     frame, classIds = obj
-    self.logger.debug(
-        'JsonWriter: Saving frameInfo on %s for classes %s' % (frame, classIds))
+    self.logger.debug('JsonWriter: Frame Number: %d' % (frame.frameNumber))
     localizations = {}
     scores = {}
     myDict = {}

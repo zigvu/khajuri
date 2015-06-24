@@ -24,7 +24,7 @@ TODO: make it so that we can run this script from GPU1/GPU2.
 
 def process(configFileName, videoFolder, videoId):
   config = Config(configFileName)
-  self.logger = config.logger
+  logger = config.logger
 
   baseFolder = config.hdf5_base_folder
   videoClipsMapFilename = os.path.join(
@@ -60,7 +60,7 @@ def process(configFileName, videoFolder, videoId):
     srcClipFile = os.path.join(videoFolder, vData['clip_filename'])
     dstClipFile = os.path.join(clipsFolderPath, "%s.mp4" % response['clip_id'])
     shutil.copy(srcClipFile, dstClipFile)
-    self.logger.info("Adding clip: %s" % dstClipFile)
+    logger.info("Adding clip: %s" % dstClipFile)
 
 
 if __name__ == '__main__':

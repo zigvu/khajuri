@@ -211,7 +211,7 @@ class VideoDbManager(object):
 
     self.logger.info(
         "DeviceId: %d: Waiting for VideoFrameReader " % self.deviceId +
-        " to exit gracefully")
+        "to exit gracefully")
     # HACK: work around so that videoDb releases lock on db folder
     videoDb = None
     # HACK: quit video reader gracefully
