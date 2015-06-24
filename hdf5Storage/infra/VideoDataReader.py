@@ -10,6 +10,7 @@ class VideoDataReader(object):
   def __init__(self, config, videoId, chiaVersionId):
     """Initialize values"""
     self.config = config
+    self.logger = self.config.logger
 
     self.baseFolder = self.config.hdf5_base_folder
     self.frameDensity = self.config.sw_frame_density
@@ -41,6 +42,9 @@ class VideoDataReader(object):
     """Read frame data from HDF5
     Return in FrameData data structure
     """
+    self.logger.debug(
+        "Get frame data for: VideoId: %d, ChiaVersionId: %d, FrameNumber: %d" %
+        (self.videoId, self.chiaVersionId, frameNumber))
     fn = (frameNumber - self.videoFrameNumberStart) / self.frameDensity
     frameData = FrameData(self.videoId, self.chiaVersionId, fn)
     frameData.scores = self.scoresDataSet[:, :, fn]

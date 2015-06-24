@@ -1,2 +1,4 @@
 class Status(object):
-  pass
+
+  def __init__(self, logger):
+    self.logger = logger

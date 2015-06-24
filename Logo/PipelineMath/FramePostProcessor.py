@@ -1,4 +1,3 @@
-import logging
 
 from Logo.PipelineMath.ScaleSpaceCombiner import ScaleSpaceCombiner
 from Logo.PipelineMath.PeaksExtractor import PeaksExtractor
@@ -14,6 +13,7 @@ class FramePostProcessor(object):
     """Initialize values"""
     self.classId = classId
     self.config = config
+    self.logger = self.config.logger
     self.frame = frame
     self.zDistThreshold = zDistThreshold
 
@@ -26,10 +26,10 @@ class FramePostProcessor(object):
     lclzPeaks = PeaksExtractor(lclzPixelMap, self.config)
     lclzPatches = lclzPeaks.getPeakBboxes()
     for lp in lclzPatches:
-      logging.info(
-          'Localization at: %s, with intensity: %s for class %s and zDist %s' %
-          (lp['bbox'].json_format(), lp['intensity'], self.classId,
-           self.zDistThreshold))
+      # self.logger.debug(
+      #     'Localization at: %s, with intensity: %s for class %s and zDist %s' %
+      #     (lp['bbox'].json_format(), lp['intensity'], self.classId,
+      #      self.zDistThreshold))
       rect = Rect(
           lp['bbox'].x0, lp['bbox'].y0, lp['bbox'].width, lp['bbox'].height)
       l = Localization(

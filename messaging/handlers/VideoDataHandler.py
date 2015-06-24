@@ -1,4 +1,4 @@
-import json, logging
+import json
 
 from hdf5Storage.type.FrameData import FrameData
 from hdf5Storage.infra.VideoDataWriter import VideoDataWriter
@@ -14,13 +14,14 @@ class VideoDataHandler(object):
     """Initialize values"""
     self.kheerRpcClient = kheerRpcClient
     self.config = config
+    self.logger = self.config.logger
 
     # hash format:
     # {chia_version_id: {video_id: hdf5Storage.infra.VideoDataWriter}}
     self.videoDataWriters = {}
 
   def startNewVideoStorage(self, videoId, chiaVersionId):
-    logging.info(
+    self.logger.info(
         "Start data import for video_id %d and chia_version_id %d" %
         (videoId, chiaVersionId))
     if not chiaVersionId in self.videoDataWriters.keys():
@@ -40,7 +41,7 @@ class VideoDataHandler(object):
     # TODO: error check
 
   def endExistingVideoStorage(self, videoId, chiaVersionId):
-    logging.info(
+    self.logger.info(
         "End data import for video_id %d and chia_version_id %d" %
         (videoId, chiaVersionId))
     self.videoDataWriters[chiaVersionId][videoId].close()

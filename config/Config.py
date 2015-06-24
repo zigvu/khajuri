@@ -3,10 +3,13 @@ import yaml, json
 import scipy.ndimage as ndimage
 import logging
 
+from multiprocessing import JoinableQueue
+
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.PixelMap import CellBoundaries
 from Logo.PipelineMath.PixelMap import NeighborsCache
 
+from config.ZLogging import ZLogging, ZLoggingQueueProducer
 
 class Config:
   """Reads YAML config file and allows easy accessor to config attributes"""
@@ -25,10 +28,14 @@ class Config:
     if logs['log_level'] == 'CRITICAL':
       self.lg_log_level = logging.CRITICAL
     self.lg_rabbit_logger = logs['rabbit_logger'] == True
-    self.lg_local_logger = logs['local_logger'] == True
     self.lg_cpp_log_started = False
 
-
+    self.lg_enable_queue_write = self.lg_rabbit_logger
+    self.formatMsg = {}
+    if self.lg_enable_queue_write:
+      # TODO: get from kheer
+      self.formatMsg = { 'kheer_job_id': 1 }
+      self.logQueue = JoinableQueue()
 
     # CPU count
     self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])
@@ -125,18 +132,6 @@ class Config:
     self.cr_curationNumOfSets = curation['num_of_sets']
     self.cr_curationNumOfItemsPerSet = curation['num_of_items_per_set']
 
-    # PeaksExtractor config - not exposed to config.yaml
-    # Connectedness of labeled example - have a full matrix structure
-    self.pe_binaryStructure = ndimage.morphology.generate_binary_structure(2, 2)
-    # if the intersection between candidate labeled bbox and proposed subsume bbox
-    # is more than 70%, then subsume the candidate labeled bbox
-    self.pe_maxCandidateIntersectionDiff = 0.7
-    # allow no more than 90% of intersection between subsumed boxes
-    self.pe_maxSubsumedIntersectionDiff = 0.9
-    # thresholds to subsample candidate labeled bbox prior to showing to user
-    self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3,
-                                       0.2, 0.1]
-
     # HDF5 settings
     hdf5 = config['hdf5']
     self.hdf5_clip_frame_count = 1024
@@ -163,6 +158,14 @@ class Config:
     # load memory heavy dictionaries on demand
     self.cachedCellBoundariesDict = None
     self.cachedNeighborMap = None
+
+  @property
+  def logger(self):
+    if self.lg_enable_queue_write:
+      return ZLoggingQueueProducer(
+        self.logQueue, self.lg_log_level, self.formatMsg).getLogger()
+    else:
+      return ZLogging(self.lg_log_level, self.formatMsg).getLogger()
 
   @property
   def allCellBoundariesDict(self):

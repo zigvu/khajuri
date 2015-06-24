@@ -2,7 +2,6 @@ import os
 import re
 import time
 import json
-import logging
 from collections import OrderedDict
 
 from VideoReader import VideoReader
@@ -19,6 +18,7 @@ class VideoDbManager(object):
   def __init__(self, config):
     """Initialization"""
     self.config = config
+    self.logger = self.config.logger
     self.scales = self.config.sw_scales
     self.maxProducedQueueSize = self.config.ci_lmdbBufferMaxSize
     self.compressedJSON = self.config.pp_compressedJSON
@@ -133,16 +133,16 @@ class VideoDbManager(object):
     videoDb.createNewDb(self.dbFolder, self.videoFrameReader)
 
     # Main loop to go through video
-    logging.info("Start patch extraction for deviceId %d" % self.deviceId)
+    self.logger.info("DeviceId: %d: Start patch extraction" % self.deviceId)
     while (not self.videoFrameReader.eof) or (
         currentFrameNum <= self.videoFrameReader.totalFrames):
       # For each batch of patches, put in queue
       if (((dbPatchCounter + 1) % self.caffeBatchSize) == 0):
         # add to db
         if len(dbBatchMapping) > 0:
-          logging.debug(
-              "Saving batch ID: %d for device id %d" % 
-              (dbBatchId, self.deviceId))
+          self.logger.debug(
+              "DeviceId: %d: Saving batch ID: %d" % 
+              (self.deviceId, dbBatchId))
           videoDb.saveDb()
           with open(dbBatchMappingFile, "w") as f:
             json.dump(dbBatchMapping, f, indent=2)
@@ -159,9 +159,9 @@ class VideoDbManager(object):
         dbBatchMapping = OrderedDict()
         dbBatchMappingFile = os.path.join(
             self.dbFolder, "db_mapping_%d.json" % dbBatchId)
-        logging.info(
-            "%d percent video processed" % 
-            (int(100.0 * currentFrameNum / self.totalNumOfFrames)))
+        self.logger.info(
+            "DeviceId: %d: Percent video processed: %d" % 
+            (self.deviceId, int(100.0 * currentFrameNum/self.totalNumOfFrames)))
 
       # Start json annotation file
       jsonFile = os.path.join(
@@ -186,8 +186,8 @@ class VideoDbManager(object):
 
     # For the last db group, save and put in queue
     if len(dbBatchMapping) > 0:
-      logging.debug(
-          "Saving batch ID: %d for device id %d" % (dbBatchId, self.deviceId))
+      self.logger.debug(
+          "DeviceId: %d: Saving batch ID: %d" % (self.deviceId, dbBatchId))
       videoDb.saveDb()
       with open(dbBatchMappingFile, "w") as f:
         json.dump(dbBatchMapping, f, indent=2)
@@ -196,8 +196,8 @@ class VideoDbManager(object):
     # let consumer know that we are at the end
     self.producedQueue.put(None)
     # Put poison pills and wait to join all threads
-    logging.info(
-        "Done with all patch extraction for device id %d" % self.deviceId)
+    self.logger.info(
+        "DeviceId: %d: Done with all patch extraction" % self.deviceId)
     while True:
       dbBatchMappingFileToDelete = self.consumedQueue.get()
       # caffe finished evaluating
@@ -209,7 +209,9 @@ class VideoDbManager(object):
       self.delFromVideoDb(videoDb, dbBatchMappingFileToDelete)
       self.consumedQueue.task_done()
 
-    logging.info("Waiting for videoFrameReader to exit gracefully")
+    self.logger.info(
+        "DeviceId: %d: Waiting for VideoFrameReader " % self.deviceId +
+        " to exit gracefully")
     # HACK: work around so that videoDb releases lock on db folder
     videoDb = None
     # HACK: quit video reader gracefully
@@ -221,7 +223,7 @@ class VideoDbManager(object):
 
   def delFromVideoDb(self, videoDb, dbBatchMappingFileToDelete):
     """Delete all keys from VideoDb found in dbBatchMappingFileToDelete"""
-    logging.debug(
+    self.logger.debug(
         "Deleting keys in file %s in deviceId %d" % 
         (dbBatchMappingFileToDelete, self.deviceId))
     dbBatchMapping = json.load(open(dbBatchMappingFileToDelete, "r"))

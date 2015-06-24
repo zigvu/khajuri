@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, logging
+import os
 import sys, json, shutil
 
 from config.Config import Config
@@ -24,6 +24,8 @@ TODO: make it so that we can run this script from GPU1/GPU2.
 
 def process(configFileName, videoFolder, videoId):
   config = Config(configFileName)
+  self.logger = config.logger
+
   baseFolder = config.hdf5_base_folder
   videoClipsMapFilename = os.path.join(
       videoFolder, config.hdf5_video_clips_map_filename)
@@ -55,10 +57,10 @@ def process(configFileName, videoFolder, videoId):
         'frame_number_end': vData['frame_number_end']
     }
     response = json.loads(rpcClient.call(headers, json.dumps(message)))
-    srcVideoFile = os.path.join(videoFolder, vData['clip_filename'])
-    dstVideoFile = os.path.join(clipsFolderPath, "%s.mp4" % response['clip_id'])
-    shutil.copy(srcVideoFile, dstVideoFile)
-    print "Adding video: %s" % (dstVideoFile)
+    srcClipFile = os.path.join(videoFolder, vData['clip_filename'])
+    dstClipFile = os.path.join(clipsFolderPath, "%s.mp4" % response['clip_id'])
+    shutil.copy(srcClipFile, dstClipFile)
+    self.logger.info("Adding clip: %s" % dstClipFile)
 
 
 if __name__ == '__main__':

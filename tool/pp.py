@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import multiprocessing, time, os, logging
+import multiprocessing, time, os
 import math, sys, glob
 
 from config.Config import Config
@@ -27,16 +27,13 @@ def main():
 
 
 def process(configFileName, jsonFolder, jsonOutputFolder):
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO,
-      datefmt="%Y-%m-%d--%H:%M:%S")
   config = Config(configFileName)
+  logger = config.logger
+  status = Status(logger)
+
   config.json_output_folder = jsonOutputFolder
   inputs = multiprocessing.JoinableQueue()
   results = multiprocessing.Queue()
-  status = Status()
 
   #Uncomment for serial run
   #reader = OldJsonReader( config, status ),
@@ -58,7 +55,10 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
   config.videoId = None
   myPipeline = Pipeline([PostProcess(config, status)], inputs, results)
 
-  Version().logVersion()
+  branch, commit = Version().getGitVersion()
+  logger.info('Branch: %s' % branch)
+  logger.info('Commit: %s' % commit)
+
   startTime = time.time()
   myPipeline.start()
 
@@ -76,9 +76,9 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
   # Wait for all of the inputs to finish
   myPipeline.join()
   endTime = time.time()
-  logging.info('Took %s seconds' % (endTime - startTime))
+  logger.info('Took %s seconds' % (endTime - startTime))
 
-  # Start logging results
+  # Start printing results
   for i in xrange(num_consumers + num_jobs):
     result = results.get()
-    logging.info('Result: %s', result)
+    logger.info('Result: %s', result)

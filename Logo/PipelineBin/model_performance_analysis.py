@@ -97,7 +97,7 @@ def main():
       classMapping[v] = k
 
   for f in glob.glob(os.path.join(csvFolder, '*.csv')):
-    logging.info('Reading file %s' % f)
+    logging.debug('Reading file %s' % f)
     with open(f, 'rb') as myFile:
       className = os.path.splitext(os.path.basename(f))[0]
       reader = csv.reader(myFile)
@@ -107,7 +107,7 @@ def main():
           header = True
           continue
         else:
-          # logging.info( '%s' % row )
+          # logging.debug( '%s' % row )
           imgByClass[row[0]] = className
           if len(row) > 0:
             for i in range(1, len(row)):
@@ -153,9 +153,9 @@ def main():
           os.makedirs(outputDir)
         inputPatchPath = os.path.join(patchImageFolder, clsA, k[0])
         if not os.path.exists(inputPatchPath):
-          logging.info('Missing Patch %s' % inputPatchPath)
+          logging.debug('Missing Patch %s' % inputPatchPath)
         else:
-          logging.info('Copying Patch %s to %s' % (
+          logging.debug('Copying Patch %s to %s' % (
               inputPatchPath, os.path.join(outputDir, k[0])
           ))
           os.system('cp %s %s' %

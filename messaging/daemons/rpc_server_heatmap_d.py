@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import logging, sys
+import sys
 
 from config.Config import Config
 
@@ -17,17 +17,12 @@ TODO: daemonize
 
 def process(configFileName):
   config = Config(configFileName)
+  logger = config.logger
 
   amqp_url = config.mes_amqp_url
   serverQueueName = config.mes_q_vm2_kheer_development_heatmap_rpc_request
 
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=config.lg_log_level,
-      datefmt="%Y-%m-%d--%H:%M:%S")
-
-  logging.info("Heatmap rpc server started")
+  logger.info("Heatmap rpc server started")
 
   heatmapDataHandler = HeatmapDataHandler(config)
   rpc = RpcServer(amqp_url, serverQueueName, heatmapDataHandler)

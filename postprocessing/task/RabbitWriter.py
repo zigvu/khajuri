@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 
 from postprocessing.task.Task import Task
@@ -14,14 +13,14 @@ class RabbitWriter(Task):
 
   def __init__(self, config, status):
     Task.__init__(self, config, status)
-    logging.debug('RabbitWriter: Starting writer')
+    self.logger.info('RabbitWriter: Starting writer')
     amqp_url = self.config.mes_amqp_url
     serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
     self.rabbitWriter = RpcClient(amqp_url, serverQueueName, expectReply=False)
 
   def __call__(self, obj):
     frame, classIds = obj
-    logging.info(
+    self.logger.debug(
         'RabbitWriter: Saving frameInfo on %s for classes %s' %
         (frame, classIds))
 

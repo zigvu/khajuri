@@ -1,5 +1,3 @@
-import logging
-
 from postprocessing.task.Task import Task
 
 from postprocessing.task.CompareFrame import CompareFrame
@@ -11,7 +9,7 @@ class CompareFiles(Task):
   reader = {'old': OldJsonReader, 'new': JsonReader,}
 
   def __call__(self, obj):
-    logging.info('Got %s, %s, %s, %s for comparison' % obj)
+    self.logger.debug('Got %s, %s, %s, %s for comparison' % obj)
     j, jFormat, k, kFormat = obj
     # Take an item out from the Queue, read it, compare it, put the results into the queue
     # Compile the Result

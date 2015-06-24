@@ -1,4 +1,4 @@
-import json, logging
+import json
 import numpy as np
 
 from Logo.PipelineMath.PixelMap import PixelMap
@@ -13,6 +13,7 @@ class HeatmapDataHandler(object):
   def __init__(self, config):
     """Initialize values"""
     self.config = config
+    self.logger = self.config.logger
 
   def handle(self, headers, heatmapRequest):
     # request syntax should match in
@@ -44,13 +45,13 @@ class HeatmapDataHandler(object):
         data = {'scores': cellValues}
 
         msg = "Heatmap success: " + msg
-        logging.info(msg)
+        self.logger.info(msg)
         responseHeaders = Headers.statusSuccess()
         responseMessage = json.dumps(data)
     except Exception, e:
       # TODO: catch specific exceptions here
       msg = "Heatmap failure: " + msg
-      logging.error(msg)
+      self.logger.error(msg)
       responseHeaders = Headers.statusFailure(msg)
       responseMessage = json.dumps({'scores': []})
 

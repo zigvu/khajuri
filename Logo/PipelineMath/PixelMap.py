@@ -1,5 +1,4 @@
 import os
-import logging
 import numpy as np
 from shapely.geometry import box
 from multiprocessing import Process, Manager
@@ -163,6 +162,7 @@ class CellBoundaries(object):
 
   def __init__(self, config):
     self.config = config
+    self.logger = self.config.logger
     imgDim = Rectangle.rectangle_from_dimensions(
         self.config.sw_frame_width, self.config.sw_frame_height)
     patchDim = Rectangle.rectangle_from_dimensions(
@@ -214,11 +214,11 @@ class CellBoundaries(object):
         useSavedOne = False
 
     if useSavedOne:
-      logging.info(
+      self.logger.info(
           "Using already computed boundaries from file at %s" % saveFile)
       return allCellBoundaries
     else:
-      logging.info("Calculating new cellMap and saving to file %s" % saveFile)
+      self.logger.info("Calculating new cellMap and saving to file %s" % saveFile)
       try:
         os.remove( "/tmp/savedBoundaries.p" )
         os.remove( "/tmp/savedNeighbors.p" )
@@ -432,7 +432,7 @@ class CellBoundaries(object):
         "yStride": staticBBoxes.ystepSize[scaleFactor]}
       # print progress
       #print "Scale %0.2f, unique: %d" % (scaleFactor, len(uniqueValues))
-      logging.info("Finished working on scale %.2f. Unique values: %d" %
+      self.logger.info("Finished working on scale %.2f. Unique values: %d" %
                    (scaleFactor, len(uniqueValues)))
 
     # error check: we shouldn't have different max_cell_counter
@@ -540,8 +540,6 @@ class NeighborsCache(object):
 def setupNeighbor(queue, neighbors, cellBoundaries):
   while True:
     index, cb = queue.get()
-    logging.info('Got cb : %s at index %s for setting up from queue' %
-                 (cb, index))
     if not cb:
       break
     else:

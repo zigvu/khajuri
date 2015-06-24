@@ -21,9 +21,10 @@ baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 class TestVersion(unittest.TestCase):
 
   def testVersion(self):
-    version = Version()
-    version.logVersion()
-
+    v = Version()
+    branch, commit = v.getGitVersion()
+    print "Branch: %s" % branch
+    print "Commit: %s" % commit
 
 class TestFrameInfo(unittest.TestCase):
 
@@ -46,7 +47,9 @@ class TestFrameInfo(unittest.TestCase):
   def testCurations(self):
     frame = Frame([1, 2, 3], 543, [0, 1])
     config = Config(baseScriptDir + os.sep + 'config.yaml')
-    status = Status()
+    logger = config.logger
+
+    status = Status(logger)
     frameJsonWriter = JsonWriter(config, status)
     frameJsonWriter((frame, '/tmp/save.json'))
 

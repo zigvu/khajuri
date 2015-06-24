@@ -1,4 +1,4 @@
-import logging, json
+import json
 import os
 
 from postprocessing.task.Task import Task
@@ -8,7 +8,7 @@ class JsonWriter(Task):
 
   def __call__(self, obj):
     frame, classIds = obj
-    logging.info(
+    self.logger.debug(
         'JsonWriter: Saving frameInfo on %s for classes %s' % (frame, classIds))
     localizations = {}
     scores = {}

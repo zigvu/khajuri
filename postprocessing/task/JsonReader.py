@@ -1,4 +1,4 @@
-import logging, json, os
+import json, os
 
 from postprocessing.task.Task import Task
 
@@ -15,7 +15,7 @@ class JsonReader(Task):
 
   def __call__(self, obj):
     fileName = obj
-    logging.info('Reading frameInfo from %s' % fileName)
+    self.logger.debug('Reading frameInfo from %s' % fileName)
     if not self.config.videoId:
       self.config.videoId = self.getVideoId(fileName)
     jsonObj = json.load(open(fileName, 'r'))
@@ -40,7 +40,7 @@ class JsonReader(Task):
           zDist = loc['zdist_thresh']
           rect = Rect(bbox['x'], bbox['y'], bbox['width'], bbox['height'])
           loc = Localization(zDist, classId, rect, score, scale)
-          logging.info('Adding localization %s' % loc)
+          # self.logger.debug('Adding localization %s' % loc)
           frame.addLocalization(classId, loc)
 
     return (frame, jsonObj['scores'].keys())

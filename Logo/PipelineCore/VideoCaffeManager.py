@@ -1,6 +1,5 @@
 import json
 from collections import OrderedDict
-import logging
 
 import caffe
 
@@ -16,6 +15,7 @@ class VideoCaffeManager(object):
   def __init__(self, config):
     """Initialization"""
     self.config = config
+    self.logger = self.config.logger
     self.classes = self.config.ci_allClassIds
     self.numOfClasses = len(self.classes)
     self.runPostProcessor = self.config.ci_runPostProcess
@@ -40,7 +40,7 @@ class VideoCaffeManager(object):
       raise RuntimeError(
           "Couldn't read batch size from file %s" % newPrototxtFile)
 
-    logging.info("Setup caffe network for device id %d" % self.deviceId)
+    self.logger.info("DeviceId: %d: Setup caffe network" % self.deviceId)
     useGPU = self.config.ci_useGPU
     modelFile = self.config.ci_modelFile
 
@@ -53,7 +53,7 @@ class VideoCaffeManager(object):
       self.caffe_net.set_device(self.deviceId)
     else:
       self.caffe_net.set_mode_cpu()
-    logging.debug("Reinitializing caffe_net")
+    self.logger.debug("DeviceId: %d: Reinitializing caffe_net" % self.deviceId)
 
     self.caffe_net = caffe.Net(newPrototxtFile, modelFile)
     self.caffe_net.set_phase_test()
@@ -62,7 +62,7 @@ class VideoCaffeManager(object):
       self.caffe_net.set_device(self.deviceId)
     else:
       self.caffe_net.set_mode_cpu()
-    logging.debug("Done initializing caffe_net")
+    self.logger.debug("DeviceId: %d: Done initializing caffe_net" % self.deviceId)
 
   def setupQueues(self, producedQueue, consumedQueue, postProcessQueue):
     """Setup queues"""
@@ -81,15 +81,14 @@ class VideoCaffeManager(object):
         # poison pill means done with evaluations
         break
       # producer is not finished producing, so consume
-      logging.debug(
-          "Caffe working on batch %s on device %d" % 
-          (dbBatchMappingFile, self.deviceId))
+      self.logger.debug(
+          "DeviceId: %d: Caffe working on batch %s" % 
+          (self.deviceId, dbBatchMappingFile))
       self.forward(dbBatchMappingFile)
       # once scores are saved, put it in deletion queue
       self.consumedQueue.put(dbBatchMappingFile)
       self.producedQueue.task_done()
-    logging.info(
-        "Caffe finished working all batches on device %d" % (self.deviceId))
+    self.logger.info("DeviceId: %d: Caffe finished all batches" % self.deviceId)
 
   def forward(self, dbBatchMappingFile):
     """Forward call in caffe"""
@@ -134,7 +133,7 @@ class VideoCaffeManager(object):
         frames[infoDict['jsonFile']].addScores(infoDict['patchNum'], scores)
         frames[infoDict['jsonFile']].addfc8Scores(
             infoDict['patchNum'], scores_fc8)
-        # logging.debug("%s" % printStr)
+        # self.logger.debug("%s" % printStr)
       patchCounter += 1
 
     # Save and put json files in post processing queue

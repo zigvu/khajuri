@@ -1,5 +1,4 @@
 import os, glob, time
-import logging
 
 from Logo.PipelineMath.Rectangle import Rectangle
 
@@ -19,6 +18,8 @@ class VideoLocalizationThread(object):
                videoOutputFolder):
     """Initialize values"""
     self.config = Config(configFileName)
+    self.logger = self.config.logger
+
     self.videoFileName = videoFileName
     self.jsonFolder = jsonFolder
     self.videoOutputFolder = videoOutputFolder
@@ -31,17 +32,11 @@ class VideoLocalizationThread(object):
 
     Config.mkdir_p(self.videoOutputFolder)
 
-    # Logging levels
-    logging.basicConfig(
-        format=
-        '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s',
-        level=self.config.lg_log_level,
-        datefmt="%Y-%m-%d--%H:%M:%S")
 
   def run(self):
     """Run the video through caffe"""
     startTime = time.time()
-    logging.info(
+    self.logger.info(
         "Setting up localization drawing for video %s" % self.videoFileName)
 
     videoFrameReader = VideoFrameReader(self.videoFileName)
@@ -53,12 +48,13 @@ class VideoLocalizationThread(object):
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
 
     for jsonFileName in jsonFiles:
-      logging.debug("Reading json %s" % os.path.basename(jsonFileName))
+      self.logger.debug("Reading json %s" % os.path.basename(jsonFileName))
       frameObj = self.jsonReader(jsonFileName)[0]
       frameNumber = frameObj.frameNumber
       frameIndex[frameNumber] = jsonFileName
-    logging.info("Total of %d json indexed" % len(frameIndex.keys()))
+    self.logger.info("Total of %d json files indexed" % len(frameIndex.keys()))
 
+    self.logger.info("Creating new video")
     # Set up output video
     videoBaseName = os.path.basename(self.videoFileName).split('.')[0]
     outVideoFileName = os.path.join(
@@ -90,7 +86,7 @@ class VideoLocalizationThread(object):
     frameObj = None
     frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
     while frame != None:
-      logging.debug("Adding frame %d to video" % currentFrameNum)
+      self.logger.debug("Adding frame %d to video" % currentFrameNum)
       if currentFrameNum in frameIndex.keys():
         frameObj = self.jsonReader(frameIndex[currentFrameNum])[0]
 
@@ -128,7 +124,7 @@ class VideoLocalizationThread(object):
 
     # Save and exit
     videoWriter.save()
-    logging.info("Finished creating video")
+    self.logger.info("Finished creating video")
     endTime = time.time()
-    logging.info('It took VideoLocalizationThread %s seconds to complete' %
+    self.logger.info('It took VideoLocalizationThread %s seconds to complete' %
                  (endTime - startTime))

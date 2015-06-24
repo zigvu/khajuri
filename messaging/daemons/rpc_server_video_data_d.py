@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import logging, sys
+import sys
 
 from config.Config import Config
 
@@ -19,6 +19,8 @@ TODO: daemonize
 
 def process(configFileName):
   config = Config(configFileName)
+  logger = config.logger
+
   config.total_num_of_patches = 543  # read this from config instead
 
   amqp_url = config.mes_amqp_url
@@ -26,16 +28,10 @@ def process(configFileName):
   khajuriDataQueueName = config.mes_q_vm2_kahjuri_development_video_data
   kheerQueueName = config.mes_q_vm2_kheer_development_localization_request
 
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=config.lg_log_level,
-      datefmt="%Y-%m-%d--%H:%M:%S")
-
   # this client sends data to kheer
   kheerRpcClient = RpcClient(amqp_url, kheerQueueName)
 
-  logging.info("Starting RPC server to read video data")
+  logger.info("Starting RPC server to read video data")
 
   # this server runs in VM2 and listens to data from GPU1/GPU2
   videoDataHandler = VideoDataHandler(kheerRpcClient, config)

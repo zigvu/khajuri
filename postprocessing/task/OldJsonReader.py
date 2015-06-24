@@ -1,4 +1,4 @@
-import logging, json
+import json
 import numpy as np
 import os
 
@@ -27,7 +27,7 @@ class OldJsonReader(Task):
 
   def __call__(self, obj):
     fileName = obj
-    logging.info('Reading frameInfo from %s' % fileName)
+    self.logger.debug('Reading frameInfo from %s' % fileName)
     if not self.config.videoId:
       self.config.videoId = self.getVideoId(fileName)
     self.myDict = json.load(open(fileName, 'r'))
@@ -53,19 +53,20 @@ class OldJsonReader(Task):
     frame.scores[0][:, :, 0] = scores
     frame.scores[0][:, :, 1] = fc8scores
 
-    logging.info('Reading localizations from file %s' % fileName)
+    # self.logger.debug('Reading localizations from file %s' % fileName)
     if self.myDict.get('localizations'):
       for classId in self.classIds:
         lList = self.myDict['localizations'].get(classId)
         for lDict in lList:
-          logging.info('Got the localization dict %s' % lDict)
+          # self.logger.debug('Got the localization dict %s' % lDict)
           rect = Rect(
               lDict["bbox"]["x"], lDict["bbox"]["y"], lDict["bbox"]["width"],
               lDict["bbox"]["height"])
           loc = Localization(0, classId, rect, lDict["score"], 1)
-          logging.info(
-              'Adding localization %s to frame from file %s' % (loc, fileName))
+          # self.logger.debug(
+          #     'Adding localization %s to frame from file %s' % (loc, fileName))
           frame.addLocalization(int(classId), loc)
     else:
-      logging.info('Localization is not present in file %s' % fileName)
+      # self.logger.debug('Localization is not present in file %s' % fileName)
+      pass
     return (frame, self.classIds)

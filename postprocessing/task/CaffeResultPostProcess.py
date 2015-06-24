@@ -1,5 +1,3 @@
-import logging
-
 from config.Config import Config
 
 from postprocessing.task.Task import Task

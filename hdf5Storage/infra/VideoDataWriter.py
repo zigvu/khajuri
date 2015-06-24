@@ -9,6 +9,7 @@ class VideoDataWriter(object):
   def __init__(self, config, videoId, chiaVersionId):
     """Initialize values"""
     self.config = config
+    self.logger = self.config.logger
 
     self.baseFolder = self.config.hdf5_base_folder
     self.numFrameInClip = self.config.hdf5_clip_frame_count
@@ -48,6 +49,10 @@ class VideoDataWriter(object):
 
   def addFrameData(self, frameData):
     """Add data for a single frame"""
+    self.logger.debug(
+        "Save frame data for: VideoId: %d, ChiaVersionId: %d, FrameNumber: %d" %
+        (self.videoId, self.chiaVersionId, frameData.frameNumber))
+
     frameNumber = (
         frameData.frameNumber - self.videoFrameNumberStart
     ) / self.frameDensity
