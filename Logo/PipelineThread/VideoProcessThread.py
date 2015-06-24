@@ -124,6 +124,9 @@ class VideoProcessThread(object):
       raise RuntimeError(
           "LMDB buffer min size must be smaller than lmdb buffer max size")
 
+    # max size of post-process queue
+    self.maxPostProcessQueueSize = self.config.ci_ppQueue_maxSize
+
   def run(self):
     """Run the video through caffe"""
     videoTimeLengthSeconds = 0
@@ -164,7 +167,7 @@ class VideoProcessThread(object):
     consumedQueues = OrderedDict()
     videoDbManagerProcesses = []
     videoCaffeManagerProcesses = []
-    postProcessQueue = JoinableQueue()
+    postProcessQueue = JoinableQueue(maxsize=self.maxPostProcessQueueSize)
     resultsQueue = multiprocessing.Queue()
 
     myPostProcessPipeline = Pipeline(

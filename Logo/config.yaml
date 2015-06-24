@@ -68,6 +68,11 @@ caffe_input:
   lmdb_buffer_min_size:                      4
   lmdb_num_frames_per_buffer:                1
 
+  # post-processing queue size management (nuum of items)
+  pp_queue_max_size:                         5000
+  pp_queue_high_watermark:                   4000
+  pp_queue_low_watermark:                    1000
+
   # frame number to start video processing on
   video_frame_number_start:                  1
   use_gpu:                                   true

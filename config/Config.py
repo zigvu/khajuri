@@ -104,6 +104,9 @@ class Config:
     self.ci_lmdbBufferMaxSize = caffeInput['lmdb_buffer_max_size']
     self.ci_lmdbBufferMinSize = caffeInput['lmdb_buffer_min_size']
     self.ci_lmdbNumFramesPerBuffer = caffeInput['lmdb_num_frames_per_buffer']
+    self.ci_ppQueue_maxSize = caffeInput['pp_queue_max_size']
+    self.ci_ppQueue_highWatermark = caffeInput['pp_queue_high_watermark']
+    self.ci_ppQueue_lowWatermark = caffeInput['pp_queue_low_watermark']
     self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
     self.ci_useGPU = caffeInput['use_gpu'] == True
     self.ci_gpu_devices = caffeInput['gpu_devices']

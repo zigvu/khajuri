@@ -1,9 +1,11 @@
+import time
 import json
 from collections import OrderedDict
 
 import caffe
 
 from config.Config import Config
+from config.Status import Status
 
 from postprocessing.type.Frame import Frame
 from postprocessing.task.JsonWriter import JsonWriter
@@ -16,12 +18,21 @@ class VideoCaffeManager(object):
     """Initialization"""
     self.config = config
     self.logger = self.config.logger
+    self.status = Status(self.logger)
+
     self.classes = self.config.ci_allClassIds
     self.numOfClasses = len(self.classes)
     self.runPostProcessor = self.config.ci_runPostProcess
     self.compressedJSON = self.config.pp_compressedJSON
     self.patchMapping = self.config.allCellBoundariesDict["patchMapping"]
     self.totalPatches = len(self.patchMapping)
+
+    # manage post-process queue size
+    self.ppQueue_highWatermark = self.config.ci_ppQueue_highWatermark
+    self.ppQueue_lowWatermark = self.config.ci_ppQueue_lowWatermark
+    self.ppQueue_isAboveHighWatermark = False
+    self.postProcessQueueSleepTime = 10
+
 
   def setupNet(self, newPrototxtFile, deviceId):
     """Setup caffe network"""
@@ -88,6 +99,7 @@ class VideoCaffeManager(object):
       # once scores are saved, put it in deletion queue
       self.consumedQueue.put(dbBatchMappingFile)
       self.producedQueue.task_done()
+      self.pauseForPostProcessQueue()
     self.logger.info("DeviceId: %d: Caffe finished all batches" % self.deviceId)
 
   def forward(self, dbBatchMappingFile):
@@ -141,4 +153,28 @@ class VideoCaffeManager(object):
       if self.runPostProcessor:
         self.postProcessQueue.put((frame, self.classes))
       else:
-        JsonWriter(self.config, None)((frame, self.classes))
+        JsonWriter(self.config, self.status)((frame, self.classes))
+
+  def pauseForPostProcessQueue(self):
+    """In case post-process queue is too big, pause"""
+    # only run if post-processing is enabled
+    if not self.runPostProcessor:
+      return
+    # get queue size
+    ppQueue_curSize = self.postProcessQueue.qsize()
+    if self.ppQueue_isAboveHighWatermark:
+      # if above high watermark, wait until we are below low watermark
+      while ppQueue_curSize > self.ppQueue_lowWatermark:
+        self.logger.debug(
+            "DeviceId: %d: Waiting for pp queue to shrink" % self.deviceId)
+        time.sleep(self.postProcessQueueSleepTime)
+        ppQueue_curSize = self.postProcessQueue.qsize()
+      # reset
+      self.ppQueue_isAboveHighWatermark = False
+    else:
+      # mark if we go above high water mark
+      if ppQueue_curSize > self.ppQueue_highWatermark:
+        self.logger.debug(
+            "DeviceId: %d: Above pp queue high watermark" % self.deviceId)
+        self.ppQueue_isAboveHighWatermark = True
+    
