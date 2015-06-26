@@ -81,7 +81,7 @@ class VideoProcessThread(object):
     # Logging infrastructure
     self.logQueue = self.config.logQueue
     self.logConsolidatorProcess = Process(
-        target=runLogConsolidator, args=(,))
+        target=runLogConsolidator, args=())
     self.logConsolidatorProcess.start()
 
     self.logger = self.config.logger

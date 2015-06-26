@@ -4,9 +4,12 @@ import logging
 class  ZFormatter(logging.Formatter):
   """Log formatter that respects ZFilter"""
   # Format as per issue 104
+
   # LOG Format:
-  # [machine_hostname]::[zigvu_system]::[kheer_job_id]::[log_level]::
-  # [date_time]::[file_name]::[line_number]::[process_id]::[message]
+  # [machine_hostname]::[zigvu_system]::[environment]::[kheer_job_id]::
+  # [log_level]::[date_time]::[file_name]::[line_number]::[process_id]::
+  # [message]
+
   # TIME Format:
   # [Year]-[Month]-[DAY]:[HOUR]-[MINUTE]-[SECOND]
 
@@ -19,6 +22,7 @@ class  ZFormatter(logging.Formatter):
     """Correctly formatted log"""
     msg = '%s' % (record.hostname)
     msg = '%s::%s' % (msg, record.name)
+    msg = '%s::%s' % (msg, record.environment)
     msg = '%s::%s' % (msg, record.kheerjobid)
     msg = '%s::%s' % (msg, record.levelname)
     msg = '%s::%s' % (msg, self.formatTime(record, self.datefmt))
@@ -29,21 +33,24 @@ class  ZFormatter(logging.Formatter):
     return msg
 
 
+
 class ZFilter(logging.Filter):
   """Specialized log filter to help in logging analytics"""
   def __init__(self, formatMsg):
     """Init"""
     logging.Filter.__init__(self)
     self.hostname = socket.gethostname()
-    self.kheerjobid = 0
-    if 'kheer_job_id' in formatMsg:
-      self.kheerjobid = formatMsg['kheer_job_id']
+    # decompose formatMsg
+    self.kheerjobid = formatMsg['kheer_job_id']
+    self.environment = formatMsg['environment']
 
   def filter(self, record):
     """Correctly formatted log"""
     record.hostname = self.hostname
     record.kheerjobid = self.kheerjobid
+    record.environment = self.environment
     return True
+
 
 
 class ZLoggingStreamHandler(logging.StreamHandler):

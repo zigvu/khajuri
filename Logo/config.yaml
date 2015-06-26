@@ -162,7 +162,7 @@ post_processing:
     - 4
   result_writers:
     json_writer:                              true
-    rabbit_writer:                            true
+    rabbit_writer:                            false
 
 # Curation
 curation:
@@ -183,7 +183,7 @@ hdf5:
 
 # Messaging
 messaging:
-  amqp_url:                                   'localhost'
+  amqp_url:                                     'localhost'
   queue_names:
     vm2_kahjuri_development_video_data:         'vm2.kahjuri.development.video_data'
     vm2_khajuri_development_log:                'vm2.khajuri.development.log'

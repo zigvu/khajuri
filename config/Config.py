@@ -1,11 +1,9 @@
 import os, errno, shutil
 import yaml, json
-import scipy.ndimage as ndimage
 import logging
 
 from multiprocessing import JoinableQueue
 
-from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.PixelMap import CellBoundaries
 from Logo.PipelineMath.PixelMap import NeighborsCache
 
@@ -31,10 +29,14 @@ class Config:
 
     # TODO: get from kheer
     self.kheerJobId = 0
+    self.environment = 'development'
+    self.formatMsg = {
+      'kheer_job_id': self.kheerJobId,
+      'environment': self.environment
+    }
 
     self.lg_rabbit_logger = logs['rabbit_logger'] == True
     self.lg_write_logs_to_queue = logs['write_logs_to_queue'] == True
-    self.formatMsg = { 'kheer_job_id': self.kheerJobId }
     self.logQueue = JoinableQueue()
     if self.lg_rabbit_logger:
       self.lg_write_logs_to_queue = True
