@@ -56,10 +56,9 @@ def runVideoCaffeManager(sharedDict, producedQueue, consumedQueue, \
   videoCaffeManager.startForwards()
 
 
-def runLogConsolidator(logQueue):
+def runLogConsolidator():
   """Consolidate log from multiple processes"""
   logConsolidator = LogConsolidator(config)
-  logConsolidator.setupQueues(logQueue)
   # finally start log consolidation
   logConsolidator.startConsolidation()
 
@@ -82,7 +81,7 @@ class VideoProcessThread(object):
     # Logging infrastructure
     self.logQueue = self.config.logQueue
     self.logConsolidatorProcess = Process(
-        target=runLogConsolidator, args=(self.logQueue,))
+        target=runLogConsolidator, args=(,))
     self.logConsolidatorProcess.start()
 
     self.logger = self.config.logger

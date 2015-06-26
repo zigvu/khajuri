@@ -27,15 +27,17 @@ class Config:
       self.lg_log_level = logging.ERROR
     if logs['log_level'] == 'CRITICAL':
       self.lg_log_level = logging.CRITICAL
-    self.lg_rabbit_logger = logs['rabbit_logger'] == True
     self.lg_cpp_log_started = False
 
-    self.lg_enable_queue_write = self.lg_rabbit_logger
-    self.formatMsg = {}
-    if self.lg_enable_queue_write:
-      # TODO: get from kheer
-      self.formatMsg = { 'kheer_job_id': 1 }
-      self.logQueue = JoinableQueue()
+    # TODO: get from kheer
+    self.kheerJobId = 0
+
+    self.lg_rabbit_logger = logs['rabbit_logger'] == True
+    self.lg_write_logs_to_queue = logs['write_logs_to_queue'] == True
+    self.formatMsg = { 'kheer_job_id': self.kheerJobId }
+    self.logQueue = JoinableQueue()
+    if self.lg_rabbit_logger:
+      self.lg_write_logs_to_queue = True
       # force only INFO and higher logs
       self.lg_log_level = logging.INFO
 
@@ -152,6 +154,9 @@ class Config:
     self.mes_q_vm2_kahjuri_development_video_data = queueNames[
         'vm2_kahjuri_development_video_data'
     ]
+    self.mes_q_vm2_khajuri_development_log = queueNames[
+        'vm2_khajuri_development_log'
+    ]
     self.mes_q_vm2_kheer_development_clip_id_request = queueNames[
         'vm2_kheer_development_clip_id_request'
     ]
@@ -169,7 +174,7 @@ class Config:
   @property
   def logger(self):
     if not self.cachedLogger:
-      if self.lg_enable_queue_write:
+      if self.lg_write_logs_to_queue:
         self.cachedLogger = ZLoggingQueueProducer(
           self.logQueue, self.lg_log_level, self.formatMsg).getLogger()
       else:

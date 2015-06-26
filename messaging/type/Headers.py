@@ -106,3 +106,14 @@ class Headers(object):
   @staticmethod
   def getPropsChiaVersionId(headers):
     return int(headers['props']['chia_version_id'])
+
+  # log headers
+  # -----------------------------------------------
+  @staticmethod
+  def log(kheerJobId):
+    headers = {
+        'type': 'log',
+        'state': 'emit',
+        'props': {'kheer_job_id': kheerJobId}
+    }
+    return headers

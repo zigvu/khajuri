@@ -4,6 +4,7 @@
 logging:
   log_level:                                  DEBUG
   rabbit_logger:                              false
+  write_logs_to_queue:                        false
 
 # Count to multiply with the number of cores available in machine
 # if using fraction, will round down to nearest integer after multiplication
@@ -184,7 +185,8 @@ hdf5:
 messaging:
   amqp_url:                                   'localhost'
   queue_names:
-    vm2_kahjuri_development_video_data:       'vm2.kahjuri.development.video_data'
-    vm2_kheer_development_clip_id_request:    'vm2.kheer.development.clip_id.request'
+    vm2_kahjuri_development_video_data:         'vm2.kahjuri.development.video_data'
+    vm2_khajuri_development_log:                'vm2.khajuri.development.log'
+    vm2_kheer_development_clip_id_request:      'vm2.kheer.development.clip_id.request'
     vm2_kheer_development_heatmap_rpc_request:  'vm2.kheer.development.heatmap_rpc.request'
     vm2_kheer_development_localization_request: 'vm2.kheer.development.localization.request'
