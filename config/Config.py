@@ -28,13 +28,21 @@ class Config:
     self.lg_cpp_log_started = False
 
     # TODO: get from kheer
-    self.kheerJobId = 0
-    self.environment = 'development'
+    processVideoJob = config['process_video_job']
+    self.kheerJobId = processVideoJob['kheerJobId']
+    self.environment = processVideoJob['environment']
+    self.videoId = processVideoJob['videoId']
+    self.videoFileName = processVideoJob['videoFileName']
+    self.chiaVersionId = processVideoJob['chiaVersionId']
+    self.baseDbFolder = processVideoJob['baseDbFolder']
+    self.jsonFolder = processVideoJob['jsonFolder']
+    self.numpyFolder = processVideoJob['numpyFolder']
+
+    # log to graylog
     self.formatMsg = {
       'kheer_job_id': self.kheerJobId,
       'environment': self.environment
     }
-
     self.lg_rabbit_logger = logs['rabbit_logger'] == True
     self.lg_write_logs_to_queue = logs['write_logs_to_queue'] == True
     self.logQueue = JoinableQueue()
@@ -44,6 +52,9 @@ class Config:
       self.lg_log_level = logging.INFO
 
     self.cachedLogger = None
+
+
+
 
     # CPU count
     self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])

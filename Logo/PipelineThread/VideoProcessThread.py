@@ -66,13 +66,9 @@ def runLogConsolidator():
 class VideoProcessThread(object):
   """Class responsible for starting and running caffe on video"""
 
-  def __init__(self, configFileName, videoFileName, \
-    baseDbFolder, jsonFolder, numpyFolder, videoId, chiaVersionId):
+  def __init__(self, configFileName):
     """Initialize values"""
     self.configFileName = configFileName
-    self.videoFileName = videoFileName
-    self.videoId = videoId
-    self.chiaVersionId = chiaVersionId
 
     global config
     config = Config(configFileName)
@@ -91,14 +87,19 @@ class VideoProcessThread(object):
 
     self.status = Status(self.logger)
 
+    # kheer job configuration
+    self.videoFileName = self.config.videoFileName
+    self.videoId = self.config.videoId
+    self.chiaVersionId = self.config.chiaVersionId
+
     self.runCaffe = self.config.ci_runCaffe
     self.runPostProcessor = self.config.ci_runPostProcess
     self.frameStartNumber = self.config.ci_videoFrameNumberStart
 
     # Folder to save files
-    self.baseDbFolder = baseDbFolder
-    self.jsonFolder = jsonFolder
-    self.numpyFolder = numpyFolder
+    self.baseDbFolder = self.config.baseDbFolder
+    self.jsonFolder = self.config.jsonFolder
+    self.numpyFolder = self.config.numpyFolder
     Config.rm_rf(self.baseDbFolder)
     Config.mkdir_p(self.baseDbFolder)
 
