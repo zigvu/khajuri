@@ -15,3 +15,8 @@ setup:
 test:
 	py.test
 
+clean:
+	echo 'Cleaning .pyc files'
+	find . -name '*.pyc' | xargs rm
+	echo 'Cleaning install directory ~/site-packages/'
+	rm -rf ~/site-packages/
