@@ -13,7 +13,7 @@ This script will run a video through caffe and post-processing pipeline
 """
 
 def main():
-  if len(sys.argv) < 8:
+  if len(sys.argv) < 2:
     print 'Usage %s <config.yaml>' % sys.argv[0]
     print description
     sys.exit(1)

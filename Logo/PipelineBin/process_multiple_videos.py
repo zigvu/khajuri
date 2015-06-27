@@ -23,19 +23,19 @@ def main():
   configsFolder = sys.argv[1]
 
   # iterate over all files:
-  for dirpath, dirs, files in os.walk(configsFolder):
-    for filename in files:
-      configFileName = os.path.join(dirpath, filename)
-      print "Working on file: %s"% configFileName
-      try:
-        call(["~/khajuri/Logo/PipelineBin/process_video", configFileName])
-      except Exception, e:
-        print "Couldn't run file: %s"% configFileName
-        time.sleep(10)
-        call(["pkill", "processvideo"])
-        time.sleep(10)
-      finally:
-        pass
+  for fileName in glob.glob(os.path.join(configsFolder, '*.yaml')):
+    configFileName = os.path.join(os.getcwd(), fileName)
+    print "Working on file: %s"% configFileName
+    try:
+      call(["/home/ubuntu/khajuri/Logo/PipelineBin/process_video.py", configFileName])
+    except Exception, e:
+      print "Couldn't run file: %s"% configFileName
+      print "%s" % e
+      time.sleep(10)
+      call(["pkill", "processvideo"])
+      time.sleep(10)
+    finally:
+      pass
 
 if __name__ == '__main__':
   main()
