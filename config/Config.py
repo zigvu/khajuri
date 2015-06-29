@@ -54,20 +54,8 @@ class Config:
     self.cachedLogger = None
 
 
-
-
-    # CPU count
-    self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])
-
     # Sliding window creation:
     slidingWindow = config['sliding_window']
-    sw_folders = slidingWindow['folders']
-    self.sw_folders_frame = sw_folders['frame_output']
-    self.sw_folders_patch = sw_folders['patch_output']
-    self.sw_folders_json = sw_folders['json_output']
-    self.sw_folders_leveldb = sw_folders['levedb_output']
-    self.sw_folders_video = sw_folders['video_output']
-    self.sw_folders_numpy = sw_folders['numpy_output']
 
     self.sw_frame_density = int(slidingWindow['frame_density'])
     self.sw_frame_width = int(slidingWindow['frame_width'])
@@ -112,10 +100,6 @@ class Config:
     caffeInput = config['caffe_input']
     self.ci_modelFile = caffeInput['model_file']
     self.ci_video_prototxtFile = caffeInput['video_prototxt_file']
-    self.ci_deploy_prototxtFile = caffeInput['deploy_prototxt_file']
-    self.ci_numFramesPerLeveldb = caffeInput['num_frames_per_leveldb']
-    self.ci_numConcurrentLeveldbs = caffeInput['num_concurrent_leveldbs']
-    self.ci_maxLeveldbSizeMB = caffeInput['max_leveldb_size_mb']
     self.ci_lmdbBufferMaxSize = caffeInput['lmdb_buffer_max_size']
     self.ci_lmdbBufferMinSize = caffeInput['lmdb_buffer_min_size']
     self.ci_lmdbNumFramesPerBuffer = caffeInput['lmdb_num_frames_per_buffer']
@@ -125,34 +109,19 @@ class Config:
     self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
     self.ci_useGPU = caffeInput['use_gpu'] == True
     self.ci_gpu_devices = caffeInput['gpu_devices']
-    self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
-    self.ci_computeFrameCuration = caffeInput['compute_frame_curation'] == True
-    self.ci_runCaffePostProcessInParallel = caffeInput[
-        'run_caffe_postprocess_in_parallel'
-    ] == True
     self.ci_runCaffe = caffeInput['run_caffe'] == True
     self.ci_runPostProcess = caffeInput['run_postprocess'] == True
     self.ci_allClassIds = caffeInput['all_classes']
     self.ci_backgroundClassIds = caffeInput['background_classes']
-    self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds
-                                     if x not in self.ci_backgroundClassIds]
-    self.ci_heatMapClassIds = config['heatmap']['classes']
     self.ci_scoreTypes = {'prob': 0, 'fc8': 1}
 
     # Post processing
     postProcessing = config['post_processing']
     self.pp_detectorThreshold = postProcessing['detector_threshold']
-    self.pp_savePatchScores = postProcessing['save_patch_scores'] == True
-    self.pp_compressedJSON = postProcessing['compressed_json'] == True
     self.pp_zDistThresholds = postProcessing['z_dist_thresholds']
     ppResultWriters = postProcessing['result_writers']
     self.pp_resultWriterJSON = ppResultWriters['json_writer'] == True
     self.pp_resultWriterRabbit = ppResultWriters['rabbit_writer'] == True
-
-    # Curation
-    curation = config['curation']
-    self.cr_curationNumOfSets = curation['num_of_sets']
-    self.cr_curationNumOfItemsPerSet = curation['num_of_items_per_set']
 
     # HDF5 settings
     hdf5 = config['hdf5']

@@ -108,12 +108,6 @@ class VideoProcessThread(object):
       Config.mkdir_p(self.jsonFolder)
       Config.mkdir_p(self.numpyFolder)
 
-    if self.config.pp_resultWriterRabbit:
-      # TODO: find a better way
-      # For now, tag along variables in config
-      self.config.videoId = videoId
-      self.config.chiaVersionId = chiaVersionId
-
     # More than 1 GPU Available?
     self.gpu_devices = self.config.ci_gpu_devices
 

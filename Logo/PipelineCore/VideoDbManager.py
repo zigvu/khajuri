@@ -21,7 +21,6 @@ class VideoDbManager(object):
     self.logger = self.config.logger
     self.scales = self.config.sw_scales
     self.maxProducedQueueSize = self.config.ci_lmdbBufferMaxSize
-    self.compressedJSON = self.config.pp_compressedJSON
 
   def setupFolders(self, dbFolder, jsonFolder):
     """Setup folders"""

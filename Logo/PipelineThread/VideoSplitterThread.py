@@ -65,8 +65,7 @@ class VideoSplitterThread(object):
     conversionQueue = JoinableQueue()
     conversionProcesses = []
     # num_consumers = 1
-    num_consumers = max(int(
-        self.config.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
+    num_consumers = multiprocessing.cpu_count()
 
     for i in xrange(num_consumers):
       conversionProcess = Process(

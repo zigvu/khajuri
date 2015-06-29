@@ -1,4 +1,4 @@
-# running with khajuri branch: Development (w/ lmdb circular buffer)
+# Khajuri Config
 
 # in increasing level of severity: DEBUG, INFO, ERROR, CRITICAL
 logging:
@@ -17,22 +17,8 @@ process_video_job:
   jsonFolder:                                'json'
   numpyFolder:                               'numpy'
 
-# Count to multiply with the number of cores available in machine
-# if using fraction, will round down to nearest integer after multiplication
-# Example: 16 core machine and 1.4 factor = 22 threads to run in parallel
-# use 31 out of 32 cores
-multiple_of_cpu_count:                        1
-
 # Sliding window configurations
 sliding_window:
-  is_test:                                    false
-  folders:
-    frame_output:                             frames
-    patch_output:                             patches
-    json_output:                              json
-    levedb_output:                            /mnt/tmp/lmdb
-    video_output:                             vdo-out
-    numpy_output:                             numpy
   frame_density:                              5
   frame_width:                                1280
   frame_height:                               720
@@ -58,29 +44,20 @@ sliding_window:
     - 1.3
     - 1.6
 
-# put in same folder as this config.yaml file - no absolute path here
+  # put in same folder as this config.yaml file - no absolute path here
   scale_decayed_factors_file:                "config_scale_decay_factors.json"
 
 # Caffe input
 caffe_input:
   model_file:                                 "/mnt/data/wc14itr/set04/runResults/caffe_logo_train_iter_5000"
   video_prototxt_file:                        "/mnt/data/wc14itr/set04/runResults/prototxt/logo_video.prototxt"
-  deploy_prototxt_file:                       "/mnt/data/wc14itr/set04/runResults/prototxt/logo_deploy.prototxt"
-
-# for processing vdo in older setup with leveldb
-  # number of frames to put in one leveldb
-  num_frames_per_leveldb:                    30
-  num_concurrent_leveldbs:                   2
-  # leveldb might be maintained in TEMPFS - if exceed this size, pause leveldb creation
-  # if want to ignore the size limit, set to zero
-  max_leveldb_size_mb:                       20000
 
   # lmdb circular buffers - look at issue65 for setting these
   lmdb_buffer_max_size:                      6
   lmdb_buffer_min_size:                      4
   lmdb_num_frames_per_buffer:                1
 
-  # post-processing queue size management (nuum of items)
+  # post-processing queue size management (num of frames in queue)
   pp_queue_max_size:                         5000
   pp_queue_high_watermark:                   4000
   pp_queue_low_watermark:                    1000
@@ -93,11 +70,6 @@ caffe_input:
     - 1
     - 2
     - 3
-  save_video_heatmap:                        false 
-  compute_frame_curation:                    false
-
-# for processing vdo in older setup with leveldb
-  run_caffe_postprocess_in_parallel:         false
 
   run_caffe:                                 true
   run_postprocess:                           true
@@ -161,12 +133,6 @@ caffe_input:
 # Post processing
 post_processing:
   detector_threshold:                         0.8
-  # Note: to avoid losing caffe scores permanently, `save_patch_scores = false` 
-  # is ONLY considered when saving JSON after post-processing stage
-  save_patch_scores:                          true
-  # this uses the snappy library - to unzip a file from the command line
-  # issue: python -m snappy -d <filename.snappy>
-  compressed_json:                            false
   z_dist_thresholds:
     - 0
     - 2
@@ -174,19 +140,6 @@ post_processing:
   result_writers:
     json_writer:                              true
     rabbit_writer:                            false
-
-# Curation
-curation:
-  # total patches/frames per class = num_of_sets * num_of_items_per_set
-  num_of_sets:                                10
-  num_of_items_per_set:                       500
-
-heatmap:
-  classes:
-   - '22'
-
-log:
-  file:       pp.log
 
 # HDF5 storage
 hdf5:

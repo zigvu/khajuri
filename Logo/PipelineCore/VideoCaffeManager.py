@@ -23,7 +23,6 @@ class VideoCaffeManager(object):
     self.classes = self.config.ci_allClassIds
     self.numOfClasses = len(self.classes)
     self.runPostProcessor = self.config.ci_runPostProcess
-    self.compressedJSON = self.config.pp_compressedJSON
     self.patchMapping = self.config.allCellBoundariesDict["patchMapping"]
     self.totalPatches = len(self.patchMapping)
 

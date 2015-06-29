@@ -32,7 +32,7 @@ def main():
       print "Couldn't run file: %s"% configFileName
       print "%s" % e
       time.sleep(10)
-      call(["pkill", "processvideo"])
+      call(["pkill", "process_video"])
       time.sleep(10)
     finally:
       pass
