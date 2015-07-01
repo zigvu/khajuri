@@ -57,9 +57,7 @@ def main():
     sys.exit(1)
 
   config = Config(sys.argv[1])
-  logger = config.logger
-
-  config.videoId = None
+  logger = config.logging.logger
 
   branch, commit = Version().getGitVersion()
   logger.info('Branch: %s' % branch)
@@ -76,7 +74,7 @@ def main():
   inputs = multiprocessing.JoinableQueue()
   results = multiprocessing.Queue()
 
-  classes = config.ci_allClassIds
+  classes = config.caffeInput.ci_allClassIds
   adiffMax = OrderedDict()
   adiffAvg = OrderedDict()
   adiffMin = OrderedDict()

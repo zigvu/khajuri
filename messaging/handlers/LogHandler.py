@@ -11,7 +11,7 @@ class LogHandler(object):
   def __init__(self, config):
     """Initialize values"""
     self.config = config
-    self.logger = self.config.logger
+    self.logger = self.config.logging.logger
     self.handler = graypy.GELFHandler('localhost', 12201)
 
   def handle(self, headers, message):

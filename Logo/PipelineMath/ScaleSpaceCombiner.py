@@ -1,6 +1,5 @@
 import numpy as np
 
-from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.PixelMapper import PixelMapper
 
 
@@ -9,21 +8,20 @@ class ScaleSpaceCombiner(object):
 
   def __init__(self, classId, config, frame, zDistThreshold):
     """Initialize class"""
-    self.classId = classId
-    self.config = config
-    self.frame = frame
-    self.zDistThreshold = zDistThreshold
-    self.pixelMapper = PixelMapper(classId, config, frame, self.zDistThreshold)
-    scaleDecayFactors = self.config.sw_scale_decay_factors
-    self.pixelMapper.setupScaleDecayedMapCache(scaleDecayFactors)
+    self.pixelMapper = PixelMapper(classId, config, frame, zDistThreshold)
+
+    self.slidingWindowCfg = config.slidingWindow
+
+    self.pixelMapper.setupScaleDecayedMapCache(
+        self.slidingWindowCfg.sw_scale_decay_factors)
 
   def getBestInferredPixelMap(self):
     """Get the Best Localization Map"""
-    maxLocalizationScale = self.config.sw_scales[0]
+    maxLocalizationScale = self.slidingWindowCfg.sw_scales[0]
     maxLocalizationMap = self.pixelMapper.getScaleDecayedMap(
         maxLocalizationScale)
     maxPixelLocalization = 1E-10
-    for scale in self.config.sw_scales:
+    for scale in self.slidingWindowCfg.sw_scales:
       curLocalizationMap = self.pixelMapper.getScaleDecayedMap(scale)
       curMaxPixelValue = np.max(curLocalizationMap.cellValues)
       if curMaxPixelValue > maxPixelLocalization:

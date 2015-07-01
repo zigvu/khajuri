@@ -5,6 +5,8 @@ import sys, glob, json
 import numpy as np
 
 from config.Config import Config
+from config.Status import Status
+
 from postprocessing.task.JsonReader import JsonReader
 
 from hdf5Storage.type.FrameData import FrameData
@@ -26,15 +28,15 @@ which pulls data out of RabbitMq and saves to HDF5.
 
 def process(configFileName, jsonFolder, videoId, chiaVersionId):
   config = Config(configFileName)
-  logger = config.logger
 
-  # TODO: get from config file
-  config.videoId = 1  # strangely, without this, JsonReader will break
-  config.total_num_of_patches = 543  # read this from config instead
-  jsonReader = JsonReader(config, None)
+  logger = config.logging.logger
+  messagingCfg = config.messaging
 
-  amqp_url = config.mes_amqp_url
-  serverQueueName = config.mes_q_vm2_kahjuri_development_video_data
+  status = Status(logger)
+  jsonReader = JsonReader(config, status)
+
+  amqp_url = messagingCfg.amqpURL
+  serverQueueName = messagingCfg.queues.videoData
 
   # STEP 1:
   # this client needs to be defined at the begining of
@@ -44,9 +46,7 @@ def process(configFileName, jsonFolder, videoId, chiaVersionId):
 
   # STEP 2:
   # need to inform VM1/VM2 that a new video processing is begining
-  # for now, we are the originator of config object - this will change
-  # once we have a more robust config manager
-  message = Pickler.pickle(config)
+  message = Pickler.pickle({})
   headers = Headers.videoStorageStart(videoId, chiaVersionId)
   response = json.loads(rpcClient.call(headers, message))
 

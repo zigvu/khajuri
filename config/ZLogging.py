@@ -6,7 +6,7 @@ class  ZFormatter(logging.Formatter):
   # Format as per issue 104
 
   # LOG Format:
-  # [machine_hostname]::[zigvu_system]::[environment]::[kheer_job_id]::
+  # [machine_hostname]::[zigvu_system]::[environment]::[zigvu_job_id]::
   # [log_level]::[date_time]::[file_name]::[line_number]::[process_id]::
   # [message]
 
@@ -23,7 +23,7 @@ class  ZFormatter(logging.Formatter):
     msg = '%s' % (record.hostname)
     msg = '%s::%s' % (msg, record.name)
     msg = '%s::%s' % (msg, record.environment)
-    msg = '%s::%s' % (msg, record.kheerjobid)
+    msg = '%s::%s' % (msg, record.zigvuJobId)
     msg = '%s::%s' % (msg, record.levelname)
     msg = '%s::%s' % (msg, self.formatTime(record, self.datefmt))
     msg = '%s::%s' % (msg, record.filename)
@@ -36,19 +36,16 @@ class  ZFormatter(logging.Formatter):
 
 class ZFilter(logging.Filter):
   """Specialized log filter to help in logging analytics"""
-  def __init__(self, formatMsg):
+  def __init__(self, logExtraParams):
     """Init"""
     logging.Filter.__init__(self)
-    self.hostname = socket.gethostname()
-    # decompose formatMsg
-    self.kheerjobid = formatMsg['kheer_job_id']
-    self.environment = formatMsg['environment']
+    self.logExtraParams = logExtraParams
+    self.logExtraParams.update({'hostname': socket.gethostname()})
 
   def filter(self, record):
     """Correctly formatted log"""
-    record.hostname = self.hostname
-    record.kheerjobid = self.kheerjobid
-    record.environment = self.environment
+    for k,v in self.logExtraParams.iteritems():
+      setattr(record, k, v)
     return True
 
 
@@ -75,10 +72,10 @@ class ZLoggingQueueHandler(logging.Handler):
 
 class ZLoggingQueueProducer(object):
   """Produce logs from non-main process/threads"""
-  def __init__(self, logQueue, logLevel, formatMsg):
+  def __init__(self, logQueue, logLevel, logExtraParams):
     self.logger = logging.getLogger('zigvu.khajuri')
     self.logger.setLevel(logLevel)
-    self.logger.addFilter(ZFilter(formatMsg))
+    self.logger.addFilter(ZFilter(logExtraParams))
 
     # remove existing handlers
     for handler in self.logger.handlers:
@@ -95,13 +92,14 @@ class ZLoggingQueueProducer(object):
 
 
 class ZLogging(object):
-  def __init__(self, logLevel, formatMsg):
+  def __init__(self, logLevel, logExtraParams):
     self.logger = logging.getLogger('zigvu.khajuri')
     self.logger.setLevel(logLevel)
-    self.logger.addFilter(ZFilter(formatMsg))
+    self.logger.addFilter(ZFilter(logExtraParams))
 
     handler = ZLoggingStreamHandler()
     self.logger.addHandler(handler)
+    self.logger.propagate = False
 
   def getLogger(self):
     return self.logger

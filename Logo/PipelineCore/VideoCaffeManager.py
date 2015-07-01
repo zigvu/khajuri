@@ -17,18 +17,21 @@ class VideoCaffeManager(object):
   def __init__(self, config):
     """Initialization"""
     self.config = config
-    self.logger = self.config.logger
+    self.logger = self.config.logging.logger
+    self.machineCfg = self.config.machine
+    self.caffeInputCfg = self.config.caffeInput
+
     self.status = Status(self.logger)
 
-    self.classes = self.config.ci_allClassIds
+    self.classes = self.caffeInputCfg.ci_allClassIds
     self.numOfClasses = len(self.classes)
-    self.runPostProcessor = self.config.ci_runPostProcess
+    self.runPostProcessor = self.caffeInputCfg.ci_runPostProcess
     self.patchMapping = self.config.allCellBoundariesDict["patchMapping"]
     self.totalPatches = len(self.patchMapping)
 
     # manage post-process queue size
-    self.ppQueue_highWatermark = self.config.ci_ppQueue_highWatermark
-    self.ppQueue_lowWatermark = self.config.ci_ppQueue_lowWatermark
+    self.ppQueue_highWatermark = self.caffeInputCfg.ci_ppQueue_highWatermark
+    self.ppQueue_lowWatermark = self.caffeInputCfg.ci_ppQueue_lowWatermark
     self.ppQueue_isAboveHighWatermark = False
     self.postProcessQueueSleepTime = 10
 
@@ -51,8 +54,8 @@ class VideoCaffeManager(object):
           "Couldn't read batch size from file %s" % newPrototxtFile)
 
     self.logger.info("DeviceId: %d: Setup caffe network" % self.deviceId)
-    useGPU = self.config.ci_useGPU
-    modelFile = self.config.ci_modelFile
+    useGPU = self.machineCfg.useGPU()
+    modelFile = self.caffeInputCfg.ci_modelFile
 
     # HACK: without reinitializing caffe_net twice, it won't give reproducible results
     # Seems to happen in both CPU and GPU runs:
@@ -114,7 +117,7 @@ class VideoCaffeManager(object):
       jsonFile = infoDict['jsonFile']
       if jsonFile not in frames.keys():
         frames[jsonFile] = Frame(
-            self.classes, self.totalPatches, self.config.ci_scoreTypes.keys())
+            self.classes, self.totalPatches, self.caffeInputCfg.ci_scoreTypes.keys())
         frames[jsonFile].filename = jsonFile
         frames[jsonFile].frameNumber = infoDict['frameNum']
         frames[jsonFile].frameDisplayTime = 0

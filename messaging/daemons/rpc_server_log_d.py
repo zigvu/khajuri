@@ -18,10 +18,12 @@ TODO: daemonize
 
 def process(configFileName):
   config = Config(configFileName)
-  logger = config.logger
 
-  amqp_url = config.mes_amqp_url
-  serverQueueName = config.mes_q_vm2_khajuri_development_log
+  logger = config.logging.logger
+  messagingCfg = config.messaging
+
+  amqp_url = messagingCfg.amqpURL
+  serverQueueName = messagingCfg.queues.log
 
   logger.info("Starting RPC server to read logs")
 

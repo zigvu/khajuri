@@ -110,10 +110,9 @@ class Headers(object):
   # log headers
   # -----------------------------------------------
   @staticmethod
-  def log(kheerJobId):
+  def log():
     headers = {
         'type': 'log',
-        'state': 'emit',
-        'props': {'kheer_job_id': kheerJobId}
+        'state': 'emit'
     }
     return headers

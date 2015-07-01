@@ -1,21 +1,92 @@
 # Khajuri Config
 
-# in increasing level of severity: DEBUG, INFO, ERROR, CRITICAL
-logging:
-  log_level:                                  DEBUG
-  rabbit_logger:                              false
-  write_logs_to_queue:                        false
+# For any change to Config.py or related sub-classes, need to update this file
+# with both khajuri and kheer issues that introduce the code changes
+# If just changing the values in this config (as apposed to adding new fields),
+# version tracking is not required
+versioning:
+  khajuri_issue_number:                      104
+  kheer_issue_number:                        1
 
-# process video config values
-process_video_job:
-  kheerJobId:                                1
-  environment:                               'development'
-  videoId:                                   1
-  videoFileName:                             ''
-  chiaVersionId:                             1
-  baseDbFolder:                              '/mnt/tmp/lmdb'
-  jsonFolder:                                'json'
-  numpyFolder:                               'numpy'
+# Each executable will need to configure these
+# parameters prior to executing any khajuri code
+execution:
+  # Environments: 'local', 'development', 'production'
+  environment:                               'local'
+  # Log levels: DEBUG, INFO, ERROR, CRITICAL
+  #   rabbit writer logs are automatically INFO
+  logging:
+    rabbit_writer:                           false
+    needs_log_queue:                         true
+    log_level:                               'INFO'
+  # Jobs: 'process_video', 'heatmap_daemon', 'hdf5_writer_daemon'
+  job:                                       'process_video'
+  # Machines: GPU1, GPU2, VM
+  machine:                                   'GPU2'
+
+
+
+# Details of jobs
+jobs:
+  process_video:
+    zigvu_job_id:                            1
+    kheer_job_id:                            1
+    video_id:                                1
+    video_file_name:                         ''
+    chia_version_id:                         1
+  heatmap_daemon:
+    zigvu_job_id:                            2
+  hdf5_writer_daemon:
+    zigvu_job_id:                            3
+
+
+# Details of machines
+machines:
+  # To not use GPUs in GPU machines, put:
+  #   gpu_devices: None
+  GPU1:
+    gpu_devices:                            
+      - 0
+      - 1
+    num_cores:                               32
+  GPU2:
+    gpu_devices:                            
+      - 0
+      - 1
+      - 2
+      - 3
+    num_cores:                               32
+  VM:
+    num_cores:                               2
+
+
+# Rabbit messaging
+rabbit:
+  amqp_url:                                  'localhost'
+  queue_names:
+    local:                                   None
+    development:
+      log:                                   'development.log'
+      video_data:                            'development.video_data'
+      clip_id_request:                       'development.clip_id.request'
+      heatmap_request:                       'development.heatmap.request'
+      localization_request:                  'development.localization.request'
+    production:
+      log:                                   'production.log'
+      video_data:                            'production.video_data'
+      clip_id_request:                       'production.clip_id.request'
+      heatmap_request:                       'production.heatmap.request'
+      localization_request:                  'production.localization.request'
+
+# temporary and permanent storage
+storage:
+  json_read_write:                            false
+  hdf5_read_write:                            false
+  local:
+    base_db_folder:                          '/mnt/tmp/lmdb'
+    json_folder:                             'json'
+  hdf5:
+    hdf5_base_folder:                        '/var/www/kheer/public/data'
 
 # Sliding window configurations
 sliding_window:
@@ -23,8 +94,8 @@ sliding_window:
   frame_width:                                1280
   frame_height:                               720
   # Dimension of patches
-  output_width:                               256
-  output_height:                              256
+  patch_width:                               256
+  patch_height:                              256
   x_stride:
     - 32
     - 64
@@ -47,6 +118,8 @@ sliding_window:
   # put in same folder as this config.yaml file - no absolute path here
   scale_decayed_factors_file:                "config_scale_decay_factors.json"
 
+
+
 # Caffe input
 caffe_input:
   model_file:                                 "/mnt/data/wc14itr/set04/runResults/caffe_logo_train_iter_5000"
@@ -64,12 +137,6 @@ caffe_input:
 
   # frame number to start video processing on
   video_frame_number_start:                  1
-  use_gpu:                                   true
-  gpu_devices:                               
-    - 0
-    - 1
-    - 2
-    - 3
 
   run_caffe:                                 true
   run_postprocess:                           true
@@ -137,9 +204,58 @@ post_processing:
     - 0
     - 2
     - 4
-  result_writers:
-    json_writer:                              true
-    rabbit_writer:                            false
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Khajuri Config
+
+# in increasing level of severity: DEBUG, INFO, ERROR, CRITICAL
+logging:
+  log_level:                                  DEBUG
+  rabbit_logger:                              false
+  write_logs_to_queue:                        false
+
+# process video config values
+process_video_job:
+  kheerJobId:                                1
+  environment:                               'development'
+  videoId:                                   1
+  videoFileName:                             ''
+  chiaVersionId:                             1
+  baseDbFolder:                              '/mnt/tmp/lmdb'
+  jsonFolder:                                'json'
+  numpyFolder:                               'numpy'
 
 # HDF5 storage
 hdf5:

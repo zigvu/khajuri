@@ -13,7 +13,9 @@ class HeatmapDataHandler(object):
   def __init__(self, config):
     """Initialize values"""
     self.config = config
-    self.logger = self.config.logger
+    self.logger = self.config.logging.logger
+    self.allCellBoundariesDict = self.config.allCellBoundariesDict
+    self.neighborMap = self.config.neighborMap
 
   def handle(self, headers, heatmapRequest):
     # request syntax should match in
@@ -33,8 +35,7 @@ class HeatmapDataHandler(object):
 
     try:
       # construct PixelMap
-      pixelMap = PixelMap(
-              self.config.allCellBoundariesDict, self.config.neighborMap, scale)
+      pixelMap = PixelMap(self.allCellBoundariesDict, self.neighborMap, scale)
       with VideoDataReader(self.config, videoId, chiaVersionId) as vdr:
         frameData = vdr.getFrameData(frameNumber)
         patchScores = frameData.scores[:, chiaClassId]

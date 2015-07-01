@@ -157,5 +157,27 @@ def main_old():
   # logger.info("Whaa")
 
 
+def main_two():
+  if len(sys.argv) < 2:
+    print 'Usage %s <config.yaml>' % sys.argv[0]
+    sys.exit(1)
+
+  print "Loading config..."
+  configFileName = sys.argv[1]
+  e = Config(configFileName)
+
+  print "VideoId: %s" % e.job.videoId
+  print "Env: %s" % e.environment
+  print "Mchn GPUs: %s" % e.machine.useGPU()
+  print "Storage hdf5: %s" % e.storage.enableHdf5ReadWrite
+  print "CPP Logger: %s" % e.logging.cppGlogStarted
+  print "SW scales: %s" % e.slidingWindow.sw_scales
+  print "SW bbx len: %s" % e.slidingWindow.numOfSlidingWindows
+  # print "Mes videoData: %s" % e.messaging.queues.videoData
+  print "Done loading config..."
+
+  logger = ZLogging(logging.DEBUG, {'zigvuJobId': 1, 'environment': 'local'}).getLogger()
+  logger.info("Whaa")
+
 if __name__ == '__main__':
-  main()
+  main_two()

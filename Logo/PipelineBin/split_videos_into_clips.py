@@ -3,6 +3,7 @@
 import sys, os, glob
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
+import time
 
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append('%s/../../VideoReader' % baseScriptDir)
@@ -52,13 +53,14 @@ def main():
       fileNameQueue.put(inputFileName)
 
   # num of processes
-  numOfProcesses = 4
+  numOfProcesses = 8
   runVideoSplitProcesses = []
   for i in range(0,numOfProcesses):
     runVideoSplitProcess = Process(
         target=runClipCreation, 
         args=(fileNameQueue, configFileName, clipsOutputFolder, ))
     runVideoSplitProcesses += [runVideoSplitProcess]
+    time.sleep(10)
     runVideoSplitProcess.start()
     fileNameQueue.put(None)
 

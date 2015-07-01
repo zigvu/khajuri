@@ -127,6 +127,7 @@ if __name__ == '__main__':
     runVideoConversionProcess = Process(
         target=runVideoConversion, args=(fileNameQueue, outputVideoFolder, ))
     runVideoConversionProcesses += [runVideoConversionProcess]
+    time.sleep(10)
     runVideoConversionProcess.start()
     fileNameQueue.put(None)
 

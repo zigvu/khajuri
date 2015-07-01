@@ -1,4 +1,3 @@
-
 from Logo.PipelineMath.ScaleSpaceCombiner import ScaleSpaceCombiner
 from Logo.PipelineMath.PeaksExtractor import PeaksExtractor
 
@@ -13,7 +12,7 @@ class FramePostProcessor(object):
     """Initialize values"""
     self.classId = classId
     self.config = config
-    self.logger = self.config.logger
+    self.logger = self.config.logging.logger
     self.frame = frame
     self.zDistThreshold = zDistThreshold
 

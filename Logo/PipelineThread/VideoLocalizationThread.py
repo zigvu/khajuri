@@ -1,4 +1,6 @@
-import os, glob, time
+import os
+import glob
+import time
 
 from Logo.PipelineMath.Rectangle import Rectangle
 
@@ -9,19 +11,22 @@ from Logo.PipelineCore.VideoWriter import VideoWriter
 from config.Config import Config
 from config.Version import Version
 from config.Status import Status
+from config.Utils import Utils
 
 from postprocessing.task.JsonReader import JsonReader
 
 
 class VideoLocalizationThread(object):
-  """Class to draw localization for all classes in video"""
+  """Draw localization for all classes in video"""
 
   def __init__(self, configFileName, videoFileName, jsonFolder,
                videoOutputFolder):
     """Initialize values"""
     self.config = Config(configFileName)
 
-    self.logger = self.config.logger
+    self.logger = self.config.logging.logger
+    self.videoFrameNumberStart = self.config.caffeInput.ci_videoFrameNumberStart
+
     branch, commit = Version().getGitVersion()
     self.logger.info('Branch: %s' % branch)
     self.logger.info('Commit: %s' % commit)
@@ -32,13 +37,9 @@ class VideoLocalizationThread(object):
     self.jsonFolder = jsonFolder
     self.videoOutputFolder = videoOutputFolder
 
-    # TODO: remove - currently this is a bug which causes
-    # JSONReader to crash
-    self.config.videoId = 1
-
     self.jsonReader = JsonReader(self.config, self.status)
 
-    Config.mkdir_p(self.videoOutputFolder)
+    Utils.mkdir_p(self.videoOutputFolder)
 
 
   def run(self):
@@ -70,7 +71,7 @@ class VideoLocalizationThread(object):
     videoWriter = VideoWriter(outVideoFileName, fps, imageDim)
 
     # pre-fill video with frames that didn't get evaluated
-    for currentFrameNum in range(0, self.config.ci_videoFrameNumberStart):
+    for currentFrameNum in range(0, self.videoFrameNumberStart):
       frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
       if frame != None:
         # Save each frame
@@ -90,7 +91,7 @@ class VideoLocalizationThread(object):
     # Go through evaluated video frame by frame
 
     # frame number being extracted
-    currentFrameNum = self.config.ci_videoFrameNumberStart
+    currentFrameNum = self.videoFrameNumberStart
     frameObj = None
     frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
     while frame != None:

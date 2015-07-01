@@ -18,9 +18,7 @@ def main():
     print 'This executable will compare two files and print any diff per class'
     sys.exit(1)
   config = Config(sys.argv[1])
-  logger = config.logger
-
-  config.videoId = None
+  logger = config.logging.logger
 
   branch, commit = Version().getGitVersion()
   logger.info('Branch: %s' % branch)

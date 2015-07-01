@@ -25,7 +25,7 @@ def main():
 
 def process(configFileName, inputs, results):
   config = Config(configFileName)
-  logger = config.logger
+  logger = config.logging.logger
 
   status = Status(logger)
 

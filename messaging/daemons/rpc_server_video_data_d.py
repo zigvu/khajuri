@@ -19,23 +19,22 @@ TODO: daemonize
 
 def process(configFileName):
   config = Config(configFileName)
-  logger = config.logger
 
-  config.total_num_of_patches = 543  # read this from config instead
+  logger = config.logging.logger
+  messagingCfg = config.messaging
 
-  amqp_url = config.mes_amqp_url
-
-  khajuriDataQueueName = config.mes_q_vm2_kahjuri_development_video_data
-  kheerQueueName = config.mes_q_vm2_kheer_development_localization_request
+  amqp_url = messagingCfg.amqpURL
+  videoDataQueueName = messagingCfg.queues.videoData
+  localizationRequestQueueName = messagingCfg.queues.localizationRequest
 
   # this client sends data to kheer
-  kheerRpcClient = RpcClient(amqp_url, kheerQueueName)
+  kheerRpcClient = RpcClient(amqp_url, localizationRequestQueueName)
 
   logger.info("Starting RPC server to read video data")
 
   # this server runs in VM2 and listens to data from GPU1/GPU2
   videoDataHandler = VideoDataHandler(kheerRpcClient, config)
-  rpc = RpcServer(amqp_url, khajuriDataQueueName, videoDataHandler)
+  rpc = RpcServer(amqp_url, videoDataQueueName, videoDataHandler)
 
 
 if __name__ == '__main__':

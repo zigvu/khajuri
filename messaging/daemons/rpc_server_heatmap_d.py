@@ -17,10 +17,12 @@ TODO: daemonize
 
 def process(configFileName):
   config = Config(configFileName)
-  logger = config.logger
 
-  amqp_url = config.mes_amqp_url
-  serverQueueName = config.mes_q_vm2_kheer_development_heatmap_rpc_request
+  logger = config.logging.logger
+  messagingCfg = config.messaging
+
+  amqp_url = messagingCfg.amqpURL
+  serverQueueName = messagingCfg.queues.heatmapRequest
 
   logger.info("Heatmap rpc server started")
 

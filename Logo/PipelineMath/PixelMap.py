@@ -8,6 +8,8 @@ import multiprocessing
 import time
 import cPickle as pickle
 
+from Logo.PipelineMath.Rectangle import Rectangle
+
 
 class PixelMap(object):
   """Container data structure for creating/hodling caffe scores"""
@@ -154,23 +156,20 @@ class PixelMap(object):
     self.scaleFactor = scaleFactor
 
 
-from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
-from Logo.PipelineMath.Rectangle import Rectangle
-
 
 class CellBoundaries(object):
 
   def __init__(self, config):
     self.config = config
-    self.logger = self.config.logger
-    imgDim = Rectangle.rectangle_from_dimensions(
-        self.config.sw_frame_width, self.config.sw_frame_height)
-    patchDim = Rectangle.rectangle_from_dimensions(
-        self.config.sw_patchWidth, self.config.sw_patchHeight)
-    staticBBoxes = BoundingBoxes(
-        imgDim, self.config.sw_xStride, self.config.sw_yStride, patchDim)
+
+    self.logging = self.config.logging
+    self.slidingWindowCfg = self.config.slidingWindow
+
+    self.logger = self.logging.logger
+
+    staticBBoxes = self.slidingWindowCfg.staticBBoxes
     self.allCellBoundariesDict = self.getCellBoundaries(
-        staticBBoxes, self.config.sw_scales)
+        staticBBoxes, self.slidingWindowCfg.sw_scales)
 
   def getCellBoundaries(self, staticBBoxes, scales):
     """Return cell boundaries for given scales.

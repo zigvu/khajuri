@@ -6,10 +6,8 @@ from collections import OrderedDict
 
 from VideoReader import VideoReader
 
-from Logo.PipelineMath.Rectangle import Rectangle
-from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
-
 from config.Config import Config
+from config.Utils import Utils
 
 
 class VideoDbManager(object):
@@ -18,9 +16,15 @@ class VideoDbManager(object):
   def __init__(self, config):
     """Initialization"""
     self.config = config
-    self.logger = self.config.logger
-    self.scales = self.config.sw_scales
-    self.maxProducedQueueSize = self.config.ci_lmdbBufferMaxSize
+    self.loggingCfg = self.config.logging
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+
+    self.logger = self.loggingCfg.logger
+    self.scales = self.slidingWindowCfg.sw_scales
+    self.staticBBoxes = self.slidingWindowCfg.staticBBoxes
+    self.numOfSlidingWindowsPerFrame = self.slidingWindowCfg.numOfSlidingWindows
+    self.maxProducedQueueSize = self.caffeInputCfg.ci_lmdbBufferMaxSize
 
   def setupFolders(self, dbFolder, jsonFolder):
     """Setup folders"""
@@ -29,40 +33,32 @@ class VideoDbManager(object):
     self.jsonFolder = None
 
     self.dbFolder = dbFolder
-    #config.mkdir_p(self.dbFolder) # this is made in C++
+    # Utils.mkdir_p(self.dbFolder) # this is made in C++
     self.jsonFolder = jsonFolder
-    Config.mkdir_p(self.jsonFolder)
+    Utils.mkdir_p(self.jsonFolder)
 
   def setupVideoFrameReader(self, videoFileName):
     """Setup database creation from video given start of frame and steps"""
     # initializes the following:
     self.videoFrameReader = None
-    self.staticBoundingBoxes = None
     self.totalNumOfFrames = None
     self.videoId = None
-    self.imageDim = None
 
     # Load video
     self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
     self.videoFrameReader.generateFrames()
-    if not self.config.lg_cpp_log_started:
+    if not self.loggingCfg.cppGlogStarted:
       self.videoFrameReader.startLogger()
-      self.config.lg_cpp_log_started = True
+      self.loggingCfg.cppGlogStarted = True
 
     # since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
     time.sleep(10)
 
-    # Get frame dimensions and create bounding boxes
+    # Get frame dimensions
     frame = self.videoFrameReader.getFrameWithFrameNumber(1)
     while not frame:
       frame = self.videoFrameReader.getFrameWithFrameNumber(1)
-    self.imageDim = Rectangle.rectangle_from_dimensions(
-        frame.width, frame.height)
-    patchDimension = Rectangle.rectangle_from_dimensions(
-      self.config.sw_patchWidth, self.config.sw_patchHeight)
-    self.staticBoundingBoxes = BoundingBoxes(
-      self.imageDim, self.config.sw_xStride, self.config.sw_yStride, patchDimension)
 
     fps = self.videoFrameReader.fps
     lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
@@ -81,16 +77,12 @@ class VideoDbManager(object):
     self.deviceId = deviceId
 
     # create new prototxt
-    prototxtFile = self.config.ci_video_prototxtFile
+    prototxtFile = self.caffeInputCfg.ci_video_prototxtFile
     self.newPrototxtFile = newPrototxtFile
 
-    # calculate batch size from bounding boxes
-    for scale in self.scales:
-      self.caffeBatchSize += len(
-          self.staticBoundingBoxes.getBoundingBoxes(scale))
-
     # if we want multiple frames per batch, change
-    self.caffeBatchSize = self.caffeBatchSize * self.config.ci_lmdbNumFramesPerBuffer
+    self.caffeBatchSize = self.numOfSlidingWindowsPerFrame * \
+        self.caffeInputCfg.ci_lmdbNumFramesPerBuffer
 
     # ensure backend is lmdb
     isDbLMDB = False
@@ -168,7 +160,7 @@ class VideoDbManager(object):
       # Put patch into db
       patchNum = 0
       for scale in self.scales:
-        for box in self.staticBoundingBoxes.getBoundingBoxes(scale):
+        for box in self.staticBBoxes.getBoundingBoxes(scale):
           # Generate db patch and add to json
           dbPatchCounter = videoDb.savePatch(
               currentFrameNum, scale, box[0], box[1], box[2], box[3])
@@ -231,4 +223,4 @@ class VideoDbManager(object):
       videoDb.deletePatch(int(patchCounter))
       videoDb.saveDb()
     # delete file
-    Config.rm_rf(dbBatchMappingFileToDelete)
+    Utils.rm_rf(dbBatchMappingFileToDelete)

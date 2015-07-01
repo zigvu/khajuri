@@ -1,4 +1,5 @@
-import os, time
+import os
+import time
 import multiprocessing
 from multiprocessing import JoinableQueue, Process, Manager
 from collections import OrderedDict
@@ -14,6 +15,7 @@ from Logo.PipelineCore.LogConsolidator import LogConsolidator
 from config.Config import Config
 from config.Version import Version
 from config.Status import Status
+from config.Utils import Utils
 
 from postprocessing.task.CaffeResultPostProcess import CaffeResultPostProcess
 
@@ -68,58 +70,63 @@ class VideoProcessThread(object):
 
   def __init__(self, configFileName):
     """Initialize values"""
-    self.configFileName = configFileName
-
     global config
     config = Config(configFileName)
     self.config = config
 
+    self.loggingCfg = self.config.logging
+    self.jobCfg = self.config.job
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+    self.postProcessingCfg = self.config.postProcessing
+    self.messagingCfg = self.config.messaging
+    self.storageCfg = self.config.storage
+
     # Logging infrastructure
-    self.logQueue = self.config.logQueue
+    self.logQueue = self.loggingCfg.logQueue
     self.logConsolidatorProcess = Process(
         target=runLogConsolidator, args=())
     self.logConsolidatorProcess.start()
 
-    self.logger = self.config.logger
+    self.logger = self.loggingCfg.logger
     branch, commit = Version().getGitVersion()
     self.logger.info('Branch: %s' % branch)
     self.logger.info('Commit: %s' % commit)
 
     self.status = Status(self.logger)
 
-    # kheer job configuration
-    self.videoFileName = self.config.videoFileName
-    self.videoId = self.config.videoId
-    self.chiaVersionId = self.config.chiaVersionId
+    # job details
+    self.videoId = self.jobCfg.videoId
+    self.videoFileName = self.jobCfg.videoFileName
+    self.chiaVersionId = self.jobCfg.chiaVersionId
 
-    self.runCaffe = self.config.ci_runCaffe
-    self.runPostProcessor = self.config.ci_runPostProcess
-    self.frameStartNumber = self.config.ci_videoFrameNumberStart
+    self.runCaffe = self.caffeInputCfg.ci_runCaffe
+    self.runPostProcessor = self.caffeInputCfg.ci_runPostProcess
+    self.frameStartNumber = self.caffeInputCfg.ci_videoFrameNumberStart
 
     # Folder to save files
-    self.baseDbFolder = self.config.baseDbFolder
-    self.jsonFolder = self.config.jsonFolder
-    self.numpyFolder = self.config.numpyFolder
-    Config.rm_rf(self.baseDbFolder)
-    Config.mkdir_p(self.baseDbFolder)
+    self.baseDbFolder = self.storageCfg.baseDbFolder
+    self.jsonFolder = self.storageCfg.jsonFolder
+    Utils.rm_rf(self.baseDbFolder)
+    Utils.mkdir_p(self.baseDbFolder)
 
     # if JSON writer is enabled
-    if self.config.pp_resultWriterJSON:
-      Config.mkdir_p(self.jsonFolder)
-      Config.mkdir_p(self.numpyFolder)
+    if self.storageCfg.enableJsonReadWrite:
+      Utils.mkdir_p(self.jsonFolder)
 
     # More than 1 GPU Available?
-    self.gpu_devices = self.config.ci_gpu_devices
+    self.gpu_devices = self.caffeInputCfg.ci_gpu_devices
 
-    self.maxProducedQueueSize = self.config.ci_lmdbBufferMaxSize
+    self.maxProducedQueueSize = self.caffeInputCfg.ci_lmdbBufferMaxSize
     self.maxConsumedQueueSize = \
-        self.config.ci_lmdbBufferMaxSize - self.config.ci_lmdbBufferMinSize
+        self.caffeInputCfg.ci_lmdbBufferMaxSize - \
+        self.caffeInputCfg.ci_lmdbBufferMinSize
     if self.maxConsumedQueueSize <= 0:
       raise RuntimeError(
           "LMDB buffer min size must be smaller than lmdb buffer max size")
 
     # max size of post-process queue
-    self.maxPostProcessQueueSize = self.config.ci_ppQueue_maxSize
+    self.maxPostProcessQueueSize = self.caffeInputCfg.ci_ppQueue_maxSize
 
   def run(self):
     """Run the video through caffe"""
@@ -130,12 +137,12 @@ class VideoProcessThread(object):
       self.logger.info("Setting up caffe run for video %s" % self.videoFileName)
     if self.runPostProcessor:
       self.logger.info("Setting up post-processing to run in parallel")
-    if config.pp_resultWriterJSON:
+    if self.storageCfg.enableJsonReadWrite:
       self.logger.info("Writing output to JSON files")
-    if config.pp_resultWriterRabbit:
+    if self.storageCfg.enableHdf5ReadWrite:
       self.logger.info("Writing output to RabbitMq")
-      amqp_url = self.config.mes_amqp_url
-      serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
+      amqp_url = self.messagingCfg.amqpURL
+      serverQueueName = self.messagingCfg.queues.videoData
       self.rabbitWriter = RpcClient(amqp_url, serverQueueName)
       # inform rabbit consumer that video processing is ready to start
       message = Pickler.pickle({})
@@ -151,7 +158,6 @@ class VideoProcessThread(object):
     sharedDict = sharedManager.dict()
     sharedDict['videoFileName'] = self.videoFileName
     sharedDict['jsonFolder'] = self.jsonFolder
-    sharedDict['numpyFolder'] = self.numpyFolder
     sharedDict['maxProducedQueueSize'] = self.maxProducedQueueSize
 
     # ----------------------
@@ -177,10 +183,11 @@ class VideoProcessThread(object):
           1.0 / 1000000
       # Calculate frameStep from density and fps
       self.frameStep = int(round(
-          (1.0 * videoFrameReader.fps) / self.config.sw_frame_density))
+          (1.0 * videoFrameReader.fps) / self.slidingWindowCfg.sw_frame_density))
       self.logger.info(
           "FPS: %s, FrameDensity: %s, FrameStep: %s" % (
-              videoFrameReader.fps, self.config.sw_frame_density, self.frameStep
+              videoFrameReader.fps, self.slidingWindowCfg.sw_frame_density, 
+              self.frameStep
           ))
 
       deviceCount = 0
@@ -245,7 +252,7 @@ class VideoProcessThread(object):
       self.logger.info("Finished scoring video")
 
     # clean up db folder
-    Config.rm_rf(self.baseDbFolder)
+    Utils.rm_rf(self.baseDbFolder)
 
     # Add a poison pill for each PostProcessWorker
     num_consumers = multiprocessing.cpu_count()
@@ -257,9 +264,9 @@ class VideoProcessThread(object):
     postProcessQueue.join()
 
     # Inform rabbit writer that this video processing has completed
-    if config.pp_resultWriterRabbit:
-      amqp_url = self.config.mes_amqp_url
-      serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
+    if self.storageCfg.enableHdf5ReadWrite:
+      amqp_url = self.messagingCfg.amqpURL
+      serverQueueName = self.messagingCfg.queues.videoData
       self.rabbitWriter = RpcClient(amqp_url, serverQueueName)
       message = Pickler.pickle({})
       headers = Headers.videoStorageEnd(self.videoId, self.chiaVersionId)

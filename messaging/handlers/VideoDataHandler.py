@@ -14,7 +14,7 @@ class VideoDataHandler(object):
     """Initialize values"""
     self.kheerRpcClient = kheerRpcClient
     self.config = config
-    self.logger = self.config.logger
+    self.logger = self.config.logging.logger
 
     # hash format:
     # {chia_version_id: {video_id: hdf5Storage.infra.VideoDataWriter}}
@@ -36,8 +36,8 @@ class VideoDataHandler(object):
     # inform kheer of incoming data
     message = {}
     headers = Headers.videoStorageStart(videoId, chiaVersionId)
-    response = json.loads(self.kheerRpcClient.call(
-        headers, json.dumps(message)))
+    response = json.loads(
+        self.kheerRpcClient.call(headers, json.dumps(message)))
     # TODO: error check
 
   def endExistingVideoStorage(self, videoId, chiaVersionId):

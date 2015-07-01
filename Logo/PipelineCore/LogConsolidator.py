@@ -10,16 +10,18 @@ class LogConsolidator(object):
   def __init__(self, config):
     """Initialization"""
     self.config = config
-    self.logQueue = self.config.logQueue
+    self.loggingCfg = self.config.logging
+    self.messagingCfg = self.config.messaging
+
+    self.logQueue = self.loggingCfg.logQueue
     # print to stdio
     self.zLoggingStreamHandler = ZLoggingStreamHandler()
     # if enabled, also write to rabbit
-    if self.config.lg_rabbit_logger:
+    if self.loggingCfg.rabbitLoggerEnabled:
       # create rabbit log writer
-      amqp_url = self.config.mes_amqp_url
-      serverQueueName = self.config.mes_q_vm2_khajuri_development_log
+      amqp_url = self.messagingCfg.amqpURL
+      serverQueueName = self.messagingCfg.queues.log
       self.rabbitLogWriter = RpcClient(amqp_url, serverQueueName, expectReply=False)
-
 
   def startConsolidation(self):
     """Write logs to all output"""
@@ -33,12 +35,12 @@ class LogConsolidator(object):
       # print to stdio
       self.zLoggingStreamHandler.handle(logRecord)
       # if enabled, also write to rabbit
-      if self.config.lg_rabbit_logger:
+      if self.loggingCfg.rabbitLoggerEnabled:
         # send to storage queue
         message = Pickler.pickle(logRecord)
-        headers = Headers.log(self.config.kheerJobId)
+        headers = Headers.log()
         self.rabbitLogWriter.call(headers, message)
       self.logQueue.task_done()
     # done with all logs
-    if self.config.lg_rabbit_logger:
+    if self.loggingCfg.rabbitLoggerEnabled:
       self.rabbitLogWriter.close()

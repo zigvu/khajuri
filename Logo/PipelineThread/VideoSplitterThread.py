@@ -7,6 +7,7 @@ from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
 
 from config.Config import Config
+from config.Utils import Utils
 
 
 def runAviToMp4Converter(conversionQueue):
@@ -37,20 +38,25 @@ class VideoSplitterThread(object):
   def __init__(self, configFileName, videoFileName, clipsOutputFolder):
     """Initialize values"""
     self.config = Config(configFileName)
-    self.logger = self.config.logger
+
+
+    self.logger = self.config.logging.logger
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+    self.storageCfg = self.config.storage
 
     self.videoFileName = videoFileName
     self.clipsOutputFolder = clipsOutputFolder
     self.tempFolder = os.path.join(
         '/mnt/tmp', os.path.basename(videoFileName).split('.')[0])
-    Config.mkdir_p(self.tempFolder)
+    Utils.mkdir_p(self.tempFolder)
 
-    self.numFrameInClip = self.config.hdf5_clip_frame_count
+    self.numFrameInClip = self.storageCfg.hdf5ClipFrameCount
     self.videoClipsMapFilename = os.path.join(
-        self.clipsOutputFolder, self.config.hdf5_video_clips_map_filename)
-    self.frameDensity = self.config.sw_frame_density
+        self.clipsOutputFolder, self.storageCfg.hdf5VideoClipsMapFilename)
+    self.frameDensity = self.slidingWindowCfg.sw_frame_density
 
-    Config.mkdir_p(self.clipsOutputFolder)
+    Utils.mkdir_p(self.clipsOutputFolder)
 
 
   def run(self):
@@ -85,7 +91,7 @@ class VideoSplitterThread(object):
     currentFrameNum = 0  # frame number being extracted
 
     frame = videoFrameReader.getFrameWithFrameNumber(
-        int(self.config.ci_videoFrameNumberStart))
+        int(self.caffeInputCfg.ci_videoFrameNumberStart))
     while frame != None:
       if ((currentFrameNum % self.numFrameInClip) == 0):
         if clipWriter != None:

@@ -22,16 +22,17 @@ if __name__ == '__main__':
   # 1280, 720
   imageDim = Rectangle.rectangle_from_dimensions(videoWidth, videoHeight)
   patchDim = Rectangle.rectangle_from_dimensions(
-      configReader.sw_patchWidth, configReader.sw_patchHeight)
-  staticBoundingBoxes = BoundingBoxes(imageDim, configReader.sw_xStride,
-                                      configReader.sw_yStride, patchDim)
+      config.sw_patchWidth, config.sw_patchHeight)
+  scales = [0.4, 0.7, 1.0, 1.3, 1.6]
+  staticBoundingBoxes = BoundingBoxes(
+      imageDim, config.sw_xStride, config.sw_yStride, patchDim, scales)
   cornerBoxWH = 10
 
   Config.mkdir_p(outputFolder)
 
   # Create a blank image
   totalPatches = 0
-  for scale in configReader.sw_scales:
+  for scale in config.sw_scales:
     blankImageFilename = os.path.join(
         outputFolder, "blank_image_%s.png" % scale)
     os.system("convert -size %dx%d xc:blue %s" % (

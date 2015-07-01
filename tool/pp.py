@@ -6,6 +6,7 @@ import math, sys, glob
 from config.Config import Config
 from config.Status import Status
 from config.Version import Version
+from config.Utils import Utils
 
 from infra.Pipeline import Pipeline
 
@@ -19,19 +20,20 @@ from postprocessing.task.PostProcess import PostProcess
 
 
 def main():
-  if len(sys.argv) < 4:
-    print 'Usage %s <config.yaml> <jsonFolder> <jsonOutputFolder>' % sys.argv[0]
+  if len(sys.argv) < 3:
+    print 'Usage %s <config.yaml> <jsonInputFolder>' % sys.argv[0]
+    print '  Note: Output JSON resides in folder specified in config'
     sys.exit(1)
-  os.makedirs(sys.argv[3])
-  process(sys.argv[1], sys.argv[2], sys.argv[3])
+  process(sys.argv[1], sys.argv[2])
 
 
-def process(configFileName, jsonFolder, jsonOutputFolder):
+def process(configFileName, jsonInputFolder):
   config = Config(configFileName)
-  logger = config.logger
+  logger = config.logging.logger
   status = Status(logger)
 
-  config.json_output_folder = jsonOutputFolder
+  Utils.mkdir_p(config.storage.jsonFolder)
+
   inputs = multiprocessing.JoinableQueue()
   results = multiprocessing.Queue()
 
@@ -41,7 +43,7 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
   #zDist = ZDistFilter( config, status ),
   #localization = Localization( config, status )
 
-  #for jsonFile in glob.glob( jsonFolder + os.sep + "*.json" ):
+  #for jsonFile in glob.glob( jsonInputFolder + os.sep + "*.json" ):
   #  postprocess = PostProcess( config, status )
   #  postprocess( jsonFile )
 
@@ -52,7 +54,6 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
   #                        #ZDistFilter( config, status ),
   #                        Localization( config, status )
   #                        ], inputs, results )
-  config.videoId = None
   myPipeline = Pipeline([PostProcess(config, status)], inputs, results)
 
   branch, commit = Version().getGitVersion()
@@ -64,7 +65,7 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
 
   # Enqueue jobs
   num_jobs = 0
-  for jsonFile in glob.glob(jsonFolder + os.sep + "*.json"):
+  for jsonFile in glob.glob(jsonInputFolder + os.sep + "*.json"):
     inputs.put(jsonFile)
     num_jobs += 1
 

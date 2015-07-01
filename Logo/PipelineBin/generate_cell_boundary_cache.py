@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-import sys, os, glob
+import sys
+import os
+import glob
+
+import cPickle as pickle
 
 from config.Config import Config
 
 from Logo.PipelineMath.PixelMap import CellBoundaries
 from Logo.PipelineMath.PixelMap import NeighborsCache
-from Logo.PipelineMath.Rectangle import Rectangle
-from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
-import cPickle as pickle
 
 description = \
 """
@@ -22,7 +23,7 @@ def main():
     sys.exit(1)
   configFileName = sys.argv[1]
   config = Config(configFileName)
-  logger = config.logger
+  logger = config.logging.logger
 
   logger.info('Start: Get cell boundaries')
   cellBoundaries = CellBoundaries(config)
