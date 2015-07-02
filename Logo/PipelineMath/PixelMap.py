@@ -164,6 +164,7 @@ class CellBoundaries(object):
 
     self.logging = self.config.logging
     self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
 
     self.logger = self.logging.logger
 
@@ -192,7 +193,7 @@ class CellBoundaries(object):
     Returns mapping dictionary
     """
     # Load existing one from File System if it exists
-    saveFile = "/tmp/savedBoundaries.p"
+    saveFile = self.caffeInputCfg.ci_savedBoundariesFile
     useSavedOne = False
     if os.path.exists(saveFile):
       allCellBoundaries = pickle.load(open(saveFile, "rb"))
@@ -219,8 +220,8 @@ class CellBoundaries(object):
     else:
       self.logger.info("Calculating new cellMap and saving to file %s" % saveFile)
       try:
-        os.remove( "/tmp/savedBoundaries.p" )
-        os.remove( "/tmp/savedNeighbors.p" )
+        os.remove(self.caffeInputCfg.ci_savedBoundariesFile)
+        os.remove(self.caffeInputCfg.ci_savedNeighborsFile)
       except OSError as exc:  # Python >2.5
         pass
 
@@ -490,8 +491,10 @@ class NeighborsCache(object):
 
   def __init__(self, config):
     self.config = config
+    self.caffeInputCfg = self.config.caffeInput
+
     self.neighborMap = None
-    self.saveFile = "/tmp/savedNeighbors.p"
+    self.saveFile = self.caffeInputCfg.ci_savedNeighborsFile
     self.loadFromCache()
 
   def neighborMapAllScales(self, cellBoundariesDict):

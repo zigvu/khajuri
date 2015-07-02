@@ -4,15 +4,7 @@ import yaml
 from config.config_manager.Environments import Environments
 
 from config.config_manager.Jobs import Jobs
-from config.config_manager.Jobs import ProcessVideoJob
-from config.config_manager.Jobs import HeatmapDaemonJob
-from config.config_manager.Jobs import HDF5WriterDaemonJob
-
 from config.config_manager.Machines import Machines
-from config.config_manager.Machines import GPU1
-from config.config_manager.Machines import GPU2
-from config.config_manager.Machines import VMs
-
 from config.config_manager.Loggers import Loggers
 from config.config_manager.Messaging import Messaging
 from config.config_manager.Storage import Storage
@@ -61,28 +53,14 @@ class Config:
   def job(self):
     if not self._job:
       jobType = self.configHash['execution']['job']
-      if jobType == Jobs.PROCESS_VIDEO:
-        self._job = ProcessVideoJob(self.configHash)
-      elif jobType == Jobs.HEATMAP_DAEMON:
-        self._job = HeatmapDaemonJob(self.configHash)
-      elif jobType == Jobs.HDF5_WRITER_DAEMON:
-        self._job = HDF5WriterDaemonJob(self.configHash)
-      else:
-        raise RuntimeError("Job type not recognized: %s" % jobType)
+      self._job = Jobs(self.configHash, jobType)
     return self._job
 
   @property
   def machine(self):
     if not self._machine:
       mType = self.configHash['execution']['machine']
-      if mType == Machines.GPU1:
-        self._machine = GPU1(self.configHash)
-      elif mType == Machines.GPU2:
-        self._machine = GPU2(self.configHash)
-      elif mType == Machines.VM:
-        self._machine = VMs(self.configHash)
-      else:
-        raise RuntimeError("Machine not recognized: %s" % envType)
+      self._machine = Machines(self.configHash, mType)
     return self._machine
 
   @property

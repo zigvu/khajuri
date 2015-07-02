@@ -5,52 +5,44 @@ class Jobs(object):
   PROCESS_VIDEO = 'process_video'
   HEATMAP_DAEMON = 'heatmap_daemon'
   HDF5_WRITER_DAEMON = 'hdf5_writer_daemon'
+  LOG_WRITER_DAEMON = 'log_writer_daemon'
 
-  def getLogExtraParams(self):
-    raise NotImplementedError("Class has not implemented logging message")
-
-class ProcessVideoJob(Jobs):
-  """Sets up jobs related configs"""
-  def __init__(self, configHash):
+  def __init__(self, configHash, jobType):
     """Initialize variables"""
-    processVideoJob = configHash['jobs'][Jobs.PROCESS_VIDEO]
+    self.jobType = jobType
 
-    self.videoId = processVideoJob['video_id']
-    self.videoFileName = processVideoJob['video_file_name']
-    self.chiaVersionId = processVideoJob['chia_version_id']
+    if self.jobType == Jobs.PROCESS_VIDEO:
+      jobHash = configHash['jobs'][Jobs.PROCESS_VIDEO]
 
-    self.kheerJobId = processVideoJob['kheer_job_id']
-    self.zigvuJobId = processVideoJob['zigvu_job_id']
+      self.videoId = jobHash['video_id']
+      self.videoFileName = jobHash['video_file_name']
+      self.chiaVersionId = jobHash['chia_version_id']
+      self.kheerJobId = jobHash['kheer_job_id']
+      self.zigvuJobId = jobHash['zigvu_job_id']
 
-  def getLogExtraParams(self):
-    return { 
-      'kheerJobId': self.kheerJobId,
-      'zigvuJobId': self.zigvuJobId
-    }
+    elif self.jobType == Jobs.HEATMAP_DAEMON:
+      jobHash = configHash['jobs'][Jobs.HEATMAP_DAEMON]
 
+      self.zigvuJobId = jobHash['zigvu_job_id']
 
+    elif self.jobType == Jobs.HDF5_WRITER_DAEMON:
+      jobHash = configHash['jobs'][Jobs.HDF5_WRITER_DAEMON]
 
-class HeatmapDaemonJob(Jobs):
-  """Sets up jobs related configs"""
-  def __init__(self, configHash):
-    """Initialize variables"""
-    heatmapDaemonJob = configHash['jobs'][Jobs.HEATMAP_DAEMON]
+      self.zigvuJobId = jobHash['zigvu_job_id']
 
-    self.zigvuJobId = heatmapDaemonJob['zigvu_job_id']
+    elif self.jobType == Jobs.LOG_WRITER_DAEMON:
+      jobHash = configHash['jobs'][Jobs.LOG_WRITER_DAEMON]
 
-  def getLogExtraParams(self):
-    return { 'zigvuJobId': self.zigvuJobId }
+      self.zigvuJobId = jobHash['zigvu_job_id']
 
-
-
-class HDF5WriterDaemonJob(Jobs):
-  """Sets up jobs related configs"""
-  def __init__(self, configHash):
-    """Initialize variables"""
-    hdf5WriterDaemonJob = configHash['jobs'][Jobs.HDF5_WRITER_DAEMON]
-
-    self.zigvuJobId = hdf5WriterDaemonJob['zigvu_job_id']
+    else:
+      raise RuntimeError("Job type not recognized: %s" % self.jobType)
 
   def getLogExtraParams(self):
-    return { 'zigvuJobId': self.zigvuJobId }
-
+    if self.jobType == Jobs.PROCESS_VIDEO:
+      return { 
+        'kheerJobId': self.kheerJobId,
+        'zigvuJobId': self.zigvuJobId
+      }
+    else:
+      return { 'zigvuJobId': self.zigvuJobId }

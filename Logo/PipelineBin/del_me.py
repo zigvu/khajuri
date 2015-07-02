@@ -169,6 +169,7 @@ def main_two():
   print "VideoId: %s" % e.job.videoId
   print "Env: %s" % e.environment
   print "Mchn GPUs: %s" % e.machine.useGPU()
+  print "JobId: %s" % e.job.zigvuJobId
   print "Storage hdf5: %s" % e.storage.enableHdf5ReadWrite
   print "CPP Logger: %s" % e.logging.cppGlogStarted
   print "SW scales: %s" % e.slidingWindow.sw_scales

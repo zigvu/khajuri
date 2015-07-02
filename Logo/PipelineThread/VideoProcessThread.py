@@ -79,8 +79,11 @@ class VideoProcessThread(object):
     self.slidingWindowCfg = self.config.slidingWindow
     self.caffeInputCfg = self.config.caffeInput
     self.postProcessingCfg = self.config.postProcessing
-    self.messagingCfg = self.config.messaging
     self.storageCfg = self.config.storage
+    self.machineCfg = self.config.machine
+
+    if self.storageCfg.enableHdf5ReadWrite:
+      self.messagingCfg = self.config.messaging
 
     # Logging infrastructure
     self.logQueue = self.loggingCfg.logQueue
@@ -115,7 +118,7 @@ class VideoProcessThread(object):
       Utils.mkdir_p(self.jsonFolder)
 
     # More than 1 GPU Available?
-    self.gpu_devices = self.caffeInputCfg.ci_gpu_devices
+    self.gpu_devices = self.machineCfg.gpuDevices
 
     self.maxProducedQueueSize = self.caffeInputCfg.ci_lmdbBufferMaxSize
     self.maxConsumedQueueSize = \

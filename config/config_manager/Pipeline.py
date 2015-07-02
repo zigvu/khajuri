@@ -67,6 +67,8 @@ class CaffeInput(object):
     caffeHash = configHash['caffe_input']
     self.ci_modelFile = caffeHash['model_file']
     self.ci_video_prototxtFile = caffeHash['video_prototxt_file']
+    self.ci_savedBoundariesFile = caffeHash['saved_boundaries_file']
+    self.ci_savedNeighborsFile = caffeHash['saved_neighbors_file']
     self.ci_lmdbBufferMaxSize = caffeHash['lmdb_buffer_max_size']
     self.ci_lmdbBufferMinSize = caffeHash['lmdb_buffer_min_size']
     self.ci_lmdbNumFramesPerBuffer = caffeHash['lmdb_num_frames_per_buffer']

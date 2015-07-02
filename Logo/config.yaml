@@ -19,7 +19,8 @@ execution:
     rabbit_writer:                           false
     needs_log_queue:                         true
     log_level:                               'INFO'
-  # Jobs: 'process_video', 'heatmap_daemon', 'hdf5_writer_daemon'
+  # Jobs: 
+  # 'process_video', 'heatmap_daemon', 'hdf5_writer_daemon', 'log_writer_daemon'
   job:                                       'process_video'
   # Machines: GPU1, GPU2, VM
   machine:                                   'GPU2'
@@ -38,6 +39,8 @@ jobs:
     zigvu_job_id:                            2
   hdf5_writer_daemon:
     zigvu_job_id:                            3
+  log_writer_daemon:
+    zigvu_job_id:                            4
 
 
 # Details of machines
@@ -124,6 +127,8 @@ sliding_window:
 caffe_input:
   model_file:                                 "/mnt/data/wc14itr/set04/runResults/caffe_logo_train_iter_5000"
   video_prototxt_file:                        "/mnt/data/wc14itr/set04/runResults/prototxt/logo_video.prototxt"
+  saved_boundaries_file:                      "/home/ubuntu/.config/khajuri/savedBoundaries.p"
+  saved_neighbors_file:                       "/home/ubuntu/.config/khajuri/savedNeighbors.p"
 
   # lmdb circular buffers - look at issue65 for setting these
   lmdb_buffer_max_size:                      6
