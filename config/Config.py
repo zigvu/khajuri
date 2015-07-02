@@ -69,13 +69,16 @@ class Config:
       logExtraParams = {'environment': self.environment}
       logExtraParams.update(self.job.getLogExtraParams())
       self._logging = Loggers(self.configHash, logExtraParams)
+      if (self.environment == Environments.LOCAL and 
+          self._logging.rabbitLoggerEnabled):
+        raise RuntimeError("Rabbit logs cannot be enabled in local environment")
     return self._logging
 
   @property
   def messaging(self):
     if not self._messaging:
       if self.environment == Environments.LOCAL:
-        raise RuntimeError("No queue specified for local environment")
+        self._messaging = None
       else:
         self._messaging = Messaging(self.configHash, self.environment)
     return self._messaging
@@ -84,6 +87,9 @@ class Config:
   def storage(self):
     if not self._storage:
       self._storage = Storage(self.configHash)
+      if (self.environment == Environments.LOCAL and 
+          self._storage.enableHdf5ReadWrite):
+        raise RuntimeError("HDF5 cannot be enabled in local environment")
     return self._storage
 
   @property

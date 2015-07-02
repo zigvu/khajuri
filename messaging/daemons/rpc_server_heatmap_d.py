@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 import sys
+from multiprocessing import Process
+
+from Logo.PipelineCore.LogConsolidator import LogConsolidator
 
 from config.Config import Config
 
@@ -14,12 +17,24 @@ This daemon will listen for heatmap data requests and serve them
 TODO: daemonize
 """
 
+config = None
+
+def runLogConsolidator():
+  """Consolidate log from multiple processes"""
+  logConsolidator = LogConsolidator(config)
+  logConsolidator.startConsolidation()
 
 def process(configFileName):
+  global config
   config = Config(configFileName)
-
-  logger = config.logging.logger
+  loggingCfg = config.logging
   messagingCfg = config.messaging
+
+  # # Logging infrastructure
+  logConsolidatorProcess = Process(target=runLogConsolidator, args=())
+  logConsolidatorProcess.start()
+
+  logger = loggingCfg.logger
 
   amqp_url = messagingCfg.amqpURL
   serverQueueName = messagingCfg.queues.heatmapRequest
@@ -29,6 +44,8 @@ def process(configFileName):
   heatmapDataHandler = HeatmapDataHandler(config)
   rpc = RpcServer(amqp_url, serverQueueName, heatmapDataHandler)
 
+  # NOTE: since this executable is run as a daemon, it is expected
+  # to never complete - hence no need to join log queue
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:

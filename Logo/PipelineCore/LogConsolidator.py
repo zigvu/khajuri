@@ -12,8 +12,7 @@ class LogConsolidator(object):
     self.config = config
     self.loggingCfg = self.config.logging
     self.storageCfg = self.config.storage
-    if self.storageCfg.enableHdf5ReadWrite:
-      self.messagingCfg = self.config.messaging
+    self.messagingCfg = self.config.messaging
 
     self.logQueue = self.loggingCfg.logQueue
     # print to stdio

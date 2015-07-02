@@ -81,9 +81,7 @@ class VideoProcessThread(object):
     self.postProcessingCfg = self.config.postProcessing
     self.storageCfg = self.config.storage
     self.machineCfg = self.config.machine
-
-    if self.storageCfg.enableHdf5ReadWrite:
-      self.messagingCfg = self.config.messaging
+    self.messagingCfg = self.config.messaging
 
     # Logging infrastructure
     self.logQueue = self.loggingCfg.logQueue

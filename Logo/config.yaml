@@ -6,7 +6,7 @@
 # version tracking is not required
 versioning:
   khajuri_issue_number:                      104
-  kheer_issue_number:                        1
+  kheer_issue_number:                        15
 
 # Each executable will need to configure these
 # parameters prior to executing any khajuri code
@@ -210,68 +210,3 @@ post_processing:
     - 2
     - 4
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Khajuri Config
-
-# in increasing level of severity: DEBUG, INFO, ERROR, CRITICAL
-logging:
-  log_level:                                  DEBUG
-  rabbit_logger:                              false
-  write_logs_to_queue:                        false
-
-# process video config values
-process_video_job:
-  kheerJobId:                                1
-  environment:                               'development'
-  videoId:                                   1
-  videoFileName:                             ''
-  chiaVersionId:                             1
-  baseDbFolder:                              '/mnt/tmp/lmdb'
-  jsonFolder:                                'json'
-  numpyFolder:                               'numpy'
-
-# HDF5 storage
-hdf5:
-  hdf5_base_folder:                           '/var/www/kheer/public/data'
-
-# Messaging
-messaging:
-  amqp_url:                                     'localhost'
-  queue_names:
-    vm2_kahjuri_development_video_data:         'vm2.kahjuri.development.video_data'
-    vm2_khajuri_development_log:                'vm2.khajuri.development.log'
-    vm2_kheer_development_clip_id_request:      'vm2.kheer.development.clip_id.request'
-    vm2_kheer_development_heatmap_rpc_request:  'vm2.kheer.development.heatmap_rpc.request'
-    vm2_kheer_development_localization_request: 'vm2.kheer.development.localization.request'
