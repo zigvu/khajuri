@@ -15,3 +15,8 @@ setup:
 test:
 	python -m unittest discover tests '*tests.py'
 
+clean:
+	echo 'Cleaning .pyc files'
+	find . -name '*.pyc' | xargs rm
+	echo 'Cleaning install directory ~/site-packages/'
+	rm -rf ~/site-packages/
