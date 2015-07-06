@@ -9,7 +9,8 @@ class Version(object):
 
   def runCmd(self, cmd, cwd):
     args = cmd.split()
-    output = subprocess.check_output(args, stderr=subprocess.STDOUT, cwd=cwd)
+    output = subprocess.check_output(
+        args, stderr=subprocess.STDOUT, cwd=cwd)
     return output
 
   def logVersion(self):

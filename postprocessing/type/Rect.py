@@ -1,18 +1,35 @@
-import math
-
-
-class Rect(object):
-
-  def __init__(self, x, y, w, h):
+#!/usr/bin/env python
+import math, random
+import numpy as np
+class Rect( object ):
+  def __init__( self, x, y, w, h ):
     self.x = x
     self.y = y
     self.w = w
     self.h = h
-    self.center = (x + w / 2.0, y + h / 2.0)
+    self.center = ( x + w/2.0, y + h / 2.0 )
     self.A = w * h
+    self.numpyType =  np.dtype( [
+                          ('x', np.ushort),
+                          ('y', np.ushort),
+                          ('w', np.ushort),
+                          ('h', np.ushort) ] )
 
-  def __str__(self):
-    return 'Rect(%s, %s, %s, %s)' % (self.x, self.y, self.w, self.h)
+  def __str__( self ):
+    return 'Rect(%s, %s, %s, %s, %s)' % ( self.x, self.y, self.w, self.h, self.area )
+
+  @property
+  def area( self ):
+    return self.w * self.h
+  
+  def numpyType( self ):
+    return self.numpyTpe
+
+  def asNumpy( self ):
+    rect = self.numpyType
+    x = np.array( [ ( self.x, self.y, self.w, self.h ) ], dtype=rect )
+    return x
+
 
   def centerDistance( self, other ):
     distanceSquaredSum = ( ( self.center[ 0 ] - other.center[ 0 ] ) ** 2 ) + \
@@ -31,6 +48,9 @@ class Rect(object):
     RectBY2 = other.y + other.h
 
     if (RectAX1 < RectBX2 and RectAX2 > RectBX1 and RectAY1 < RectBY2 and RectAY2 > RectBY1):
-      return True
+      x_overlap = max(0, min(RectAX2,RectBX2) - max(RectAX1,RectBX1));
+      y_overlap = max(0, min(RectAY2,RectBY2) - max(RectAY1,RectBY1));
+      area = x_overlap * y_overlap;
+      return area
 
-    return False
+    return 0

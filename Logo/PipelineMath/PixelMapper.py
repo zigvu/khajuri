@@ -1,6 +1,7 @@
 import numpy as np
 
 from Logo.PipelineMath.PixelMap import PixelMap
+import matplotlib.pyplot as plt
 
 
 class PixelMapper(object):
@@ -29,6 +30,13 @@ class PixelMapper(object):
         'localizationMap': localizationMap, \
         'intensityMap': intensityMap,\
         'decayedMap': None}]
+      #import matplotlib.pyplot as plt
+      #plt.imshow(
+      #    intensityMap.toNumpyArray() ).write_png( '/tmp/output/heat_%s_%s_%s_%s.png'
+      #        % ( self.frame.frameNumber, classId, scale, zDistThreshold ) )
+      #plt.imshow( localizationMap.toNumpyArray() ).write_png( '/tmp/output/lclz_%s_%s_%s_%s.png'
+      #    % ( self.frame.frameNumber, classId, scale, zDistThreshold ) )
+
 
   #@profile
   def populatePixelMap(self, scale):
@@ -49,6 +57,9 @@ class PixelMapper(object):
     # Massage the cellValues
     self.massageRescoringMap(mapAllCellCount, mapDetectionCellCount)
     localizationMap = mapAllCellCount * intensityMap
+    #plt.imshow( localizationMap.toNumpyArray() ).write_png( '/tmp/output/after_massage_and_intensity_%s_%s_%s_%s.png'
+    #    % ( self.frame.frameNumber, self.classId, scale, self.zDistThreshold ) )
+
     return localizationMap, intensityMap
 
   #@profile

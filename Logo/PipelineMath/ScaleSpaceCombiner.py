@@ -2,6 +2,7 @@ import numpy as np
 
 from Logo.PipelineMath.Rectangle import Rectangle
 from Logo.PipelineMath.PixelMapper import PixelMapper
+import matplotlib.pyplot as plt
 
 
 class ScaleSpaceCombiner(object):
@@ -37,4 +38,7 @@ class ScaleSpaceCombiner(object):
     rescalingFactor = maxPixelIntensity / maxPixelLocalization
     rescaledLocalizationMap = maxLocalizationMap.copy()
     rescaledLocalizationMap.cellValues = maxLocalizationMap.cellValues * rescalingFactor
+    #plt.imshow(
+    #    rescaledLocalizationMap.toNumpyArray() ).write_png( '/tmp/output/final_localization_%s_%s_%s.png'
+    #        % ( self.frame.frameNumber, self.classId, self.zDistThreshold ) )
     return maxLocalizationScale, rescaledLocalizationMap
