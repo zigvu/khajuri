@@ -26,8 +26,6 @@ def printLocalizationStats( configFileName ):
   myPipeline.start()
 
   aGen = RandomAnnotationGenerator( config )
-  print 'Number of annotations %s' % len( aGen.annotations )
-
   frameNum = 0
   stats = Statistics( config )
   for a in aGen:
@@ -44,8 +42,10 @@ def printLocalizationStats( configFileName ):
   while frameNum > 0:
     singleFrameStat = results.get()
     if singleFrameStat:
-       stats.addFrameStats( singleFrameStat )
-    frameNum -= 1
+      stats.addFrameStats( singleFrameStat )
+      frameNum -= 1
+      if len( stats.stats ) % 10 == 0:
+        print 'Got %s results so far' % len( stats.stats )
   
   myPipeline.join()
   stats.printStat()

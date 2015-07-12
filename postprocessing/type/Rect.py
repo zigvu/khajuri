@@ -20,7 +20,7 @@ class Rect( object ):
 
   @property
   def area( self ):
-    return self.w * self.h
+    return float(self.w * self.h)
   
   def numpyType( self ):
     return self.numpyTpe

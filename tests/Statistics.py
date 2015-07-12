@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 
 class Statistics( object ):
   def __init__( self, config ):
@@ -23,18 +24,20 @@ class Statistics( object ):
       self.statsWithMissingLocalization.append( frameStats )
     if len( frameStats.missingAnnotations ) > 0:
       self.statsWithExtraLocalization.append( frameStats )
-    self.areaRatio.append( frameStats.areaRatioByAnnotation.values() )
+    self.areaRatio += frameStats.areaRatioByAnnotation.values()
     self.centerDistance.append( frameStats.avGcenterDistance )
 
  
   def printStat( self ):
-    print 'Number of Frame Evaluated: %s' % len( self.stats )
-    # Num of frame with Corner 
-    print 'Number of Frame with cornered annotation: %s' % len( self.statsWithCornerAnnotation )
-    # Num of Frames with missing Localization
-    print 'Number of Frame with missing localization: %s' % len( self.statsWithMissingLocalization )
-    # Num of Frames with useless Localization
-    print 'Number of Frame with extra localization: %s' % len( self.statsWithExtraLocalization )
-    # Area Ratio Histogram
+    print 'Evaluated: %s frames' % len( self.stats )
+    print 'Evaluated: %s annotations' % np.sum( self.numOfAnnotations )
+    print 'Produced: %s localization' % np.sum( self.numOfLocalizations )
+    print 'At least one cornered annotation: %s frames' % len( self.statsWithCornerAnnotation )
+    print 'Missing localization: %s annotations' % len( self.statsWithMissingLocalization )
+    print 'Extra localization: %s' % len( self.statsWithExtraLocalization )
+    print 'Histogram of Annotations Count %s, buckets: %s' % np.histogram( self.numOfAnnotations, bins=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] )
+    print 'Histogram of Localizations Count %s, buckets: %s' % np.histogram( self.numOfLocalizations, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ] )
+    print 'Histogram of Area Ratio( anno/loca ) %s, buckets: %s' % np.histogram( self.areaRatio, bins=5 )
     # Center Distance Histogram
+    print 'Histogram of Center Distances %s, buckets: %s' % np.histogram( self.centerDistance, bins=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 ] )
     # Save

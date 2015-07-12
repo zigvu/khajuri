@@ -26,8 +26,8 @@ class SingleFrameStatistics( object ):
     # Corner or Central?
     self.corner = False
     for a in self.annotatedFrame.annotations:
-      if a.x >= config.sw_frame_width - 100 or a.y >= config.sw_frame_height - 100 or \
-                a.x <= 100 or a.y <= 100:
+      if a.x >= config.sw_frame_width - 50 or a.y >= config.sw_frame_height - 50 or \
+                a.x <= 50 or a.y <= 50:
         self.corner = True
         break
 
@@ -58,16 +58,12 @@ class SingleFrameStatistics( object ):
     # Missing Localization
     # Area Ratios
     self.missingLocalization = []
+    self.areaRatioByAnnotation = {}
     for a, ( l, d ) in self.annotationToLocalization.items():
       if l.intersect( a ) <= 0.1 * a.area:
         self.missingLocalization.append( a )
-    self.areaRatioByAnnotation = {}
-    for a in self.annotatedFrame.annotations:
-      for l in localizations:
-         if a.intersect( l ) >= 0.1 * a.area:
-            self.areaRatioByAnnotation[ a ] = a.intersect( l )
-            break
-
+      else:
+        self.areaRatioByAnnotation[ a ] = a.area/l.area
 
     # Localization with no Annotation
     self.missingAnnotations = []
