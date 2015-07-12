@@ -1,6 +1,44 @@
-import math
-
+import math, random
 from postprocessing.type.Rect import Rect
+from tests.AnnotatedFrame import AnnotatedFrame
+
+AREASTEP = 0.5
+AREARATIO = 2.0
+POSITIONSTEP = 50
+areaConstraintMax = 1.5
+MAXANNOTATIONPERFRAME = 5.0
+
+class RandomAnnotationGenerator( object ):
+  def __init__( self, config ):
+    self.config = config
+    self.annotations = []
+    patchArea = config.sw_patchHeight * config.sw_patchWidth
+    areaConstraint = 0.05
+    while areaConstraint <= areaConstraintMax:
+      for x in range( 0, config.sw_frame_width, POSITIONSTEP ):
+        for y in range( 0, config.sw_frame_height, POSITIONSTEP ):
+          gen = RandomRectGenerator( x, y, areaConstraint * patchArea,
+              AREARATIO, POSITIONSTEP,
+              config.sw_frame_width, config.sw_frame_height )
+          for aRect in gen:
+            self.annotations.append( aRect )
+      areaConstraint += AREASTEP
+  def __iter__( self ):
+    return self
+  
+  def next( self ):
+    annotatedFrame = AnnotatedFrame( self.config )
+    numOfAnnotations = random.randint( 1, MAXANNOTATIONPERFRAME )
+    while numOfAnnotations > 0:
+       rndAtn = random.choice( self.annotations )
+       for a in annotatedFrame.annotations:
+         if rndAtn.intersect( a ):
+           break
+       else:
+         annotatedFrame.addAnnotation( rndAtn )
+         self.annotations.remove( rndAtn )
+         numOfAnnotations -= 1
+    return annotatedFrame
 
 class RandomRectGenerator( object ):
   def __init__( self, x, y, area, ratio, positionstep, frameWidth, frameHeight ):
