@@ -11,6 +11,7 @@ from tests.RandomRectGenerator import RandomAnnotationGenerator
 from tests.MockLocalizationTask import MockLocalizationTask
 from tests.Statistics import Statistics
 
+NUMOFFRAMESTOEVAL = 1000
 def printLocalizationStats( configFileName ):
   config = Config( configFileName )
   assert config.allCellBoundariesDict
@@ -33,7 +34,7 @@ def printLocalizationStats( configFileName ):
     logging.info( 'Adding %s into input' % a )
     inputs.put( a )
     frameNum += 1 
-    if frameNum >= 10:
+    if frameNum >= NUMOFFRAMESTOEVAL:
        break
 
   num_consumers = multiprocessing.cpu_count()
@@ -44,18 +45,18 @@ def printLocalizationStats( configFileName ):
     singleFrameStat = results.get()
     if singleFrameStat:
        stats.addFrameStats( singleFrameStat )
-    stats.printStat()
     frameNum -= 1
   
   myPipeline.join()
+  stats.printStat()
      
 if __name__=="__main__":
   if len(sys.argv) < 2:
     print 'Usage %s <config.yaml>' % sys.argv[ 0 ]
     sys.exit(1)
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO,
-      datefmt="%Y-%m-%d--%H:%M:%S")
+  #logging.basicConfig(
+  #    format=
+  #    '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+  #    level=logging.INFO,
+  #    datefmt="%Y-%m-%d--%H:%M:%S")
   printLocalizationStats( sys.argv[ 1 ] )

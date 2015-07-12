@@ -78,4 +78,8 @@ class SingleFrameStatistics( object ):
            self.missingAnnotations.remove( l )
            break
 
+    # Get rid of frame
+    self.frame = None
+    self.config = None
+
 

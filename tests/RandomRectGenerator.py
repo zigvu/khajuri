@@ -2,8 +2,8 @@ import math, random
 from postprocessing.type.Rect import Rect
 from tests.AnnotatedFrame import AnnotatedFrame
 
-AREASTEP = 0.5
-AREARATIO = 2.0
+AREASTEP = 0.10
+AREARATIO = 5.0
 POSITIONSTEP = 50
 areaConstraintMax = 1.5
 MAXANNOTATIONPERFRAME = 5.0
