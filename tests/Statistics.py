@@ -12,6 +12,7 @@ class Statistics( object ):
     self.statsWithExtraLocalization = []
     self.areaRatio = []
     self.centerDistance = []
+    self.enclosed = []
 
   def addFrameStats( self, frameStats ):
     self.stats[ self.frameNum ] = frameStats
@@ -26,6 +27,8 @@ class Statistics( object ):
       self.statsWithExtraLocalization.append( frameStats )
     self.areaRatio += frameStats.areaRatioByAnnotation.values()
     self.centerDistance.append( frameStats.avGcenterDistance )
+    if frameStats.overAllEnclosed:
+      self.enclosed.append( frameStats )
 
  
   def printStat( self ):
@@ -35,6 +38,7 @@ class Statistics( object ):
     print 'At least one cornered annotation: %s frames' % len( self.statsWithCornerAnnotation )
     print 'Missing localization: %s annotations' % len( self.statsWithMissingLocalization )
     print 'Extra localization: %s' % len( self.statsWithExtraLocalization )
+    print 'Enclosed annotations: %s frames' % len( self.enclosed )
     print 'Histogram of Annotations Count %s, buckets: %s' % np.histogram( self.numOfAnnotations, bins=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10] )
     print 'Histogram of Localizations Count %s, buckets: %s' % np.histogram( self.numOfLocalizations, bins=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ] )
     print 'Histogram of Area Ratio( anno/loca ) %s, buckets: %s' % np.histogram( self.areaRatio, bins=5 )
