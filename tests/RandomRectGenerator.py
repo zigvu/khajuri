@@ -1,10 +1,10 @@
-import math, random
+import math, random, logging
 from postprocessing.type.Rect import Rect
 from tests.AnnotatedFrame import AnnotatedFrame
 
 AREASTEP = 0.10
 AREARATIO = 5.0
-POSITIONSTEP = 50
+POSITIONSTEP = 10
 areaConstraintMax = 1.5
 MAXANNOTATIONPERFRAME = 5.0
 
@@ -27,11 +27,14 @@ class RandomAnnotationGenerator( object ):
     return self
   
   def next( self ):
+    logging.info( 'Getting next annotation set' )
     annotatedFrame = AnnotatedFrame( self.config )
     numOfAnnotations = random.randint( 1, MAXANNOTATIONPERFRAME )
     while numOfAnnotations > 0:
+       logging.info( 'Len of annotations %s' % len( self.annotations ) )
        rndAtn = random.choice( self.annotations )
        for a in annotatedFrame.annotations:
+         logging.info( 'Checking for intersect %s' % a )
          if rndAtn.intersect( a ):
            break
        else:

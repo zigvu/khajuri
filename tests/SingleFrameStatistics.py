@@ -1,8 +1,9 @@
 import sys
 
 class SingleFrameStatistics( object ):
-  def __init__( self, config, annotatedFrame ):
-    self.config = config
+  def __init__( self, frameWidth, frameHeight, annotatedFrame ):
+    self.frameWidth = frameWidth
+    self.frameHeight = frameHeight
     self.annotatedFrame = annotatedFrame
     self.numOfAnnotations = len( self.annotatedFrame.annotations )
 
@@ -26,7 +27,7 @@ class SingleFrameStatistics( object ):
     # Corner or Central?
     self.corner = False
     for a in self.annotatedFrame.annotations:
-      if a.x >= config.sw_frame_width - 50 or a.y >= config.sw_frame_height - 50 or \
+      if a.x >= frameWidth - 50 or a.y >= frameHeight - 50 or \
                 a.x <= 50 or a.y <= 50:
         self.corner = True
         break
@@ -75,7 +76,4 @@ class SingleFrameStatistics( object ):
            break
 
     # Get rid of frame
-    self.frame = None
-    self.config = None
-
-
+    self.annotatedFrame.frame = None
