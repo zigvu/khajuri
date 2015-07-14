@@ -15,8 +15,7 @@ def read( fileName ):
   total = 0
   for f in fdr:
     total += 1
-    # TODO
-    # printFrame( f )
+    printFrame( f )
   print 'Total frames %s' % total
 
 if __name__ == '__main__':
