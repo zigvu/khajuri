@@ -74,6 +74,3 @@ class SingleFrameStatistics( object ):
          if l.intersect( a ) >= 0.1 * a.area:
            self.missingAnnotations.remove( l )
            break
-
-    # Get rid of frame
-    self.annotatedFrame.frame = None

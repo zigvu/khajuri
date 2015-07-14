@@ -9,7 +9,7 @@ class Rect( object ):
     self.h = h
     self.center = ( x + w/2.0, y + h / 2.0 )
     self.A = w * h
-    self.numpyType =  np.dtype( [
+    self._numpyType =  np.dtype( [
                           ('x', np.ushort),
                           ('y', np.ushort),
                           ('w', np.ushort),
@@ -20,10 +20,11 @@ class Rect( object ):
 
   @property
   def area( self ):
-    return float(self.w * self.h)
+    return self.w * self.h
   
+  @property
   def numpyType( self ):
-    return self.numpyTpe
+    return self._numpyType
 
   def asNumpy( self ):
     rect = self.numpyType

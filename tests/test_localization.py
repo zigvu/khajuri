@@ -8,8 +8,10 @@ from config.Status import Status
 from config.Version import Version
 
 from tests.RandomRectGenerator import RandomAnnotationGenerator
+from tests.RandomRectGenerator import MAXANNOTATIONPERFRAME
 from tests.MockLocalizationTask import MockLocalizationTask
 from tests.Statistics import Statistics
+from AnnotatedFrame import FrameDumpWriter
 
 NUMOFFRAMESTOEVAL = 10000
 def printLocalizationStats( configFileName ):
@@ -27,13 +29,14 @@ def printLocalizationStats( configFileName ):
 
   aGen = RandomAnnotationGenerator( config )
   frameNum = 0
-  stats = Statistics( config )
   for a in aGen:
     logging.info( 'Adding %s into input' % a )
     inputs.put( a )
     frameNum += 1 
     if frameNum >= NUMOFFRAMESTOEVAL:
        break
+  #stats = Statistics( config )
+  dump = FrameDumpWriter( NUMOFFRAMESTOEVAL, 543, MAXANNOTATIONPERFRAME, '/tmp/rect.npy' )
 
   num_consumers = multiprocessing.cpu_count()
   for i in xrange(num_consumers):
@@ -42,15 +45,17 @@ def printLocalizationStats( configFileName ):
  
   while frameNum > 0:
     logging.info( 'Waiting for results' )
-    singleFrameStat = results.get()
+    annotatedFrame = results.get()
     results.task_done()
-    if singleFrameStat:
-      logging.info( 'Adding %s to result set' % singleFrameStat )
-      stats.addFrameStats( singleFrameStat )
+    if annotatedFrame:
+      logging.info( 'Adding %s to result set' % annotatedFrame )
+      #stats.addFrameStats( singleFrameStat )
+      dump.addFrame( annotatedFrame )
       frameNum -= 1
   
   myPipeline.join()
-  stats.printStat()
+  #stats.printStat()
+  dump.saveToFile()
      
 if __name__=="__main__":
   if len(sys.argv) < 2:

@@ -2,16 +2,19 @@ import math, random, logging
 from postprocessing.type.Rect import Rect
 from tests.AnnotatedFrame import AnnotatedFrame
 
+import numpy as np
+import time
+
 AREASTEP = 0.10
 AREARATIO = 5.0
 POSITIONSTEP = 10
 areaConstraintMax = 1.5
-MAXANNOTATIONPERFRAME = 5.0
+MAXANNOTATIONPERFRAME = 5
 
 class RandomAnnotationGenerator( object ):
   def __init__( self, config ):
     self.config = config
-    self.annotations = []
+    self._annotations = []
     patchArea = config.sw_patchHeight * config.sw_patchWidth
     areaConstraint = 0.05
     while areaConstraint <= areaConstraintMax:
@@ -21,26 +24,38 @@ class RandomAnnotationGenerator( object ):
               AREARATIO, POSITIONSTEP,
               config.sw_frame_width, config.sw_frame_height )
           for aRect in gen:
-            self.annotations.append( aRect )
+            self._annotations.append( aRect )
       areaConstraint += AREASTEP
+    
+    # Convert to numpy based array
+    self.numpyAnnotations = np.zeros( (1, len( self._annotations ) ),
+        dtype=self._annotations[0].numpyType )
+    for i, a in enumerate(self._annotations):
+      self.numpyAnnotations[ 0, i] = a.asNumpy()
+    self.usedIndexes = set()
+
   def __iter__( self ):
     return self
   
   def next( self ):
     logging.info( 'Getting next annotation set' )
-    annotatedFrame = AnnotatedFrame( self.config )
+    annotatedFrame = AnnotatedFrame( )
     numOfAnnotations = random.randint( 1, MAXANNOTATIONPERFRAME )
     while numOfAnnotations > 0:
-       logging.info( 'Len of annotations %s' % len( self.annotations ) )
-       rndAtn = random.choice( self.annotations )
+       logging.info( 'Len of annotations %s' % len( self._annotations ) )
+       rndIndex = random.randint( 0, len( self._annotations ) - 1 )
+       rndAtn = self.numpyAnnotations[ 0, rndIndex ]
+       myRect = Rect(rndAtn[0], rndAtn[1], rndAtn[2], rndAtn[3] )
        for a in annotatedFrame.annotations:
-         logging.info( 'Checking for intersect %s' % a )
-         if rndAtn.intersect( a ):
+         if rndIndex in self.usedIndexes:
+           logging.info( 'Random index %s already used' % rndIndex  )
            break
-       else:
-         annotatedFrame.addAnnotation( rndAtn )
-         self.annotations.remove( rndAtn )
-         numOfAnnotations -= 1
+         logging.info( 'Checking for intersect %s' % a )
+         if myRect.intersect( a ):
+           break
+       annotatedFrame.addAnnotation( myRect )
+       self.usedIndexes.add( rndIndex )
+       numOfAnnotations -= 1
     return annotatedFrame
 
 class RandomRectGenerator( object ):
