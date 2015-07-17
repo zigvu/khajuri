@@ -21,6 +21,7 @@ execution:
     log_level:                               'INFO'
   # Jobs: 
   # 'process_video', 'heatmap_daemon', 'hdf5_writer_daemon', 'log_writer_daemon'
+  # 'stitch_video'
   job:                                       'process_video'
   # Machines: GPU1, GPU2, VM
   machine:                                   'GPU2'
@@ -41,6 +42,13 @@ jobs:
     zigvu_job_id:                            3
   log_writer_daemon:
     zigvu_job_id:                            4
+  stitch_video:
+    zigvu_job_id:                            5
+    kheer_job_id:                            1
+    stitch_video_details_file:               ''
+    num_context_frames:
+      before:                                15
+      after:                                 15
 
 
 # Details of machines
@@ -88,6 +96,7 @@ storage:
   local:
     base_db_folder:                          '/mnt/tmp/lmdb'
     json_folder:                             'json'
+    clip_folder:                             'clip'
   hdf5:
     hdf5_base_folder:                        '/var/www/kheer/public/data'
 

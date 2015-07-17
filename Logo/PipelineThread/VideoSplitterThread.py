@@ -41,7 +41,6 @@ class VideoSplitterThread(object):
 
 
     self.logger = self.config.logging.logger
-    self.slidingWindowCfg = self.config.slidingWindow
     self.caffeInputCfg = self.config.caffeInput
     self.storageCfg = self.config.storage
 
@@ -54,7 +53,6 @@ class VideoSplitterThread(object):
     self.numFrameInClip = self.storageCfg.hdf5ClipFrameCount
     self.videoClipsMapFilename = os.path.join(
         self.clipsOutputFolder, self.storageCfg.hdf5VideoClipsMapFilename)
-    self.frameDensity = self.slidingWindowCfg.sw_frame_density
 
     Utils.mkdir_p(self.clipsOutputFolder)
 

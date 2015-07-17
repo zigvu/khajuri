@@ -11,6 +11,7 @@ class Storage(object):
     localHash = storHash['local']
     self.baseDbFolder = localHash['base_db_folder']
     self.jsonFolder = localHash['json_folder']
+    self.clipFolder = localHash['clip_folder']
 
     hdf5Hash = storHash['hdf5']
     self.hdf5BaseFolder = hdf5Hash['hdf5_base_folder']
