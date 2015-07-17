@@ -23,7 +23,8 @@ if __name__ == '__main__':
   frameNums = f.read().split()
   videoFrameReader = VideoFrameReader(videoFileName)
   outputDirId = os.path.basename(outputDir)
-  for frameNum in frameNums:
+  for frameNum in sorted( map( int, frameNums ) ):
+    print frameNum
     fileName = os.path.join(
         outputDir, "%s_frame_%s.png" % (outputDirId, frameNum))
     videoFrameReader.savePngWithFrameNumber(int(frameNum), fileName)
