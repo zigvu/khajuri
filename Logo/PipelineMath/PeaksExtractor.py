@@ -9,7 +9,7 @@ class PeaksExtractor(object):
   def __init__(self, pixelMap, config):
     """Initialize values"""
     self.pixelMap = pixelMap
-    self.config = config
+    self.detectorThreshold = config.postProcessing.pp_detectorThreshold
 
   def getPeakBboxes(self):
     """Get bboxes for all peaks"""
@@ -17,7 +17,7 @@ class PeaksExtractor(object):
 
     # zero out all pixels below threshold
     maxima = self.pixelMap.copy()
-    diff = (maxima.cellValues > self.config.pp_detectorThreshold)
+    diff = (maxima.cellValues > self.detectorThreshold)
     maxima.cellValues[diff == 0] = 0
 
     # Find cell Indexes with a positive value

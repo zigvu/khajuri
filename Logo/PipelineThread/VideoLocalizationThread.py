@@ -1,5 +1,6 @@
-import os, glob, time
-import logging
+import os
+import glob
+import time
 
 from Logo.PipelineMath.Rectangle import Rectangle
 
@@ -8,40 +9,43 @@ from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
 
 from config.Config import Config
+from config.Version import Version
+from config.Status import Status
+from config.Utils import Utils
 
 from postprocessing.task.JsonReader import JsonReader
 
 
 class VideoLocalizationThread(object):
-  """Class to draw localization for all classes in video"""
+  """Draw localization for all classes in video"""
 
   def __init__(self, configFileName, videoFileName, jsonFolder,
                videoOutputFolder):
     """Initialize values"""
     self.config = Config(configFileName)
+
+    self.logger = self.config.logging.logger
+    self.videoFrameNumberStart = self.config.caffeInput.ci_videoFrameNumberStart
+
+    branch, commit = Version().getGitVersion()
+    self.logger.info('Branch: %s' % branch)
+    self.logger.info('Commit: %s' % commit)
+
+    self.status = Status(self.logger)
+
     self.videoFileName = videoFileName
     self.jsonFolder = jsonFolder
     self.videoOutputFolder = videoOutputFolder
 
-    # TODO: remove - currently this is a bug which causes
-    # JSONReader to crash
-    self.config.videoId = 1
+    self.jsonReader = JsonReader(self.config, self.status)
 
-    self.jsonReader = JsonReader(self.config, None)
+    Utils.mkdir_p(self.videoOutputFolder)
 
-    Config.mkdir_p(self.videoOutputFolder)
-
-    # Logging levels
-    logging.basicConfig(
-        format=
-        '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s',
-        level=self.config.log_level,
-        datefmt="%Y-%m-%d--%H:%M:%S")
 
   def run(self):
     """Run the video through caffe"""
     startTime = time.time()
-    logging.info(
+    self.logger.info(
         "Setting up localization drawing for video %s" % self.videoFileName)
 
     videoFrameReader = VideoFrameReader(self.videoFileName)
@@ -53,12 +57,13 @@ class VideoLocalizationThread(object):
     jsonFiles = glob.glob(os.path.join(self.jsonFolder, "*json"))
 
     for jsonFileName in jsonFiles:
-      logging.debug("Reading json %s" % os.path.basename(jsonFileName))
+      self.logger.debug("Reading json %s" % os.path.basename(jsonFileName))
       frameObj = self.jsonReader(jsonFileName)[0]
       frameNumber = frameObj.frameNumber
       frameIndex[frameNumber] = jsonFileName
-    logging.info("Total of %d json indexed" % len(frameIndex.keys()))
+    self.logger.info("Total of %d json files indexed" % len(frameIndex.keys()))
 
+    self.logger.info("Creating new video")
     # Set up output video
     videoBaseName = os.path.basename(self.videoFileName).split('.')[0]
     outVideoFileName = os.path.join(
@@ -66,7 +71,7 @@ class VideoLocalizationThread(object):
     videoWriter = VideoWriter(outVideoFileName, fps, imageDim)
 
     # pre-fill video with frames that didn't get evaluated
-    for currentFrameNum in range(0, self.config.ci_videoFrameNumberStart):
+    for currentFrameNum in range(0, self.videoFrameNumberStart):
       frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
       if frame != None:
         # Save each frame
@@ -86,11 +91,11 @@ class VideoLocalizationThread(object):
     # Go through evaluated video frame by frame
 
     # frame number being extracted
-    currentFrameNum = self.config.ci_videoFrameNumberStart
+    currentFrameNum = self.videoFrameNumberStart
     frameObj = None
     frame = videoFrameReader.getFrameWithFrameNumber(int(currentFrameNum))
     while frame != None:
-      logging.debug("Adding frame %d to video" % currentFrameNum)
+      self.logger.debug("Adding frame %d to video" % currentFrameNum)
       if currentFrameNum in frameIndex.keys():
         frameObj = self.jsonReader(frameIndex[currentFrameNum])[0]
 
@@ -128,7 +133,7 @@ class VideoLocalizationThread(object):
 
     # Save and exit
     videoWriter.save()
-    logging.info("Finished creating video")
+    self.logger.info("Finished creating video")
     endTime = time.time()
-    logging.info('It took VideoLocalizationThread %s seconds to complete' %
+    self.logger.info('It took VideoLocalizationThread %s seconds to complete' %
                  (endTime - startTime))

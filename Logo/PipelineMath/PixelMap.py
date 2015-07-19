@@ -1,5 +1,4 @@
 import os
-import logging
 import numpy as np
 from shapely.geometry import box
 from multiprocessing import Process, Manager
@@ -8,6 +7,8 @@ from Queue import Queue, Empty
 import multiprocessing
 import time
 import cPickle as pickle
+
+from Logo.PipelineMath.Rectangle import Rectangle
 
 
 class PixelMap(object):
@@ -155,22 +156,21 @@ class PixelMap(object):
     self.scaleFactor = scaleFactor
 
 
-from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
-from Logo.PipelineMath.Rectangle import Rectangle
-
 
 class CellBoundaries(object):
 
   def __init__(self, config):
     self.config = config
-    imgDim = Rectangle.rectangle_from_dimensions(
-        self.config.sw_frame_width, self.config.sw_frame_height)
-    patchDim = Rectangle.rectangle_from_dimensions(
-        self.config.sw_patchWidth, self.config.sw_patchHeight)
-    staticBBoxes = BoundingBoxes(
-        imgDim, self.config.sw_xStride, self.config.sw_yStride, patchDim)
+
+    self.logging = self.config.logging
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+
+    self.logger = self.logging.logger
+
+    staticBBoxes = self.slidingWindowCfg.staticBBoxes
     self.allCellBoundariesDict = self.getCellBoundaries(
-        staticBBoxes, self.config.sw_scales)
+        staticBBoxes, self.slidingWindowCfg.sw_scales)
 
   def getCellBoundaries(self, staticBBoxes, scales):
     """Return cell boundaries for given scales.
@@ -193,7 +193,7 @@ class CellBoundaries(object):
     Returns mapping dictionary
     """
     # Load existing one from File System if it exists
-    saveFile = "/tmp/savedBoundaries.p"
+    saveFile = self.caffeInputCfg.ci_savedBoundariesFile
     useSavedOne = False
     if os.path.exists(saveFile):
       allCellBoundaries = pickle.load(open(saveFile, "rb"))
@@ -214,14 +214,14 @@ class CellBoundaries(object):
         useSavedOne = False
 
     if useSavedOne:
-      logging.info(
+      self.logger.info(
           "Using already computed boundaries from file at %s" % saveFile)
       return allCellBoundaries
     else:
-      logging.info("Calculating new cellMap and saving to file %s" % saveFile)
+      self.logger.info("Calculating new cellMap and saving to file %s" % saveFile)
       try:
-        os.remove( "/tmp/savedBoundaries.p" )
-        os.remove( "/tmp/savedNeighbors.p" )
+        os.remove(self.caffeInputCfg.ci_savedBoundariesFile)
+        os.remove(self.caffeInputCfg.ci_savedNeighborsFile)
       except OSError as exc:  # Python >2.5
         pass
 
@@ -432,7 +432,7 @@ class CellBoundaries(object):
         "yStride": staticBBoxes.ystepSize[scaleFactor]}
       # print progress
       #print "Scale %0.2f, unique: %d" % (scaleFactor, len(uniqueValues))
-      logging.info("Finished working on scale %.2f. Unique values: %d" %
+      self.logger.info("Finished working on scale %.2f. Unique values: %d" %
                    (scaleFactor, len(uniqueValues)))
 
     # error check: we shouldn't have different max_cell_counter
@@ -491,8 +491,10 @@ class NeighborsCache(object):
 
   def __init__(self, config):
     self.config = config
+    self.caffeInputCfg = self.config.caffeInput
+
     self.neighborMap = None
-    self.saveFile = "/tmp/savedNeighbors.p"
+    self.saveFile = self.caffeInputCfg.ci_savedNeighborsFile
     self.loadFromCache()
 
   def neighborMapAllScales(self, cellBoundariesDict):
@@ -540,8 +542,6 @@ class NeighborsCache(object):
 def setupNeighbor(queue, neighbors, cellBoundaries):
   while True:
     index, cb = queue.get()
-    logging.info('Got cb : %s at index %s for setting up from queue' %
-                 (cb, index))
     if not cb:
       break
     else:

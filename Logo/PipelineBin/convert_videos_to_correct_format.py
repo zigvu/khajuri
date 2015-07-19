@@ -1,5 +1,7 @@
 #!/usr/bin/python
 import sys, time, os, json, shutil
+import multiprocessing
+from multiprocessing import JoinableQueue, Process, Manager
 
 
 description = \
@@ -88,6 +90,20 @@ def convertFile(inputFileName, outputFolder):
     return False
 
 
+
+def runVideoConversion(fileNameQueue, outputVideoFolder):
+  """Process to convert video"""
+  while True:
+    fileName = fileNameQueue.get()
+    if fileName is None:
+      fileNameQueue.task_done()
+      # poison pill means done with files
+      break
+    success = convertFile(fileName, outputVideoFolder)
+    if success:
+      print "Finished converting %s" % fileName
+    fileNameQueue.task_done()
+
 if __name__ == '__main__':
   if len(sys.argv) < 3:
     print 'Usage %s <inputVideoFolder> <outputVideoFolder>' % sys.argv[0]
@@ -97,9 +113,24 @@ if __name__ == '__main__':
   inputVideoFolder = sys.argv[1]
   outputVideoFolder = sys.argv[2]
 
+  fileNameQueue = JoinableQueue()
+
   for dirpath, dirs, files in os.walk(inputVideoFolder):
     for filename in files:
       inputFileName = os.path.join(dirpath, filename)
-      success = convertFile(inputFileName, outputVideoFolder)
-      if success:
-        print "Finished converting %s" % inputFileName
+      fileNameQueue.put(inputFileName)
+
+  # num of processes
+  numOfProcesses = 8
+  runVideoConversionProcesses = []
+  for i in range(0,numOfProcesses):
+    runVideoConversionProcess = Process(
+        target=runVideoConversion, args=(fileNameQueue, outputVideoFolder, ))
+    runVideoConversionProcesses += [runVideoConversionProcess]
+    time.sleep(10)
+    runVideoConversionProcess.start()
+    fileNameQueue.put(None)
+
+  for runVideoConversionProcess in runVideoConversionProcesses:
+    runVideoConversionProcess.join()
+  fileNameQueue.join()

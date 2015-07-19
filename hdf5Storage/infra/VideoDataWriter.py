@@ -10,12 +10,17 @@ class VideoDataWriter(object):
     """Initialize values"""
     self.config = config
 
-    self.baseFolder = self.config.hdf5_base_folder
-    self.numFrameInClip = self.config.hdf5_clip_frame_count
-    self.numClassIds = len(self.config.ci_allClassIds)
-    self.numTotalPatches = self.config.total_num_of_patches
-    self.frameDensity = self.config.sw_frame_density
-    self.videoFrameNumberStart = self.config.ci_videoFrameNumberStart
+    self.logger = self.config.logging.logger
+    self.storageCfg = self.config.storage
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+
+    self.baseFolder = self.storageCfg.hdf5BaseFolder
+    self.numFrameInClip = self.storageCfg.hdf5ClipFrameCount
+    self.numTotalPatches = self.slidingWindowCfg.numOfSlidingWindows
+    self.frameDensity = self.slidingWindowCfg.sw_frame_density
+    self.numClassIds = len(self.caffeInputCfg.ci_allClassIds)
+    self.videoFrameNumberStart = self.caffeInputCfg.ci_videoFrameNumberStart
 
     self.videoId = videoId
     self.chiaVersionId = chiaVersionId
@@ -48,6 +53,10 @@ class VideoDataWriter(object):
 
   def addFrameData(self, frameData):
     """Add data for a single frame"""
+    self.logger.debug(
+        "Save frame data for: VideoId: %d, ChiaVersionId: %d, FrameNumber: %d" %
+        (self.videoId, self.chiaVersionId, frameData.frameNumber))
+
     frameNumber = (
         frameData.frameNumber - self.videoFrameNumberStart
     ) / self.frameDensity

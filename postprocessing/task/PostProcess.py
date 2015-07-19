@@ -1,5 +1,3 @@
-import logging
-
 from postprocessing.task.Task import Task
 from postprocessing.task.ClassFilter import ClassFilter
 from postprocessing.task.ZDistFilter import ZDistFilter

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys, os, random
 
-from config.Config import Config
+from config.Utils import Utils
 
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
@@ -25,7 +25,7 @@ if __name__ == '__main__':
   imageDim = Rectangle.rectangle_from_dimensions(videoWidth, videoHeight)
   cornerBoxWH = 10
 
-  Config.mkdir_p(outputFolder)
+  Utils.mkdir_p(outputFolder)
 
   # Create a blank image
   blankImageFilename = os.path.join(outputFolder, "blank_image.png")

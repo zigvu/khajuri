@@ -21,9 +21,10 @@ baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 class TestVersion(unittest.TestCase):
 
   def testVersion(self):
-    version = Version()
-    version.logVersion()
-
+    v = Version()
+    branch, commit = v.getGitVersion()
+    print "Branch: %s" % branch
+    print "Commit: %s" % commit
 
 class TestFrameInfo(unittest.TestCase):
 
@@ -46,7 +47,9 @@ class TestFrameInfo(unittest.TestCase):
   def testCurations(self):
     frame = Frame([1, 2, 3], 543, [0, 1])
     config = Config(baseScriptDir + os.sep + 'config.yaml')
-    status = Status()
+    logger = config.logging.logger
+
+    status = Status(logger)
     frameJsonWriter = JsonWriter(config, status)
     frameJsonWriter((frame, '/tmp/save.json'))
 
@@ -60,16 +63,13 @@ class PixelMapTest(unittest.TestCase):
   def testNeighborMap(self):
     return
     ''' Test NeighborMap created '''
-    imageDim = Rectangle.rectangle_from_dimensions(1280, 720)
-    patchDim = Rectangle.rectangle_from_dimensions(256, 256)
     xStepSize = {0.4: 32, 1: 32, 1.4: 32,}
     yStepSize = {0.4: 32, 1: 32, 1.4: 32,}
-    staticBoundingBoxes = BoundingBoxes(imageDim, xStepSize, yStepSize,
-                                        patchDim)
-    allCellBoundariesDict = PixelMap.getCellBoundaries(staticBoundingBoxes,
-                                                       [0.4, 1, 1.4])
-
-    pass
+    scales = [0.4, 0.7, 1.0, 1.3, 1.6]
+    staticBoundingBoxes = BoundingBoxes(
+        1280, 720, xStepSize, yStepSize, 256, 256, scales)
+    allCellBoundariesDict = PixelMap.getCellBoundaries(
+        staticBoundingBoxes, [0.4, 1, 1.4])
 
   def testCellMap(self):
     ''' Test the cellMap created '''

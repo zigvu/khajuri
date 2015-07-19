@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
-import os, logging, subprocess, sys
+import os
+import subprocess
+import sys
 
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 
@@ -12,7 +14,7 @@ class Version(object):
     output = subprocess.check_output(args, stderr=subprocess.STDOUT, cwd=cwd)
     return output
 
-  def logVersion(self):
+  def getGitVersion(self):
     gitShow = self.runCmd("git show", baseScriptDir)
     commit = None
     for line in gitShow.split('\n'):
@@ -23,13 +25,11 @@ class Version(object):
     for line in gitBranch.split('\n'):
       if line.startswith('*'):
         branch = line
-    logging.info('Branch: %s' % branch)
-    logging.info(commit)
+    return branch, commit
 
 
 if __name__ == '__main__':
-  logging.basicConfig(
-      format='{%(filename)s:%(lineno)d} %(levelname)s - %(message)s',
-      level=logging.INFO)
   v = Version()
-  v.logVersion()
+  branch, commit = v.getGitVersion()
+  print "Branch: %s" % branch
+  print "Commit: %s" % commit

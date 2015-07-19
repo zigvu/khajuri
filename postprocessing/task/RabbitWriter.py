@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 
 from postprocessing.task.Task import Task
@@ -14,20 +13,24 @@ class RabbitWriter(Task):
 
   def __init__(self, config, status):
     Task.__init__(self, config, status)
-    logging.debug('RabbitWriter: Starting writer')
-    amqp_url = self.config.mes_amqp_url
-    serverQueueName = self.config.mes_q_vm2_kahjuri_development_video_data
+    self.logger.info('RabbitWriter: Starting writer')
+
+    self.messagingCfg = self.config.messaging
+    self.jobCfg = self.config.job
+
+    amqp_url = self.messagingCfg.amqpURL
+    serverQueueName = self.messagingCfg.queues.videoData
     self.rabbitWriter = RpcClient(amqp_url, serverQueueName, expectReply=False)
+
+    self.videoId = self.jobCfg.videoId
+    self.chiaVersionId = self.jobCfg.chiaVersionId
 
   def __call__(self, obj):
     frame, classIds = obj
-    logging.info(
-        'RabbitWriter: Saving frameInfo on %s for classes %s' %
-        (frame, classIds))
+    self.logger.debug('RabbitWriter: Frame Number: %d' % (frame.frameNumber))
 
     # extract data that needs to pass through network
-    frameData = FrameData(
-        self.config.videoId, self.config.chiaVersionId, frame.frameNumber)
+    frameData = FrameData(self.videoId, self.chiaVersionId, frame.frameNumber)
     # get prob scores for zdist 0
     frameData.scores = frame.scores[0][:, :, 0].astype(np.float16)
     # get localizations for all zdist
@@ -35,8 +38,7 @@ class RabbitWriter(Task):
 
     # send to storage queue
     message = Pickler.pickle(frameData)
-    headers = Headers.videoStorageSave(
-        self.config.videoId, self.config.chiaVersionId)
+    headers = Headers.videoStorageSave(self.videoId, self.chiaVersionId)
     self.rabbitWriter.call(headers, message)
 
     return (frame, classIds)

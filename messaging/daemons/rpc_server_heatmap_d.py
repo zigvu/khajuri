@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import logging, sys
+import sys
+from multiprocessing import Process
+
+from Logo.PipelineCore.LogConsolidator import LogConsolidator
 
 from config.Config import Config
 
@@ -14,24 +17,35 @@ This daemon will listen for heatmap data requests and serve them
 TODO: daemonize
 """
 
+config = None
+
+def runLogConsolidator():
+  """Consolidate log from multiple processes"""
+  logConsolidator = LogConsolidator(config)
+  logConsolidator.startConsolidation()
 
 def process(configFileName):
+  global config
   config = Config(configFileName)
+  loggingCfg = config.logging
+  messagingCfg = config.messaging
 
-  amqp_url = config.mes_amqp_url
-  serverQueueName = config.mes_q_vm2_kheer_development_heatmap_rpc_request
+  # # Logging infrastructure
+  logConsolidatorProcess = Process(target=runLogConsolidator, args=())
+  logConsolidatorProcess.start()
 
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=config.log_level,
-      datefmt="%Y-%m-%d--%H:%M:%S")
+  logger = loggingCfg.logger
 
-  logging.info("Heatmap rpc server started")
+  amqp_url = messagingCfg.amqpURL
+  serverQueueName = messagingCfg.queues.heatmapRequest
+
+  logger.info("Heatmap rpc server started")
 
   heatmapDataHandler = HeatmapDataHandler(config)
   rpc = RpcServer(amqp_url, serverQueueName, heatmapDataHandler)
 
+  # NOTE: since this executable is run as a daemon, it is expected
+  # to never complete - hence no need to join log queue
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:

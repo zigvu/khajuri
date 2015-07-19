@@ -5,15 +5,20 @@ from hdf5Storage.type.VideoDataPath import VideoDataPath
 
 
 class VideoDataReader(object):
-  """Read video data (prob scores per frame) from hdf5"""
+  """Read video data from hdf5"""
 
   def __init__(self, config, videoId, chiaVersionId):
     """Initialize values"""
     self.config = config
 
-    self.baseFolder = self.config.hdf5_base_folder
-    self.frameDensity = self.config.sw_frame_density
-    self.videoFrameNumberStart = self.config.ci_videoFrameNumberStart
+    self.logger = self.config.logging.logger
+    self.storageCfg = self.config.storage
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+
+    self.baseFolder = self.storageCfg.hdf5BaseFolder
+    self.frameDensity = self.slidingWindowCfg.sw_frame_density
+    self.videoFrameNumberStart = self.caffeInputCfg.ci_videoFrameNumberStart
 
     self.videoId = videoId
     self.chiaVersionId = chiaVersionId
@@ -41,6 +46,9 @@ class VideoDataReader(object):
     """Read frame data from HDF5
     Return in FrameData data structure
     """
+    self.logger.debug(
+        "Get frame data for: VideoId: %d, ChiaVersionId: %d, FrameNumber: %d" %
+        (self.videoId, self.chiaVersionId, frameNumber))
     fn = (frameNumber - self.videoFrameNumberStart) / self.frameDensity
     frameData = FrameData(self.videoId, self.chiaVersionId, fn)
     frameData.scores = self.scoresDataSet[:, :, fn]

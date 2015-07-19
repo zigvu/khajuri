@@ -1,9 +1,18 @@
-import os, errno, shutil
-import yaml, json
-import scipy.ndimage as ndimage
-import logging
+import os
+import yaml
 
-from Logo.PipelineMath.Rectangle import Rectangle
+from config.config_manager.Environments import Environments
+
+from config.config_manager.Jobs import Jobs
+from config.config_manager.Machines import Machines
+from config.config_manager.Loggers import Loggers
+from config.config_manager.Messaging import Messaging
+from config.config_manager.Storage import Storage
+
+from config.config_manager.Pipeline import SlidingWindow
+from config.config_manager.Pipeline import CaffeInput
+from config.config_manager.Pipeline import PostProcessing
+
 from Logo.PipelineMath.PixelMap import CellBoundaries
 from Logo.PipelineMath.PixelMap import NeighborsCache
 
@@ -13,198 +22,104 @@ class Config:
 
   def __init__(self, configFileName):
     """Initlize config from YAML file"""
-    config = yaml.load(open(configFileName, "r"))
+    self.configHash = yaml.load(open(configFileName, "r"))
+    self.configHash.update({
+      'config_root_folder': os.path.dirname(configFileName)
+    })
 
-    # Logging
-    self.log_level = logging.DEBUG
-    if config['log_level'] == 'INFO':
-      self.log_level = logging.INFO
-    if config['log_level'] == 'ERROR':
-      self.log_level = logging.ERROR
-    # for recurring logs, set interval to print
-    self.logIntervalSeconds = 5
-    self.logStarted = False
+    # khajuri configs
+    self._environment = None
+    self._job = None
+    self._machine = None
+    self._logging = None
+    self._messaging = None
+    self._storage = None
+    self._slidingWindow = None
+    self._caffeInput = None
+    self._postProcessing = None
 
-    # CPU count
-    self.multipleOfCPUCount = float(config['multiple_of_cpu_count'])
+    # cell boundaries and neighbor maps
+    self._allCellBoundariesDict = None
+    self._neighborMap = None
 
-    # Sliding window creation:
-    slidingWindow = config['sliding_window']
-    sw_folders = slidingWindow['folders']
-    self.sw_folders_frame = sw_folders['frame_output']
-    self.sw_folders_patch = sw_folders['patch_output']
-    self.sw_folders_json = sw_folders['json_output']
-    self.sw_folders_leveldb = sw_folders['levedb_output']
-    self.sw_folders_video = sw_folders['video_output']
-    self.sw_folders_numpy = sw_folders['numpy_output']
 
-    self.sw_frame_density = int(slidingWindow['frame_density'])
-    self.sw_frame_width = int(slidingWindow['frame_width'])
-    self.sw_frame_height = int(slidingWindow['frame_height'])
-    self.sw_patchWidth = int(slidingWindow['output_width'])
-    self.sw_patchHeight = int(slidingWindow['output_height'])
+  @property
+  def environment(self):
+    if not self._environment:
+      self._environment = Environments(self.configHash).environment
+    return self._environment
 
-    self.sw_scales = []
-    sw_temp_scales = slidingWindow['scaling']
-    # Check length
-    assert len(slidingWindow['x_stride']) == len(sw_temp_scales),\
-        "Stride scale array and image arrays do not match"
-    assert len(slidingWindow['y_stride']) == len(sw_temp_scales),\
-        "Stride scale array and image arrays do not match"
-    i = 0
-    self.sw_xStride = {}
-    self.sw_yStride = {}
-    for sw_scale in sw_temp_scales:
-      self.sw_scales = self.sw_scales + [float(sw_scale)]
-      self.sw_xStride[float(sw_scale)] = slidingWindow['x_stride'][i]
-      self.sw_yStride[float(sw_scale)] = slidingWindow['y_stride'][i]
-      i += 1
+  @property
+  def job(self):
+    if not self._job:
+      jobType = self.configHash['execution']['job']
+      self._job = Jobs(self.configHash, jobType)
+    return self._job
 
-    # Scale decay factors
-    decayFactorFileName = os.path.join(os.path.dirname(configFileName),\
-        slidingWindow['scale_decayed_factors_file'])
-    sdf = json.load(open(decayFactorFileName, 'r'))
-    self.sw_scale_decay_factors = sdf['scaleDecayFactors']
-    self.sw_scale_decay_sigmoid_center = 0.5
-    self.sw_scale_decay_sigmoid_steepness = 10
-    # check that JSON decay has all scale combinations
-    sdfScales = []
-    for sd in self.sw_scale_decay_factors:
-      sdfScales += [sd['scale']]
-      sdScales = []
-      for sdFactor in sd['factors']:
-        sdScales += [sdFactor['scale']]
-      assert sdScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
-    assert sdfScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
+  @property
+  def machine(self):
+    if not self._machine:
+      mType = self.configHash['execution']['machine']
+      self._machine = Machines(self.configHash, mType)
+    return self._machine
 
-    # Caffe input
-    caffeInput = config['caffe_input']
-    self.ci_modelFile = caffeInput['model_file']
-    self.ci_video_prototxtFile = caffeInput['video_prototxt_file']
-    self.ci_deploy_prototxtFile = caffeInput['deploy_prototxt_file']
-    self.ci_numFramesPerLeveldb = caffeInput['num_frames_per_leveldb']
-    self.ci_numConcurrentLeveldbs = caffeInput['num_concurrent_leveldbs']
-    self.ci_maxLeveldbSizeMB = caffeInput['max_leveldb_size_mb']
-    self.ci_lmdbBufferMaxSize = caffeInput['lmdb_buffer_max_size']
-    self.ci_lmdbBufferMinSize = caffeInput['lmdb_buffer_min_size']
-    self.ci_lmdbNumFramesPerBuffer = caffeInput['lmdb_num_frames_per_buffer']
-    self.ci_videoFrameNumberStart = caffeInput['video_frame_number_start']
-    self.ci_useGPU = caffeInput['use_gpu'] == True
-    self.ci_gpu_devices = caffeInput['gpu_devices']
-    self.ci_saveVideoHeatmap = caffeInput['save_video_heatmap'] == True
-    self.ci_computeFrameCuration = caffeInput['compute_frame_curation'] == True
-    self.ci_runCaffePostProcessInParallel = caffeInput[
-        'run_caffe_postprocess_in_parallel'
-    ] == True
-    self.ci_runCaffe = caffeInput['run_caffe'] == True
-    self.ci_runPostProcess = caffeInput['run_postprocess'] == True
-    self.ci_allClassIds = caffeInput['all_classes']
-    self.ci_backgroundClassIds = caffeInput['background_classes']
-    self.ci_nonBackgroundClassIds = [x for x in self.ci_allClassIds
-                                     if x not in self.ci_backgroundClassIds]
-    self.ci_heatMapClassIds = config['heatmap']['classes']
-    self.ci_scoreTypes = {'prob': 0, 'fc8': 1}
+  @property
+  def logging(self):
+    if not self._logging:
+      logExtraParams = {'environment': self.environment}
+      logExtraParams.update(self.job.getLogExtraParams())
+      self._logging = Loggers(self.configHash, logExtraParams)
+      if (self.environment == Environments.LOCAL and 
+          self._logging.rabbitLoggerEnabled):
+        raise RuntimeError("Rabbit logs cannot be enabled in local environment")
+    return self._logging
 
-    # Post processing
-    postProcessing = config['post_processing']
-    self.pp_detectorThreshold = postProcessing['detector_threshold']
-    self.pp_savePatchScores = postProcessing['save_patch_scores'] == True
-    self.pp_compressedJSON = postProcessing['compressed_json'] == True
-    self.pp_zDistThresholds = postProcessing['z_dist_thresholds']
-    ppResultWriters = postProcessing['result_writers']
-    self.pp_resultWriterJSON = ppResultWriters['json_writer'] == True
-    self.pp_resultWriterRabbit = ppResultWriters['rabbit_writer'] == True
+  @property
+  def messaging(self):
+    if not self._messaging:
+      if self.environment == Environments.LOCAL:
+        self._messaging = None
+      else:
+        self._messaging = Messaging(self.configHash, self.environment)
+    return self._messaging
 
-    # Curation
-    curation = config['curation']
-    self.cr_curationNumOfSets = curation['num_of_sets']
-    self.cr_curationNumOfItemsPerSet = curation['num_of_items_per_set']
+  @property
+  def storage(self):
+    if not self._storage:
+      self._storage = Storage(self.configHash)
+      if (self.environment == Environments.LOCAL and 
+          self._storage.enableHdf5ReadWrite):
+        raise RuntimeError("HDF5 cannot be enabled in local environment")
+    return self._storage
 
-    # PeaksExtractor config - not exposed to config.yaml
-    # Connectedness of labeled example - have a full matrix structure
-    self.pe_binaryStructure = ndimage.morphology.generate_binary_structure(2, 2)
-    # if the intersection between candidate labeled bbox and proposed subsume bbox
-    # is more than 70%, then subsume the candidate labeled bbox
-    self.pe_maxCandidateIntersectionDiff = 0.7
-    # allow no more than 90% of intersection between subsumed boxes
-    self.pe_maxSubsumedIntersectionDiff = 0.9
-    # thresholds to subsample candidate labeled bbox prior to showing to user
-    self.pe_curationPatchThresholds = [0.98, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3,
-                                       0.2, 0.1]
+  @property
+  def slidingWindow(self):
+    if not self._slidingWindow:
+      self._slidingWindow = SlidingWindow(self.configHash)
+    return self._slidingWindow
 
-    # HDF5 settings
-    hdf5 = config['hdf5']
-    self.hdf5_clip_frame_count = 1024
-    self.hdf5_video_clips_map_filename = 'clips_map.json'
-    self.hdf5_base_folder = hdf5['hdf5_base_folder']
+  @property
+  def caffeInput(self):
+    if not self._caffeInput:
+      self._caffeInput = CaffeInput(self.configHash)
+    return self._caffeInput
 
-    # Messaging settings
-    messaging = config['messaging']
-    self.mes_amqp_url = messaging['amqp_url']
-    queueNames = messaging['queue_names']
-    self.mes_q_vm2_kahjuri_development_video_data = queueNames[
-        'vm2_kahjuri_development_video_data'
-    ]
-    self.mes_q_vm2_kheer_development_clip_id_request = queueNames[
-        'vm2_kheer_development_clip_id_request'
-    ]
-    self.mes_q_vm2_kheer_development_heatmap_rpc_request = queueNames[
-        'vm2_kheer_development_heatmap_rpc_request'
-    ]
-    self.mes_q_vm2_kheer_development_localization_request = queueNames[
-        'vm2_kheer_development_localization_request'
-    ]
-
-    # load memory heavy dictionaries on demand
-    self.cachedCellBoundariesDict = None
-    self.cachedNeighborMap = None
+  @property
+  def postProcessing(self):
+    if not self._postProcessing:
+      self._postProcessing = PostProcessing(self.configHash)
+    return self._postProcessing
 
   @property
   def allCellBoundariesDict(self):
-    if not self.cachedCellBoundariesDict:
-      self.cachedCellBoundariesDict = CellBoundaries(self).allCellBoundariesDict
-    return self.cachedCellBoundariesDict
+    if not self._allCellBoundariesDict:
+      self._allCellBoundariesDict = CellBoundaries(self).allCellBoundariesDict
+    return self._allCellBoundariesDict
 
   @property
   def neighborMap(self):
-    if not self.cachedNeighborMap:
+    if not self._neighborMap:
       neighborCache = NeighborsCache(self)
-      self.cachedNeighborMap = neighborCache.neighborMapAllScales(
+      self._neighborMap = neighborCache.neighborMapAllScales(
           self.allCellBoundariesDict)
-    return self.cachedNeighborMap
-
-  @staticmethod
-  def mkdir_p(start_path):
-    """Util to make path"""
-    try:
-      os.makedirs(start_path)
-    except OSError as exc:  # Python >2.5
-      if exc.errno == errno.EEXIST and os.path.isdir(start_path):
-        pass
-
-  @staticmethod
-  def rm_rf(start_path):
-    """Util to delete path"""
-    try:
-      if os.path.isdir(start_path):
-        shutil.rmtree(start_path, ignore_errors=True)
-      elif os.path.exists(start_path):
-        os.remove(start_path)
-    except:
-      # do nothing
-      pass
-
-  @staticmethod
-  def dir_size(start_path):
-    """Util to get total size of path in MB"""
-    total_size = 0
-    for dirpath, dirnames, filenames in os.walk(start_path):
-      for f in filenames:
-        fp = os.path.join(dirpath, f)
-        if os.path.exists(fp):
-          try:
-            total_size += os.path.getsize(fp)
-          except:
-            continue
-    # convert to MB
-    return int(total_size * 1.0 / 10000000)
+    return self._neighborMap

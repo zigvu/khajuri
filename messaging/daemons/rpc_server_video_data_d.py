@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import logging, sys
+import sys
+from multiprocessing import Process
+
+from Logo.PipelineCore.LogConsolidator import LogConsolidator
 
 from config.Config import Config
 
@@ -16,30 +19,40 @@ to hdf5.
 TODO: daemonize
 """
 
+config = None
+
+def runLogConsolidator():
+  """Consolidate log from multiple processes"""
+  logConsolidator = LogConsolidator(config)
+  logConsolidator.startConsolidation()
 
 def process(configFileName):
+  global config
   config = Config(configFileName)
-  config.total_num_of_patches = 543  # read this from config instead
+  loggingCfg = config.logging
+  messagingCfg = config.messaging
 
-  amqp_url = config.mes_amqp_url
+  # # Logging infrastructure
+  logConsolidatorProcess = Process(target=runLogConsolidator, args=())
+  logConsolidatorProcess.start()
 
-  khajuriDataQueueName = config.mes_q_vm2_kahjuri_development_video_data
-  kheerQueueName = config.mes_q_vm2_kheer_development_localization_request
+  logger = loggingCfg.logger
 
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=config.log_level,
-      datefmt="%Y-%m-%d--%H:%M:%S")
+  amqp_url = messagingCfg.amqpURL
+  videoDataQueueName = messagingCfg.queues.videoData
+  localizationRequestQueueName = messagingCfg.queues.localizationRequest
 
   # this client sends data to kheer
-  kheerRpcClient = RpcClient(amqp_url, kheerQueueName)
+  kheerRpcClient = RpcClient(amqp_url, localizationRequestQueueName)
 
-  logging.info("Starting RPC server to read video data")
+  logger.info("Starting RPC server to read video data")
 
   # this server runs in VM2 and listens to data from GPU1/GPU2
   videoDataHandler = VideoDataHandler(kheerRpcClient, config)
-  rpc = RpcServer(amqp_url, khajuriDataQueueName, videoDataHandler)
+  rpc = RpcServer(amqp_url, videoDataQueueName, videoDataHandler)
+
+  # NOTE: since this executable is run as a daemon, it is expected
+  # to never complete - hence no need to join log queue
 
 
 if __name__ == '__main__':

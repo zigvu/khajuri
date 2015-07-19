@@ -1,21 +1,24 @@
-import logging, json
+import json
 import os
 
 from postprocessing.task.Task import Task
 
 
 class JsonWriter(Task):
+  def __init__(self, config, status):
+    Task.__init__(self, config, status)
+    self.storageCfg = self.config.storage
+    self.caffeInputCfg = self.config.caffeInput
 
   def __call__(self, obj):
     frame, classIds = obj
-    logging.info(
-        'JsonWriter: Saving frameInfo on %s for classes %s' % (frame, classIds))
+    self.logger.debug('JsonWriter: Frame Number: %d' % (frame.frameNumber))
     localizations = {}
     scores = {}
     myDict = {}
     myDict["frame_number"] = frame.frameNumber
     myDict["frame_time"] = frame.frameDisplayTime
-    for classId in self.config.ci_allClassIds:
+    for classId in self.caffeInputCfg.ci_allClassIds:
       scores[classId] = {}
       scores[classId]["fc8"] = list(frame.scores[0][:, classId, 1])
       scores[classId]["prob"] = list(frame.scores[0][:, classId, 0])
@@ -45,7 +48,6 @@ class JsonWriter(Task):
     myDict["localizations"] = localizations
     if not frame.filename:
       frame.filename = os.path.join(
-          self.config.json_output_folder,
-          "%s_frame_%s.json" % (self.config.videoId, frame.frameNumber))
+          self.storageCfg.jsonFolder, "frame_%s.json" % frame.frameNumber)
     json.dump(myDict, open(frame.filename, 'w'), indent=2)
     return (frame, classIds)

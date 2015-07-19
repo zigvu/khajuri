@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
-import sys, os, glob, logging
+import sys, os, glob
 
 from postprocessing.task.CompareFrame import CompareFrame
 from postprocessing.task.OldJsonReader import OldJsonReader
 from postprocessing.task.JsonReader import JsonReader
+
 from config.Config import Config
 from config.Status import Status
 from config.Version import Version
@@ -16,15 +17,15 @@ def main():
       '<config.yaml> <file1> <old/new> <file2> <old/new>'
     print 'This executable will compare two files and print any diff per class'
     sys.exit(1)
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO,
-      datefmt="%Y-%m-%d--%H:%M:%S")
   config = Config(sys.argv[1])
-  config.videoId = None
-  Version().logVersion()
-  status = Status()
+  logger = config.logging.logger
+
+  branch, commit = Version().getGitVersion()
+  logger.info('Branch: %s' % branch)
+  logger.info('Commit: %s' % commit)
+
+  status = Status(logger)
+
   frame1 = None
   frame2 = None
 
@@ -46,9 +47,9 @@ def main():
   compare = CompareFrame(config, status)
   diff = compare((frame1, frame2))
   if diff:
-    print 'Diff is %s' % diff
+    logger.info('Diff is %s' % diff)
   else:
-    print 'Same Frame'
+    logger.info('Same Frame')
 
 
 if __name__ == '__main__':

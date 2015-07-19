@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sys, os, glob, logging, multiprocessing
+import sys, os, glob, multiprocessing
 import time
 from collections import OrderedDict
 
@@ -55,16 +55,15 @@ def main():
       '<config.yaml> <folder1> <old/new> <folder2> <old/new>'
     print 'This executable will compare two folders and print any diff per class'
     sys.exit(1)
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO,
-      datefmt="%Y-%m-%d--%H:%M:%S")
 
   config = Config(sys.argv[1])
-  config.videoId = None
-  Version().logVersion()
-  status = Status()
+  logger = config.logging.logger
+
+  branch, commit = Version().getGitVersion()
+  logger.info('Branch: %s' % branch)
+  logger.info('Commit: %s' % commit)
+
+  status = Status(logger)
 
   startTime = time.time()
   f1 = sys.argv[2]
@@ -75,7 +74,7 @@ def main():
   inputs = multiprocessing.JoinableQueue()
   results = multiprocessing.Queue()
 
-  classes = config.ci_allClassIds
+  classes = config.caffeInput.ci_allClassIds
   adiffMax = OrderedDict()
   adiffAvg = OrderedDict()
   adiffMin = OrderedDict()
@@ -111,7 +110,7 @@ def main():
     inputs.put(None)
   myPipeline.join()
   endTime = time.time()
-  logging.info('Took %s seconds' % (endTime - startTime))
+  logger.info('Took %s seconds' % (endTime - startTime))
 
   scoreDiff = []
   localizationDiff = []

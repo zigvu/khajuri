@@ -13,23 +13,13 @@ This script will run a video through caffe and post-processing pipeline
 """
 
 def main():
-  if len(sys.argv) < 8:
-    print 'Usage %s ' % sys.argv[0] + \
-        '<config.yaml> <videoFileName> <baseDbFolder> <jsonFolder> ' + \
-        '<numpyFolder> <videoId> <chiaVersionId>'
+  if len(sys.argv) < 2:
+    print 'Usage %s <config.yaml>' % sys.argv[0]
     print description
     sys.exit(1)
 
   configFileName = sys.argv[1]
-  videoFileName = sys.argv[2]
-  baseDbFolder = sys.argv[3]
-  jsonFolder = sys.argv[4]
-  numpyFolder = sys.argv[5]
-  videoId = int(sys.argv[6])
-  chiaVersionId = int(sys.argv[7])
-  videoProcessThread = VideoProcessThread(
-      configFileName, videoFileName, baseDbFolder, jsonFolder, numpyFolder,
-      videoId, chiaVersionId)
+  videoProcessThread = VideoProcessThread(configFileName)
   videoProcessThread.run()
 
 

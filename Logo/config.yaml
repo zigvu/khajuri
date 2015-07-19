@@ -1,30 +1,104 @@
-# running with khajuri branch: Development (w/ lmdb circular buffer)
+# Khajuri Config
 
-# in increasing level of severity: DEBUG, INFO, ERROR
-log_level:                                  DEBUG
+# For any change to Config.py or related sub-classes, need to update this file
+# with both khajuri and kheer issues that introduce the code changes
+# If just changing the values in this config (as apposed to adding new fields),
+# version tracking is not required
+versioning:
+  khajuri_issue_number:                      104
+  kheer_issue_number:                        15
 
-# Count to multiply with the number of cores available in machine
-# if using fraction, will round down to nearest integer after multiplication
-# Example: 16 core machine and 1.4 factor = 22 threads to run in parallel
-# use 31 out of 32 cores
-multiple_of_cpu_count:                        1
+# Each executable will need to configure these
+# parameters prior to executing any khajuri code
+execution:
+  # Environments: 'local', 'development', 'production'
+  environment:                               'local'
+  # Log levels: DEBUG, INFO, ERROR, CRITICAL
+  #   rabbit writer logs are automatically INFO
+  logging:
+    rabbit_writer:                           false
+    needs_log_queue:                         true
+    log_level:                               'INFO'
+  # Jobs: 
+  # 'process_video', 'heatmap_daemon', 'hdf5_writer_daemon', 'log_writer_daemon'
+  job:                                       'process_video'
+  # Machines: GPU1, GPU2, VM
+  machine:                                   'GPU2'
+
+
+
+# Details of jobs
+jobs:
+  process_video:
+    zigvu_job_id:                            1
+    kheer_job_id:                            1
+    video_id:                                1
+    video_file_name:                         ''
+    chia_version_id:                         1
+  heatmap_daemon:
+    zigvu_job_id:                            2
+  hdf5_writer_daemon:
+    zigvu_job_id:                            3
+  log_writer_daemon:
+    zigvu_job_id:                            4
+
+
+# Details of machines
+machines:
+  # To not use GPUs in GPU machines, put:
+  #   gpu_devices: None
+  GPU1:
+    gpu_devices:                            
+      - 0
+      - 1
+    num_cores:                               32
+  GPU2:
+    gpu_devices:                            
+      - 0
+      - 1
+      - 2
+      - 3
+    num_cores:                               32
+  VM:
+    num_cores:                               2
+
+
+# Rabbit messaging
+rabbit:
+  amqp_url:                                  'localhost'
+  queue_names:
+    local:                                   None
+    development:
+      log:                                   'development.log'
+      video_data:                            'development.video_data'
+      clip_id_request:                       'development.clip_id.request'
+      heatmap_request:                       'development.heatmap.request'
+      localization_request:                  'development.localization.request'
+    production:
+      log:                                   'production.log'
+      video_data:                            'production.video_data'
+      clip_id_request:                       'production.clip_id.request'
+      heatmap_request:                       'production.heatmap.request'
+      localization_request:                  'production.localization.request'
+
+# temporary and permanent storage
+storage:
+  json_read_write:                            false
+  hdf5_read_write:                            false
+  local:
+    base_db_folder:                          '/mnt/tmp/lmdb'
+    json_folder:                             'json'
+  hdf5:
+    hdf5_base_folder:                        '/var/www/kheer/public/data'
 
 # Sliding window configurations
 sliding_window:
-  is_test:                                    false
-  folders:
-    frame_output:                             frames
-    patch_output:                             patches
-    json_output:                              json
-    levedb_output:                            /mnt/tmp/lmdb
-    video_output:                             vdo-out
-    numpy_output:                             numpy
   frame_density:                              5
   frame_width:                                1280
   frame_height:                               720
   # Dimension of patches
-  output_width:                               256
-  output_height:                              256
+  patch_width:                               256
+  patch_height:                              256
   x_stride:
     - 32
     - 64
@@ -44,41 +118,30 @@ sliding_window:
     - 1.3
     - 1.6
 
-# put in same folder as this config.yaml file - no absolute path here
+  # put in same folder as this config.yaml file - no absolute path here
   scale_decayed_factors_file:                "config_scale_decay_factors.json"
+
+
 
 # Caffe input
 caffe_input:
   model_file:                                 "/mnt/data/wc14itr/set04/runResults/caffe_logo_train_iter_5000"
   video_prototxt_file:                        "/mnt/data/wc14itr/set04/runResults/prototxt/logo_video.prototxt"
-  deploy_prototxt_file:                       "/mnt/data/wc14itr/set04/runResults/prototxt/logo_deploy.prototxt"
-
-# for processing vdo in older setup with leveldb
-  # number of frames to put in one leveldb
-  num_frames_per_leveldb:                    30
-  num_concurrent_leveldbs:                   2
-  # leveldb might be maintained in TEMPFS - if exceed this size, pause leveldb creation
-  # if want to ignore the size limit, set to zero
-  max_leveldb_size_mb:                       20000
+  saved_boundaries_file:                      "/home/ubuntu/.config/khajuri/savedBoundaries.p"
+  saved_neighbors_file:                       "/home/ubuntu/.config/khajuri/savedNeighbors.p"
 
   # lmdb circular buffers - look at issue65 for setting these
   lmdb_buffer_max_size:                      6
   lmdb_buffer_min_size:                      4
   lmdb_num_frames_per_buffer:                1
 
+  # post-processing queue size management (num of frames in queue)
+  pp_queue_max_size:                         5000
+  pp_queue_high_watermark:                   4000
+  pp_queue_low_watermark:                    1000
+
   # frame number to start video processing on
   video_frame_number_start:                  1
-  use_gpu:                                   true
-  gpu_devices:                               
-    - 0
-    - 1
-    - 2
-    - 3
-  save_video_heatmap:                        false 
-  compute_frame_curation:                    false
-
-# for processing vdo in older setup with leveldb
-  run_caffe_postprocess_in_parallel:         false
 
   run_caffe:                                 true
   run_postprocess:                           true
@@ -142,42 +205,8 @@ caffe_input:
 # Post processing
 post_processing:
   detector_threshold:                         0.8
-  # Note: to avoid losing caffe scores permanently, `save_patch_scores = false` 
-  # is ONLY considered when saving JSON after post-processing stage
-  save_patch_scores:                          true
-  # this uses the snappy library - to unzip a file from the command line
-  # issue: python -m snappy -d <filename.snappy>
-  compressed_json:                            false
   z_dist_thresholds:
     - 0
     - 2
     - 4
-  result_writers:
-    json_writer:                              true
-    rabbit_writer:                            true
 
-# Curation
-curation:
-  # total patches/frames per class = num_of_sets * num_of_items_per_set
-  num_of_sets:                                10
-  num_of_items_per_set:                       500
-
-heatmap:
-  classes:
-   - '22'
-
-log:
-  file:       pp.log
-
-# HDF5 storage
-hdf5:
-  hdf5_base_folder:                           '/var/www/kheer/public/data'
-
-# Messaging
-messaging:
-  amqp_url:                                   'localhost'
-  queue_names:
-    vm2_kahjuri_development_video_data:       'vm2.kahjuri.development.video_data'
-    vm2_kheer_development_clip_id_request:    'vm2.kheer.development.clip_id.request'
-    vm2_kheer_development_heatmap_rpc_request:  'vm2.kheer.development.heatmap_rpc.request'
-    vm2_kheer_development_localization_request: 'vm2.kheer.development.localization.request'

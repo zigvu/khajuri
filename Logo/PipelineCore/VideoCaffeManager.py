@@ -1,10 +1,11 @@
+import time
 import json
 from collections import OrderedDict
-import logging
 
 import caffe
 
 from config.Config import Config
+from config.Status import Status
 
 from postprocessing.type.Frame import Frame
 from postprocessing.task.JsonWriter import JsonWriter
@@ -16,12 +17,24 @@ class VideoCaffeManager(object):
   def __init__(self, config):
     """Initialization"""
     self.config = config
-    self.classes = self.config.ci_allClassIds
+    self.logger = self.config.logging.logger
+    self.machineCfg = self.config.machine
+    self.caffeInputCfg = self.config.caffeInput
+
+    self.status = Status(self.logger)
+
+    self.classes = self.caffeInputCfg.ci_allClassIds
     self.numOfClasses = len(self.classes)
-    self.runPostProcessor = self.config.ci_runPostProcess
-    self.compressedJSON = self.config.pp_compressedJSON
+    self.runPostProcessor = self.caffeInputCfg.ci_runPostProcess
     self.patchMapping = self.config.allCellBoundariesDict["patchMapping"]
     self.totalPatches = len(self.patchMapping)
+
+    # manage post-process queue size
+    self.ppQueue_highWatermark = self.caffeInputCfg.ci_ppQueue_highWatermark
+    self.ppQueue_lowWatermark = self.caffeInputCfg.ci_ppQueue_lowWatermark
+    self.ppQueue_isAboveHighWatermark = False
+    self.postProcessQueueSleepTime = 10
+
 
   def setupNet(self, newPrototxtFile, deviceId):
     """Setup caffe network"""
@@ -40,9 +53,9 @@ class VideoCaffeManager(object):
       raise RuntimeError(
           "Couldn't read batch size from file %s" % newPrototxtFile)
 
-    logging.info("Setup caffe network for device id %d" % self.deviceId)
-    useGPU = self.config.ci_useGPU
-    modelFile = self.config.ci_modelFile
+    self.logger.info("DeviceId: %d: Setup caffe network" % self.deviceId)
+    useGPU = self.machineCfg.useGPU()
+    modelFile = self.caffeInputCfg.ci_modelFile
 
     # HACK: without reinitializing caffe_net twice, it won't give reproducible results
     # Seems to happen in both CPU and GPU runs:
@@ -53,7 +66,7 @@ class VideoCaffeManager(object):
       self.caffe_net.set_device(self.deviceId)
     else:
       self.caffe_net.set_mode_cpu()
-    logging.debug("Reinitializing caffe_net")
+    self.logger.debug("DeviceId: %d: Reinitializing caffe_net" % self.deviceId)
 
     self.caffe_net = caffe.Net(newPrototxtFile, modelFile)
     self.caffe_net.set_phase_test()
@@ -62,7 +75,7 @@ class VideoCaffeManager(object):
       self.caffe_net.set_device(self.deviceId)
     else:
       self.caffe_net.set_mode_cpu()
-    logging.debug("Done initializing caffe_net")
+    self.logger.debug("DeviceId: %d: Done initializing caffe_net" % self.deviceId)
 
   def setupQueues(self, producedQueue, consumedQueue, postProcessQueue):
     """Setup queues"""
@@ -81,15 +94,15 @@ class VideoCaffeManager(object):
         # poison pill means done with evaluations
         break
       # producer is not finished producing, so consume
-      logging.debug(
-          "Caffe working on batch %s on device %d" % 
-          (dbBatchMappingFile, self.deviceId))
+      self.logger.debug(
+          "DeviceId: %d: Caffe working on batch %s" % 
+          (self.deviceId, dbBatchMappingFile))
       self.forward(dbBatchMappingFile)
       # once scores are saved, put it in deletion queue
       self.consumedQueue.put(dbBatchMappingFile)
       self.producedQueue.task_done()
-    logging.info(
-        "Caffe finished working all batches on device %d" % (self.deviceId))
+      self.pauseForPostProcessQueue()
+    self.logger.info("DeviceId: %d: Caffe finished all batches" % self.deviceId)
 
   def forward(self, dbBatchMappingFile):
     """Forward call in caffe"""
@@ -104,7 +117,7 @@ class VideoCaffeManager(object):
       jsonFile = infoDict['jsonFile']
       if jsonFile not in frames.keys():
         frames[jsonFile] = Frame(
-            self.classes, self.totalPatches, self.config.ci_scoreTypes.keys())
+            self.classes, self.totalPatches, self.caffeInputCfg.ci_scoreTypes.keys())
         frames[jsonFile].filename = jsonFile
         frames[jsonFile].frameNumber = infoDict['frameNum']
         frames[jsonFile].frameDisplayTime = 0
@@ -134,7 +147,7 @@ class VideoCaffeManager(object):
         frames[infoDict['jsonFile']].addScores(infoDict['patchNum'], scores)
         frames[infoDict['jsonFile']].addfc8Scores(
             infoDict['patchNum'], scores_fc8)
-        # logging.debug("%s" % printStr)
+        # self.logger.debug("%s" % printStr)
       patchCounter += 1
 
     # Save and put json files in post processing queue
@@ -142,4 +155,28 @@ class VideoCaffeManager(object):
       if self.runPostProcessor:
         self.postProcessQueue.put((frame, self.classes))
       else:
-        JsonWriter(self.config, None)((frame, self.classes))
+        JsonWriter(self.config, self.status)((frame, self.classes))
+
+  def pauseForPostProcessQueue(self):
+    """In case post-process queue is too big, pause"""
+    # only run if post-processing is enabled
+    if not self.runPostProcessor:
+      return
+    # get queue size
+    ppQueue_curSize = self.postProcessQueue.qsize()
+    if self.ppQueue_isAboveHighWatermark:
+      # if above high watermark, wait until we are below low watermark
+      while ppQueue_curSize > self.ppQueue_lowWatermark:
+        self.logger.debug(
+            "DeviceId: %d: Waiting for pp queue to shrink" % self.deviceId)
+        time.sleep(self.postProcessQueueSleepTime)
+        ppQueue_curSize = self.postProcessQueue.qsize()
+      # reset
+      self.ppQueue_isAboveHighWatermark = False
+    else:
+      # mark if we go above high water mark
+      if ppQueue_curSize > self.ppQueue_highWatermark:
+        self.logger.debug(
+            "DeviceId: %d: Above pp queue high watermark" % self.deviceId)
+        self.ppQueue_isAboveHighWatermark = True
+    

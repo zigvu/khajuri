@@ -2,15 +2,12 @@ import os
 import re
 import time
 import json
-import logging
 from collections import OrderedDict
 
 from VideoReader import VideoReader
 
-from Logo.PipelineMath.Rectangle import Rectangle
-from Logo.PipelineMath.BoundingBoxes import BoundingBoxes
-
 from config.Config import Config
+from config.Utils import Utils
 
 
 class VideoDbManager(object):
@@ -19,9 +16,15 @@ class VideoDbManager(object):
   def __init__(self, config):
     """Initialization"""
     self.config = config
-    self.scales = self.config.sw_scales
-    self.maxProducedQueueSize = self.config.ci_lmdbBufferMaxSize
-    self.compressedJSON = self.config.pp_compressedJSON
+    self.loggingCfg = self.config.logging
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+
+    self.logger = self.loggingCfg.logger
+    self.scales = self.slidingWindowCfg.sw_scales
+    self.staticBBoxes = self.slidingWindowCfg.staticBBoxes
+    self.numOfSlidingWindowsPerFrame = self.slidingWindowCfg.numOfSlidingWindows
+    self.maxProducedQueueSize = self.caffeInputCfg.ci_lmdbBufferMaxSize
 
   def setupFolders(self, dbFolder, jsonFolder):
     """Setup folders"""
@@ -30,40 +33,32 @@ class VideoDbManager(object):
     self.jsonFolder = None
 
     self.dbFolder = dbFolder
-    #config.mkdir_p(self.dbFolder) # this is made in C++
+    # Utils.mkdir_p(self.dbFolder) # this is made in C++
     self.jsonFolder = jsonFolder
-    Config.mkdir_p(self.jsonFolder)
+    Utils.mkdir_p(self.jsonFolder)
 
   def setupVideoFrameReader(self, videoFileName):
     """Setup database creation from video given start of frame and steps"""
     # initializes the following:
     self.videoFrameReader = None
-    self.staticBoundingBoxes = None
     self.totalNumOfFrames = None
     self.videoId = None
-    self.imageDim = None
 
     # Load video
     self.videoFrameReader = VideoReader.VideoFrameReader(40, 40, videoFileName)
     self.videoFrameReader.generateFrames()
-    if not self.config.logStarted:
+    if not self.loggingCfg.cppGlogStarted:
       self.videoFrameReader.startLogger()
-      self.config.logStarted = True
+      self.loggingCfg.cppGlogStarted = True
 
     # since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
     time.sleep(10)
 
-    # Get frame dimensions and create bounding boxes
+    # Get frame dimensions
     frame = self.videoFrameReader.getFrameWithFrameNumber(1)
     while not frame:
       frame = self.videoFrameReader.getFrameWithFrameNumber(1)
-    self.imageDim = Rectangle.rectangle_from_dimensions(
-        frame.width, frame.height)
-    patchDimension = Rectangle.rectangle_from_dimensions(
-      self.config.sw_patchWidth, self.config.sw_patchHeight)
-    self.staticBoundingBoxes = BoundingBoxes(
-      self.imageDim, self.config.sw_xStride, self.config.sw_yStride, patchDimension)
 
     fps = self.videoFrameReader.fps
     lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
@@ -82,16 +77,12 @@ class VideoDbManager(object):
     self.deviceId = deviceId
 
     # create new prototxt
-    prototxtFile = self.config.ci_video_prototxtFile
+    prototxtFile = self.caffeInputCfg.ci_video_prototxtFile
     self.newPrototxtFile = newPrototxtFile
 
-    # calculate batch size from bounding boxes
-    for scale in self.scales:
-      self.caffeBatchSize += len(
-          self.staticBoundingBoxes.getBoundingBoxes(scale))
-
     # if we want multiple frames per batch, change
-    self.caffeBatchSize = self.caffeBatchSize * self.config.ci_lmdbNumFramesPerBuffer
+    self.caffeBatchSize = self.numOfSlidingWindowsPerFrame * \
+        self.caffeInputCfg.ci_lmdbNumFramesPerBuffer
 
     # ensure backend is lmdb
     isDbLMDB = False
@@ -133,16 +124,16 @@ class VideoDbManager(object):
     videoDb.createNewDb(self.dbFolder, self.videoFrameReader)
 
     # Main loop to go through video
-    logging.info("Start patch extraction for deviceId %d" % self.deviceId)
+    self.logger.info("DeviceId: %d: Start patch extraction" % self.deviceId)
     while (not self.videoFrameReader.eof) or (
         currentFrameNum <= self.videoFrameReader.totalFrames):
       # For each batch of patches, put in queue
       if (((dbPatchCounter + 1) % self.caffeBatchSize) == 0):
         # add to db
         if len(dbBatchMapping) > 0:
-          logging.debug(
-              "Saving batch ID: %d for device id %d" % 
-              (dbBatchId, self.deviceId))
+          self.logger.debug(
+              "DeviceId: %d: Saving batch ID: %d" % 
+              (self.deviceId, dbBatchId))
           videoDb.saveDb()
           with open(dbBatchMappingFile, "w") as f:
             json.dump(dbBatchMapping, f, indent=2)
@@ -159,9 +150,9 @@ class VideoDbManager(object):
         dbBatchMapping = OrderedDict()
         dbBatchMappingFile = os.path.join(
             self.dbFolder, "db_mapping_%d.json" % dbBatchId)
-        logging.info(
-            "%d percent video processed" % 
-            (int(100.0 * currentFrameNum / self.totalNumOfFrames)))
+        self.logger.info(
+            "DeviceId: %d: Percent video processed: %d" % 
+            (self.deviceId, int(100.0 * currentFrameNum/self.totalNumOfFrames)))
 
       # Start json annotation file
       jsonFile = os.path.join(
@@ -169,7 +160,7 @@ class VideoDbManager(object):
       # Put patch into db
       patchNum = 0
       for scale in self.scales:
-        for box in self.staticBoundingBoxes.getBoundingBoxes(scale):
+        for box in self.staticBBoxes.getBoundingBoxes(scale):
           # Generate db patch and add to json
           dbPatchCounter = videoDb.savePatch(
               currentFrameNum, scale, box[0], box[1], box[2], box[3])
@@ -186,8 +177,8 @@ class VideoDbManager(object):
 
     # For the last db group, save and put in queue
     if len(dbBatchMapping) > 0:
-      logging.debug(
-          "Saving batch ID: %d for device id %d" % (dbBatchId, self.deviceId))
+      self.logger.debug(
+          "DeviceId: %d: Saving batch ID: %d" % (self.deviceId, dbBatchId))
       videoDb.saveDb()
       with open(dbBatchMappingFile, "w") as f:
         json.dump(dbBatchMapping, f, indent=2)
@@ -196,8 +187,8 @@ class VideoDbManager(object):
     # let consumer know that we are at the end
     self.producedQueue.put(None)
     # Put poison pills and wait to join all threads
-    logging.info(
-        "Done with all patch extraction for device id %d" % self.deviceId)
+    self.logger.info(
+        "DeviceId: %d: Done with all patch extraction" % self.deviceId)
     while True:
       dbBatchMappingFileToDelete = self.consumedQueue.get()
       # caffe finished evaluating
@@ -209,7 +200,9 @@ class VideoDbManager(object):
       self.delFromVideoDb(videoDb, dbBatchMappingFileToDelete)
       self.consumedQueue.task_done()
 
-    logging.info("Waiting for videoFrameReader to exit gracefully")
+    self.logger.info(
+        "DeviceId: %d: Waiting for VideoFrameReader " % self.deviceId +
+        "to exit gracefully")
     # HACK: work around so that videoDb releases lock on db folder
     videoDb = None
     # HACK: quit video reader gracefully
@@ -221,7 +214,7 @@ class VideoDbManager(object):
 
   def delFromVideoDb(self, videoDb, dbBatchMappingFileToDelete):
     """Delete all keys from VideoDb found in dbBatchMappingFileToDelete"""
-    logging.debug(
+    self.logger.debug(
         "Deleting keys in file %s in deviceId %d" % 
         (dbBatchMappingFileToDelete, self.deviceId))
     dbBatchMapping = json.load(open(dbBatchMappingFileToDelete, "r"))
@@ -230,4 +223,4 @@ class VideoDbManager(object):
       videoDb.deletePatch(int(patchCounter))
       videoDb.saveDb()
     # delete file
-    Config.rm_rf(dbBatchMappingFileToDelete)
+    Utils.rm_rf(dbBatchMappingFileToDelete)

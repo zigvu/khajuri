@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, logging
+import os
 import sys, json, shutil
 
 from config.Config import Config
@@ -24,11 +24,16 @@ TODO: make it so that we can run this script from GPU1/GPU2.
 
 def process(configFileName, videoFolder, videoId):
   config = Config(configFileName)
-  baseFolder = config.hdf5_base_folder
+
+  logger = config.logging.logger
+  messagingCfg = config.messaging
+  storageCfg = config.storage
+
+  baseFolder = storageCfg.hdf5BaseFolder
   videoClipsMapFilename = os.path.join(
-      videoFolder, config.hdf5_video_clips_map_filename)
-  amqp_url = config.mes_amqp_url
-  serverQueueName = config.mes_q_vm2_kheer_development_clip_id_request
+      videoFolder, storageCfg.hdf5VideoClipsMapFilename)
+  amqp_url = messagingCfg.amqpURL
+  serverQueueName = messagingCfg.queues.clipIdRequest
 
   videoDataPath = VideoDataPath(baseFolder, videoId, 0)
   clipsFolderPath = videoDataPath.clips_folder_path
@@ -55,10 +60,10 @@ def process(configFileName, videoFolder, videoId):
         'frame_number_end': vData['frame_number_end']
     }
     response = json.loads(rpcClient.call(headers, json.dumps(message)))
-    srcVideoFile = os.path.join(videoFolder, vData['clip_filename'])
-    dstVideoFile = os.path.join(clipsFolderPath, "%s.mp4" % response['clip_id'])
-    shutil.copy(srcVideoFile, dstVideoFile)
-    print "Adding video: %s" % (dstVideoFile)
+    srcClipFile = os.path.join(videoFolder, vData['clip_filename'])
+    dstClipFile = os.path.join(clipsFolderPath, "%s.mp4" % response['clip_id'])
+    shutil.copy(srcClipFile, dstClipFile)
+    logger.info("Adding clip: %s" % dstClipFile)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-import multiprocessing, time, os, logging
+import multiprocessing, time, os
 import math, sys, glob
 
 from config.Config import Config
 from config.Status import Status
 from config.Version import Version
+from config.Utils import Utils
 
 from infra.Pipeline import Pipeline
 
@@ -19,24 +20,22 @@ from postprocessing.task.PostProcess import PostProcess
 
 
 def main():
-  if len(sys.argv) < 4:
-    print 'Usage %s <config.yaml> <jsonFolder> <jsonOutputFolder>' % sys.argv[0]
+  if len(sys.argv) < 3:
+    print 'Usage %s <config.yaml> <jsonInputFolder>' % sys.argv[0]
+    print '  Note: Output JSON resides in folder specified in config'
     sys.exit(1)
-  os.makedirs(sys.argv[3])
-  process(sys.argv[1], sys.argv[2], sys.argv[3])
+  process(sys.argv[1], sys.argv[2])
 
 
-def process(configFileName, jsonFolder, jsonOutputFolder):
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO,
-      datefmt="%Y-%m-%d--%H:%M:%S")
+def process(configFileName, jsonInputFolder):
   config = Config(configFileName)
-  config.json_output_folder = jsonOutputFolder
+  logger = config.logging.logger
+  status = Status(logger)
+
+  Utils.mkdir_p(config.storage.jsonFolder)
+
   inputs = multiprocessing.JoinableQueue()
   results = multiprocessing.Queue()
-  status = Status()
 
   #Uncomment for serial run
   #reader = OldJsonReader( config, status ),
@@ -44,7 +43,7 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
   #zDist = ZDistFilter( config, status ),
   #localization = Localization( config, status )
 
-  #for jsonFile in glob.glob( jsonFolder + os.sep + "*.json" ):
+  #for jsonFile in glob.glob( jsonInputFolder + os.sep + "*.json" ):
   #  postprocess = PostProcess( config, status )
   #  postprocess( jsonFile )
 
@@ -55,16 +54,18 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
   #                        #ZDistFilter( config, status ),
   #                        Localization( config, status )
   #                        ], inputs, results )
-  config.videoId = None
   myPipeline = Pipeline([PostProcess(config, status)], inputs, results)
 
-  Version().logVersion()
+  branch, commit = Version().getGitVersion()
+  logger.info('Branch: %s' % branch)
+  logger.info('Commit: %s' % commit)
+
   startTime = time.time()
   myPipeline.start()
 
   # Enqueue jobs
   num_jobs = 0
-  for jsonFile in glob.glob(jsonFolder + os.sep + "*.json"):
+  for jsonFile in glob.glob(jsonInputFolder + os.sep + "*.json"):
     inputs.put(jsonFile)
     num_jobs += 1
 
@@ -76,9 +77,9 @@ def process(configFileName, jsonFolder, jsonOutputFolder):
   # Wait for all of the inputs to finish
   myPipeline.join()
   endTime = time.time()
-  logging.info('Took %s seconds' % (endTime - startTime))
+  logger.info('Took %s seconds' % (endTime - startTime))
 
-  # Start logging results
+  # Start printing results
   for i in xrange(num_consumers + num_jobs):
     result = results.get()
-    logging.info('Result: %s', result)
+    logger.info('Result: %s', result)

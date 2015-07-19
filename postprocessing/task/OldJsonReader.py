@@ -1,4 +1,4 @@
-import logging, json
+import json
 import numpy as np
 import os
 
@@ -10,10 +10,12 @@ from postprocessing.type.Rect import Rect
 
 
 class OldJsonReader(Task):
+  def __init__(self, config, status):
+    Task.__init__(self, config, status)
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+    self.allCellBoundariesDict = self.config.allCellBoundariesDict
 
-  def getVideoId(self, filename):
-    baseName = os.path.basename(filename)
-    return baseName.split('_')[0]
 
   def getPatches(self, scale):
     # Patch Scores
@@ -27,18 +29,19 @@ class OldJsonReader(Task):
 
   def __call__(self, obj):
     fileName = obj
-    logging.info('Reading frameInfo from %s' % fileName)
-    if not self.config.videoId:
-      self.config.videoId = self.getVideoId(fileName)
+    self.logger.debug('OldJsonReader: %s' % fileName)
     self.myDict = json.load(open(fileName, 'r'))
     frame = Frame(
-        self.config.ci_allClassIds, 543, self.config.ci_scoreTypes.keys())
+        self.caffeInputCfg.ci_allClassIds, 
+        self.slidingWindowCfg.numOfSlidingWindows, 
+        self.caffeInputCfg.ci_scoreTypes.keys()
+    )
     frame.frameNumber = self.myDict["frame_number"]
-    self.patchMapping = self.config.allCellBoundariesDict["patchMapping"]
+    self.patchMapping = self.allCellBoundariesDict["patchMapping"]
     self.classIds = self.getClassIds()
     scores = np.zeros((len(self.patchMapping.keys()), len(self.classIds)))
     fc8scores = np.zeros((len(self.patchMapping.keys()), len(self.classIds)))
-    for scale in self.config.sw_scales:
+    for scale in self.slidingWindowCfg.sw_scales:
       for patch in self.getPatches(scale):
         x = patch["patch"]["x"]
         y = patch["patch"]["y"]
@@ -53,19 +56,20 @@ class OldJsonReader(Task):
     frame.scores[0][:, :, 0] = scores
     frame.scores[0][:, :, 1] = fc8scores
 
-    logging.info('Reading localizations from file %s' % fileName)
+    # self.logger.debug('Reading localizations from file %s' % fileName)
     if self.myDict.get('localizations'):
       for classId in self.classIds:
         lList = self.myDict['localizations'].get(classId)
         for lDict in lList:
-          logging.info('Got the localization dict %s' % lDict)
+          # self.logger.debug('Got the localization dict %s' % lDict)
           rect = Rect(
               lDict["bbox"]["x"], lDict["bbox"]["y"], lDict["bbox"]["width"],
               lDict["bbox"]["height"])
           loc = Localization(0, classId, rect, lDict["score"], 1)
-          logging.info(
-              'Adding localization %s to frame from file %s' % (loc, fileName))
+          # self.logger.debug(
+          #     'Adding localization %s to frame from file %s' % (loc, fileName))
           frame.addLocalization(int(classId), loc)
     else:
-      logging.info('Localization is not present in file %s' % fileName)
+      # self.logger.debug('Localization is not present in file %s' % fileName)
+      pass
     return (frame, self.classIds)

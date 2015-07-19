@@ -12,17 +12,23 @@ class PixelMapper(object):
     self.classId = classId
     self.config = config
     self.frame = frame
-    self.sigmoidCenter = self.config.sw_scale_decay_sigmoid_center
-    self.sigmoidSteepness = self.config.sw_scale_decay_sigmoid_steepness
+
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.detectorThreshold = self.config.postProcessing.pp_detectorThreshold
+    self.allCellBoundariesDict = self.config.allCellBoundariesDict
+    self.neighborMap = self.config.neighborMap
+
+    self.sigmoidCenter = self.slidingWindowCfg.sw_scale_decay_sigmoid_center
+    self.sigmoidSteepness = self.slidingWindowCfg.sw_scale_decay_sigmoid_steepness
     self.zDistThreshold = zDistThreshold
     self.pixelMaps = []
     patchScores = frame.scores[self.zDistThreshold][:, self.classId, 0]
     oneScores = np.ones(len(patchScores), dtype=np.float)
     self.mapAllCellCount = {}
-    for scale in self.config.sw_scales:
+    for scale in self.slidingWindowCfg.sw_scales:
       if not PixelMapper.mapAllCellCountCache.get(scale):
         PixelMapper.mapAllCellCountCache[scale] = PixelMap(
-            self.config.allCellBoundariesDict, self.config.neighborMap, scale)
+            self.allCellBoundariesDict, self.neighborMap, scale)
         PixelMapper.mapAllCellCountCache[scale].addScore(oneScores)
       localizationMap, intensityMap = self.populatePixelMap(scale)
       self.pixelMaps += [{'scale': scale, \
@@ -35,14 +41,14 @@ class PixelMapper(object):
     """Initialize the pixel map for the class at given scale"""
     mapAllCellCount = PixelMapper.mapAllCellCountCache[scale].copy()
     mapDetectionCellCount = PixelMap(
-        self.config.allCellBoundariesDict, self.config.neighborMap, scale)
+        self.allCellBoundariesDict, self.neighborMap, scale)
     intensityMap = PixelMap(
-        self.config.allCellBoundariesDict, self.config.neighborMap, scale)
+        self.allCellBoundariesDict, self.neighborMap, scale)
 
     # Map Patch Scores to cellValues
     patchScores = self.frame.scores[self.zDistThreshold][:, self.classId, 0]
     patchScoresAboveThresh = np.zeros(len(patchScores), dtype=np.float)
-    patchScoresAboveThresh[patchScores > self.config.pp_detectorThreshold] = 1
+    patchScoresAboveThresh[patchScores > self.detectorThreshold] = 1
     mapDetectionCellCount.addScore(patchScoresAboveThresh)
     intensityMap.addScore_max(patchScores)
 
@@ -112,8 +118,8 @@ class PixelMapper(object):
       if pm['scale'] == scale and pm['decayedMap'] != None:
         return pm['decayedMap']
     # else, create map by combining decay factors
-    decayedMap = PixelMap(self.config.allCellBoundariesDict,
-                          self.config.neighborMap, scale)
+    decayedMap = PixelMap(
+        self.allCellBoundariesDict, self.neighborMap, scale)
     decayFactors = None
     for df in self.allDecayFactors:
       if df['scale'] == scale:

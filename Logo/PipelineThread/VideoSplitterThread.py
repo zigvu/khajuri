@@ -1,13 +1,13 @@
 import os, time, json
 import multiprocessing
 from multiprocessing import JoinableQueue, Process
-import logging
 
 from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
 from Logo.PipelineCore.ImageManipulator import ImageManipulator
 from Logo.PipelineCore.VideoWriter import VideoWriter
 
 from config.Config import Config
+from config.Utils import Utils
 
 
 def runAviToMp4Converter(conversionQueue):
@@ -18,8 +18,7 @@ def runAviToMp4Converter(conversionQueue):
       conversionQueue.task_done()
       # poison pill means done with clip conversion
       break
-    logging.debug(
-        "Start mp4 conversion of file %s" % os.path.basename(clipFileName))
+    # print("Start mp4 conversion of file %s" % os.path.basename(clipFileName))
 
     # Set up output clip
     aviFolder = os.path.dirname(clipFileName)
@@ -30,8 +29,7 @@ def runAviToMp4Converter(conversionQueue):
     os.system("ffmpeg -i %s %s" % (clipFileName, mp4FileName))
     os.remove(clipFileName)
     conversionQueue.task_done()
-    logging.debug(
-        "Done mp4 conversion of file %s" % os.path.basename(clipFileName))
+    # print("Done mp4 conversion of file %s" % os.path.basename(clipFileName))
 
 
 class VideoSplitterThread(object):
@@ -40,30 +38,31 @@ class VideoSplitterThread(object):
   def __init__(self, configFileName, videoFileName, clipsOutputFolder):
     """Initialize values"""
     self.config = Config(configFileName)
+
+
+    self.logger = self.config.logging.logger
+    self.slidingWindowCfg = self.config.slidingWindow
+    self.caffeInputCfg = self.config.caffeInput
+    self.storageCfg = self.config.storage
+
     self.videoFileName = videoFileName
     self.clipsOutputFolder = clipsOutputFolder
     self.tempFolder = os.path.join(
         '/mnt/tmp', os.path.basename(videoFileName).split('.')[0])
-    Config.mkdir_p(self.tempFolder)
+    Utils.mkdir_p(self.tempFolder)
 
-    self.numFrameInClip = self.config.hdf5_clip_frame_count
+    self.numFrameInClip = self.storageCfg.hdf5ClipFrameCount
     self.videoClipsMapFilename = os.path.join(
-        self.clipsOutputFolder, self.config.hdf5_video_clips_map_filename)
-    self.frameDensity = self.config.sw_frame_density
+        self.clipsOutputFolder, self.storageCfg.hdf5VideoClipsMapFilename)
+    self.frameDensity = self.slidingWindowCfg.sw_frame_density
 
-    Config.mkdir_p(self.clipsOutputFolder)
+    Utils.mkdir_p(self.clipsOutputFolder)
 
-    # Logging levels
-    logging.basicConfig(
-        format=
-        '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s - %(message)s',
-        level=self.config.log_level,
-        datefmt="%Y-%m-%d--%H:%M:%S")
 
   def run(self):
     """Split video into clips"""
     startTime = time.time()
-    logging.info("Setting up split for video %s" % self.videoFileName)
+    self.logger.info("Setting up split for video %s" % self.videoFileName)
 
     # keep track of frame numbers for each clip
     videoClipsMap = {}
@@ -72,8 +71,7 @@ class VideoSplitterThread(object):
     conversionQueue = JoinableQueue()
     conversionProcesses = []
     # num_consumers = 1
-    num_consumers = max(int(
-        self.config.multipleOfCPUCount * multiprocessing.cpu_count()), 1)
+    num_consumers = multiprocessing.cpu_count()
 
     for i in xrange(num_consumers):
       conversionProcess = Process(
@@ -93,7 +91,7 @@ class VideoSplitterThread(object):
     currentFrameNum = 0  # frame number being extracted
 
     frame = videoFrameReader.getFrameWithFrameNumber(
-        int(self.config.ci_videoFrameNumberStart))
+        int(self.caffeInputCfg.ci_videoFrameNumberStart))
     while frame != None:
       if ((currentFrameNum % self.numFrameInClip) == 0):
         if clipWriter != None:
@@ -102,7 +100,7 @@ class VideoSplitterThread(object):
           conversionQueue.put(outClipFileName)
           videoClipsMap[clipId]['frame_number_end'] = (currentFrameNum - 1)
           clipId += 1
-        logging.debug("Creating new clip id: %d" % clipId)
+        self.logger.debug("Creating new clip id: %d" % clipId)
         outClipFileName = os.path.join(
             self.clipsOutputFolder, "%d.avi" % clipId)
         clipWriter = VideoWriter(outClipFileName, fps, imageDim)
@@ -111,7 +109,7 @@ class VideoSplitterThread(object):
             'frame_number_start': currentFrameNum
         }
 
-      logging.debug("Adding frame %d to video" % currentFrameNum)
+      self.logger.debug("Adding frame %d to video" % currentFrameNum)
       # Save each frame
       imageFileName = os.path.join(
           self.tempFolder, "temp_%d.png" % currentFrameNum)
@@ -141,18 +139,18 @@ class VideoSplitterThread(object):
     videoFrameReader.close()
 
     # join conversion threads
-    logging.info("Waiting for mp4 conversion threads to complete")
+    self.logger.info("Waiting for mp4 conversion threads to complete")
     for i in xrange(num_consumers):
       conversionQueue.put(None)
     conversionQueue.join()
-    logging.debug("Mp4 conversion queues joined")
+    self.logger.debug("Mp4 conversion queues joined")
     for conversionProcess in conversionProcesses:
       conversionProcess.join()
-    logging.debug("Mp4 conversion processes joined")
+    self.logger.debug("Mp4 conversion processes joined")
 
     # Exit
-    logging.info("Finished creating clips")
+    self.logger.info("Finished creating clips")
     endTime = time.time()
-    logging.info(
+    self.logger.info(
         'It took VideoSplitterThread %s seconds to complete' %
         (endTime - startTime))
