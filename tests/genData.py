@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from config.Config import Config
 import sys, random, math, logging
 import multiprocessing, time, os, logging
@@ -14,7 +13,7 @@ from tests.MockLocalizationTask import MockLocalizationTask
 from tests.Statistics import Statistics
 from AnnotatedFrame import FrameDumpWriter
 
-NUMOFFRAMESTOEVAL = 100
+NUMOFFRAMESTOEVAL = 10000
 def printLocalizationStats( configFileName ):
   config = Config( configFileName )
   assert config.allCellBoundariesDict
@@ -36,7 +35,8 @@ def printLocalizationStats( configFileName ):
     frameNum += 1 
     if frameNum >= NUMOFFRAMESTOEVAL:
        break
-  stats = Statistics( config )
+  #stats = Statistics( config )
+  dump = FrameDumpWriter( NUMOFFRAMESTOEVAL, 543, MAXANNOTATIONPERFRAME, '/tmp/rect.npy' )
 
   num_consumers = multiprocessing.cpu_count()
   for i in xrange(num_consumers):
@@ -49,11 +49,13 @@ def printLocalizationStats( configFileName ):
     results.task_done()
     if annotatedFrame:
       logging.info( 'Adding %s to result set' % annotatedFrame )
-      stats.addFrameStats( singleFrameStat )
+      #stats.addFrameStats( singleFrameStat )
+      dump.addFrame( annotatedFrame )
       frameNum -= 1
   
   myPipeline.join()
-  stats.printStat()
+  #stats.printStat()
+  dump.saveToFile()
      
 if __name__=="__main__":
   if len(sys.argv) < 2:
