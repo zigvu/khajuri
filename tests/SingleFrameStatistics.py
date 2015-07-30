@@ -1,17 +1,22 @@
 import sys
+import numpy as np
 
 class SingleFrameStatistics( object ):
   def __init__( self, frameWidth, frameHeight, annotatedFrame ):
     self.frameWidth = frameWidth
     self.frameHeight = frameHeight
     self.annotatedFrame = annotatedFrame
+    self.localizationAtScales = []
     self.numOfAnnotations = len( self.annotatedFrame.annotations )
 
     localizations = []
     for classId, ls in self.annotatedFrame.frame.localizations.items():
        for l in ls:
          localizations.append( l.rect )
+         self.localizationAtScales.append( l.scale )
     self.numOfLocalizations = len( localizations )
+    self.localizationScale = np.unique( self.localizationAtScales )
+    assert len( self.localizationScale ) == 1
 
 
     # Multiple Annotations and Localizations
@@ -22,7 +27,7 @@ class SingleFrameStatistics( object ):
     self.localizationArea = 0.0
     for l in localizations:
        self.localizationArea += l.area
-    self.areaRatio = self.localizationArea/self.annotatedArea
+    self.areaRatio = self.localizationArea/( 1.0 * self.annotatedArea )
 
     # Corner or Central?
     self.corner = False
@@ -61,7 +66,7 @@ class SingleFrameStatistics( object ):
     self.missingLocalization = []
     self.areaRatioByAnnotation = {}
     for a, ( l, d ) in self.annotationToLocalization.items():
-      if l.intersect( a ) <= 0.1 * a.area:
+      if not l or l.intersect( a ) <= 0.1 * a.area:
         self.missingLocalization.append( a )
       else:
         self.areaRatioByAnnotation[ a ] = a.area/l.area

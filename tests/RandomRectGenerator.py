@@ -6,10 +6,10 @@ import numpy as np
 import time
 
 AREASTEP = 0.10
-AREARATIO = 5.0
+AREARATIO = 5
 POSITIONSTEP = 10
 areaConstraintMax = 1.5
-MAXANNOTATIONPERFRAME = 5
+MAXANNOTATIONPERFRAME = 1
 
 class RandomAnnotationGenerator( object ):
   def __init__( self, config ):
@@ -33,6 +33,7 @@ class RandomAnnotationGenerator( object ):
     for i, a in enumerate(self._annotations):
       self.numpyAnnotations[ 0, i] = a.asNumpy()
     self.usedIndexes = set()
+    self.frameNum = 0
 
   def __iter__( self ):
     return self
@@ -44,18 +45,22 @@ class RandomAnnotationGenerator( object ):
     while numOfAnnotations > 0:
        logging.info( 'Len of annotations %s' % len( self._annotations ) )
        rndIndex = random.randint( 0, len( self._annotations ) - 1 )
+       if rndIndex in self.usedIndexes:
+         logging.info( 'Random index %s already used' % rndIndex  )
+         continue
        rndAtn = self.numpyAnnotations[ 0, rndIndex ]
        myRect = Rect(rndAtn[0], rndAtn[1], rndAtn[2], rndAtn[3] )
+       intersects = False
        for a in annotatedFrame.annotations:
-         if rndIndex in self.usedIndexes:
-           logging.info( 'Random index %s already used' % rndIndex  )
-           break
-         logging.info( 'Checking for intersect %s' % a )
          if myRect.intersect( a ):
-           break
+           intersects = True
+       if intersects:
+         continue
        annotatedFrame.addAnnotation( myRect )
        self.usedIndexes.add( rndIndex )
        numOfAnnotations -= 1
+    annotatedFrame.frameNum = self.frameNum
+    self.frameNum += 1
     return annotatedFrame
 
 class RandomRectGenerator( object ):

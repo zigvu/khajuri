@@ -122,6 +122,21 @@ class PixelMap(object):
           ]
           self.cellValues[cells] += patchScores[patchId[0]]
 
+  def addScore_avg(self, patchScores):
+    """Add scores to cells"""
+    patchMapping = self.allCellBoundariesDict["patchMapping"]
+    patchIdToBbox = {v: k for k, v in patchMapping.items()}
+    aboveZeroPatchIds = np.argwhere(patchScores > 0)
+    if len(aboveZeroPatchIds):
+      for patchId in aboveZeroPatchIds:
+        patchBbox = patchIdToBbox[patchId[0]]
+        if self.scaleFactor == patchBbox[0]:
+          cells = self.cellSlidingWindows[
+              (patchBbox[1], patchBbox[2], patchBbox[3], patchBbox[4])
+          ]
+          for c in cells:
+             self.cellValues[c] = ( self.cellValues[ c ] + patchScores[patchId[0]] )/2.0
+
   #@profile
   def addScore_max(self, patchScores):
     """Store max of score and existing cell values in cells"""

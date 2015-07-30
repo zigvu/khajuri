@@ -15,17 +15,27 @@ class MockCaffeModel( object ):
   def rectIntersect( self, patchDim, annotations ):
     scale = patchDim[ 0 ]
     patchRect = Rect(
-        patchDim[ 1 ]/scale, 
-        patchDim[ 2 ]/scale,
-        patchDim[ 3 ]/scale - patchDim[ 1 ]/scale, 
-        patchDim[ 4 ]/scale - patchDim[ 2 ]/scale
+        patchDim[ 1 ], 
+        patchDim[ 2 ],
+        patchDim[ 3 ] - patchDim[ 1 ], 
+        patchDim[ 4 ] - patchDim[ 2 ]
         )
+    logging.info( 'Patch is %s at scale %s' % ( patchRect, scale ) )
     for a in annotations:
-        areaIntersect = patchRect.intersect( a )
-        if areaIntersect > ( 0.8 * a.area ):
-            return True
+        logging.info( 'Annotation is %s' % a )
+        scaledAnnotation = Rect( a.x * scale, a.y * scale, a.w * scale, a.h * scale )
+        logging.info( 'Scaled Annotation is %s at scale %s' % ( scaledAnnotation, scale ) )
+        if scaledAnnotation.area <= ( 0.07 * ( 256 * 256 ) ):
+          logging.info( 'Scaled Annotation is too small %s, should be at least %s at scale %s' % ( scaledAnnotation.area, 
+                      ( 0.07  * 256 * 256 ), scale ) )
+          continue
+        areaIntersect = patchRect.intersect( scaledAnnotation )
+        if areaIntersect >= ( 0.8 * scaledAnnotation.area ):
+          logging.info( 'Scale Annotation is large enough at scale %s' % scale )
+          return True
         else:
-            continue
+          logging.info( 'Scaled Annotation intersect is too small %s, should be at least %s at scale %s' % ( areaIntersect,
+                      ( 0.8  * scaledAnnotation.area ), scale ) )
     return False
 
   def probPatch( self, patchDim, annotations ):

@@ -6,6 +6,7 @@ class AnnotatedFrame( object ):
   def __init__( self ):
     self.annotations = []
     self.patchMapping = None
+    self.frameNum = 0
     self.frame = None
 
   def addAnnotation( self, annotation ):

@@ -21,13 +21,12 @@ class ScaleSpaceCombiner(object):
   def getBestInferredPixelMap(self):
     """Get the Best Localization Map"""
     maxLocalizationScale = self.config.sw_scales[0]
-    maxLocalizationMap = self.pixelMapper.getScaleDecayedMap(
-        maxLocalizationScale)
+    maxLocalizationMap = self.pixelMapper.getScaleDecayedMap( maxLocalizationScale)
     maxPixelLocalization = 1E-10
     for scale in self.config.sw_scales:
       curLocalizationMap = self.pixelMapper.getScaleDecayedMap(scale)
       curMaxPixelValue = np.max(curLocalizationMap.cellValues)
-      if curMaxPixelValue > maxPixelLocalization:
+      if curMaxPixelValue > self.config.pp_detectorThreshold and scale > maxLocalizationScale:
         maxPixelLocalization = curMaxPixelValue
         maxLocalizationScale = scale
         maxLocalizationMap = curLocalizationMap
@@ -39,6 +38,6 @@ class ScaleSpaceCombiner(object):
     rescaledLocalizationMap = maxLocalizationMap.copy()
     rescaledLocalizationMap.cellValues = maxLocalizationMap.cellValues * rescalingFactor
     #plt.imshow(
-    #    rescaledLocalizationMap.toNumpyArray() ).write_png( '/tmp/output/final_localization_%s_%s_%s.png'
+    #    rescaledLocalizationMap.toNumpyArray() ).write_png( 'final_localization_%s_%s_%s.png'
     #        % ( self.frame.frameNumber, self.classId, self.zDistThreshold ) )
     return maxLocalizationScale, rescaledLocalizationMap

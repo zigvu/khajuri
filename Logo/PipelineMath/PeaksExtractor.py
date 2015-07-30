@@ -1,6 +1,7 @@
 import numpy as np
 
 from Logo.PipelineMath.Rectangle import Rectangle
+import matplotlib.pyplot as plt
 
 
 class PeaksExtractor(object):
@@ -14,11 +15,23 @@ class PeaksExtractor(object):
   def getPeakBboxes(self):
     """Get bboxes for all peaks"""
     candidateBboxes = []
+    
+    # Find unique values
+    #uniques = np.unique( self.pixelMap.cellValues )
+    #uniques = len( uniques) * ( 2.0/3.0 )
+
+    #myArray = self.pixelMap.cellValues
+    #threshold = np.min(myArray[ np.argpartition(myArray, -uniques)[-uniques:] ])
+    threshold = self.config.pp_detectorThreshold
 
     # zero out all pixels below threshold
     maxima = self.pixelMap.copy()
-    diff = (maxima.cellValues > self.config.pp_detectorThreshold)
+    diff = ( maxima.cellValues > threshold )
     maxima.cellValues[diff == 0] = 0
+
+    # Save the maxima 
+    #plt.imshow( maxima.toNumpyArray() ).write_png( 'peaksExtractor.png' )
+
 
     # Find cell Indexes with a positive value
     posValueSet = set()

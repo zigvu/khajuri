@@ -6,7 +6,7 @@ from tests.SingleFrameStatistics import SingleFrameStatistics
 from postprocessing.type.Frame import Frame
 import time
 
-class MockLocalizationTask( Task ):
+class DataGenerateTask( Task ):
   def __init__( self, config, status ):
     Task.__init__( self, config, status )
     self.config = config

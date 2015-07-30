@@ -10,6 +10,7 @@ class ThreadWorker(threading.Thread):
     self.input_queue = input_queue
     self.output_queue = output_queue
     self.task = task
+    self.task_done = False
 
   def run(self):
     proc_name = self.name
@@ -25,6 +26,7 @@ class ThreadWorker(threading.Thread):
       answer = self.task(next_object)
       self.input_queue.task_done()
       self.output_queue.put(answer)
+    self.task_done = True
     return
 
   def __str__(self):

@@ -13,6 +13,9 @@ from tests.RandomRectGenerator import MAXANNOTATIONPERFRAME
 from tests.MockLocalizationTask import MockLocalizationTask
 from tests.Statistics import Statistics
 from AnnotatedFrame import FrameDumpWriter
+from AnnotatedFrame import AnnotatedFrame
+from DrawFrame import drawImage
+from postprocessing.type.Rect import Rect
 
 NUMOFFRAMESTOEVAL = 100
 def printLocalizationStats( configFileName ):
@@ -31,37 +34,50 @@ def printLocalizationStats( configFileName ):
   aGen = RandomAnnotationGenerator( config )
   frameNum = 0
   for a in aGen:
-    logging.info( 'Adding %s into input' % a )
     inputs.put( a )
     frameNum += 1 
     if frameNum >= NUMOFFRAMESTOEVAL:
        break
-  stats = Statistics( config )
+  #frameNum = 0
+  #a = AnnotatedFrame()
+  ##a.addAnnotation( Rect( 549, 95, 116, 34 ) )
+  #a.addAnnotation( Rect( 680, 145, 160, 160 ) )
+  ##a.addAnnotation( Rect( 50, 300, 150, 116 ) )
+  ##a.addAnnotation( Rect( 700, 530, 100, 100 ) )
+  ##a.addAnnotation( Rect( 1000, 100, 130, 130 ) )
+  #a.frameNum = frameNum
+  #frameNum += 1
+  #inputs.put( a )
+  statsByScale = {}
+  for scale in config.sw_scales:
+    statsByScale[ scale ] = Statistics( config, scale )
 
   num_consumers = multiprocessing.cpu_count()
   for i in xrange(num_consumers):
-    logging.info( 'Adding None into input' % a )
     inputs.put(None)
  
   while frameNum > 0:
     logging.info( 'Waiting for results' )
-    annotatedFrame = results.get()
+    singleFrameStat = results.get()
     results.task_done()
-    if annotatedFrame:
-      logging.info( 'Adding %s to result set' % annotatedFrame )
-      stats.addFrameStats( singleFrameStat )
+    if singleFrameStat:
+      #drawImage( singleFrameStat, frameNum, config )
+      logging.info( 'Adding %s to result set' % singleFrameStat )
+      statsByScale[ singleFrameStat.localizationScale[0] ].addFrameStats( singleFrameStat )
       frameNum -= 1
   
   myPipeline.join()
-  stats.printStat()
+  for key, value in statsByScale.iteritems():
+    print 'Displaying result at scale %s' % key
+    value.printStat()
      
 if __name__=="__main__":
   if len(sys.argv) < 2:
     print 'Usage %s <config.yaml>' % sys.argv[ 0 ]
     sys.exit(1)
-  logging.basicConfig(
-      format=
-      '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
-      level=logging.INFO,
-      datefmt="%Y-%m-%d--%H:%M:%S")
+  #logging.basicConfig(
+  #    format=
+  #    '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
+  #    level=logging.INFO,
+  #    datefmt="%Y-%m-%d--%H:%M:%S")
   printLocalizationStats( sys.argv[ 1 ] )

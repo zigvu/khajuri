@@ -2,6 +2,7 @@ import numpy as np
 
 from Logo.PipelineMath.PixelMap import PixelMap
 import matplotlib.pyplot as plt
+import logging
 
 
 class PixelMapper(object):
@@ -25,17 +26,26 @@ class PixelMapper(object):
         PixelMapper.mapAllCellCountCache[scale] = PixelMap(
             self.config.allCellBoundariesDict, self.config.neighborMap, scale)
         PixelMapper.mapAllCellCountCache[scale].addScore(oneScores)
+        #plt.imshow(
+        #        PixelMapper.mapAllCellCountCache[scale].toNumpyArray() ).\
+        #    write_png( 'CellMapScale_%s.png' % scale )
+        self.cellMapDetails( PixelMapper.mapAllCellCountCache[scale] )
+
       localizationMap, intensityMap = self.populatePixelMap(scale)
       self.pixelMaps += [{'scale': scale, \
         'localizationMap': localizationMap, \
         'intensityMap': intensityMap,\
         'decayedMap': None}]
-      #import matplotlib.pyplot as plt
       #plt.imshow(
-      #    intensityMap.toNumpyArray() ).write_png( '/tmp/output/heat_%s_%s_%s_%s.png'
+      #    intensityMap.toNumpyArray() ).write_png( 'heat_%s_%s_%s_%s.png'
       #        % ( self.frame.frameNumber, classId, scale, zDistThreshold ) )
-      #plt.imshow( localizationMap.toNumpyArray() ).write_png( '/tmp/output/lclz_%s_%s_%s_%s.png'
+      #plt.imshow( localizationMap.toNumpyArray() ).write_png( 'lclz_%s_%s_%s_%s.png'
       #    % ( self.frame.frameNumber, classId, scale, zDistThreshold ) )
+  
+  def cellMapDetails( self, cellMap ):
+    uniqueValues = np.unique( cellMap.cellValues )
+    logging.info( 'CellMap at scale %s has %s unique values'
+            % ( cellMap.scaleFactor, len( uniqueValues ) ) )
 
 
   #@profile
@@ -46,20 +56,20 @@ class PixelMapper(object):
         self.config.allCellBoundariesDict, self.config.neighborMap, scale)
     intensityMap = PixelMap(
         self.config.allCellBoundariesDict, self.config.neighborMap, scale)
+    localizationMap = PixelMap(
+        self.config.allCellBoundariesDict, self.config.neighborMap, scale)
 
     # Map Patch Scores to cellValues
     patchScores = self.frame.scores[self.zDistThreshold][:, self.classId, 0]
     patchScoresAboveThresh = np.zeros(len(patchScores), dtype=np.float)
-    patchScoresAboveThresh[patchScores > self.config.pp_detectorThreshold] = 1
+    patchScoresAboveThresh[patchScores > self.config.pp_detectorThreshold] = 3
     mapDetectionCellCount.addScore(patchScoresAboveThresh)
     intensityMap.addScore_max(patchScores)
+    localizationMap.addScore_max(patchScoresAboveThresh)
 
     # Massage the cellValues
-    self.massageRescoringMap(mapAllCellCount, mapDetectionCellCount)
-    localizationMap = mapAllCellCount * intensityMap
-    #plt.imshow( localizationMap.toNumpyArray() ).write_png( '/tmp/output/after_massage_and_intensity_%s_%s_%s_%s.png'
-    #    % ( self.frame.frameNumber, self.classId, scale, self.zDistThreshold ) )
-
+    #self.massageRescoringMap(mapAllCellCount, mapDetectionCellCount)
+    #localizationMap = mapAllCellCount * intensityMap
     return localizationMap, intensityMap
 
   #@profile

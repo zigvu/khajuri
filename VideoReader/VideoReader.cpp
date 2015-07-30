@@ -33,13 +33,13 @@ int main(int argc, char *argv[]) {
   sprintf(command, "mkdir -p %s", argv[3]);
   system(command);
 
-  while(seeReturnValue == 0){
-    sprintf(fileName, "%s/%s_frame_%d.png", argv[3],basename(argv[3]), seekFrameNumber);
-    printf(">>Saving Frame: %d at %s\n", seekFrameNumber, fileName );
+  //while(seeReturnValue == 0){
+  //  sprintf(fileName, "%s/%s_frame_%d.png", argv[3],basename(argv[3]), seekFrameNumber);
+  //  printf(">>Saving Frame: %d at %s\n", seekFrameNumber, fileName );
 
-    seeReturnValue = vf.savePngWithFrameNumber(seekFrameNumber, fileName);
-    seekFrameNumber = seekFrameNumber + nthFrame;
-  }
+  //  seeReturnValue = vf.savePngWithFrameNumber(seekFrameNumber, fileName);
+  //  seekFrameNumber = seekFrameNumber + nthFrame;
+  //}
 
   vf.joinThreads();
   return 0;

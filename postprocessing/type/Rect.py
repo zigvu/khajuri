@@ -8,19 +8,19 @@ class Rect( object ):
     self.w = w
     self.h = h
     self.center = ( x + w/2.0, y + h / 2.0 )
-    self.A = w * h
+    self.A = ( float ) ( w * h )
     self._numpyType =  np.dtype( [
-                          ('x', np.ushort),
-                          ('y', np.ushort),
-                          ('w', np.ushort),
-                          ('h', np.ushort) ] )
+                          ('x', np.int),
+                          ('y', np.int),
+                          ('w', np.int),
+                          ('h', np.int) ] )
 
   def __str__( self ):
     return 'Rect(%s, %s, %s, %s, %s)' % ( self.x, self.y, self.w, self.h, self.area )
 
   @property
   def area( self ):
-    return self.w * self.h
+    return self.A
   
   @property
   def numpyType( self ):

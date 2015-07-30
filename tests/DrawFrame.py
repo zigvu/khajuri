@@ -31,8 +31,8 @@ POSITIONSTEP = 50
 areaConstraintMax = 1.5
 MAXANNOTATIONPERFRAME = 5.0
 
-def drawImage( stats, frameNum ):
-   im = Image.new( 'RGBA', ( stats.config.sw_frame_width, stats.config.sw_frame_height ), ( 0, 0, 0, 0 ) )
+def drawImage( stats, frameNum, config ):
+   im = Image.new( 'RGBA', ( config.sw_frame_width, config.sw_frame_height ), ( 0, 0, 0, 0 ) )
    draw = ImageDraw.Draw(im)
    for a in stats.annotatedFrame.annotations:
      draw.rectangle( ( a.x, a.y, a.x + a.w, a.y + a.h ), outline="green" )
@@ -42,7 +42,7 @@ def drawImage( stats, frameNum ):
    textToDraw = [ 
        'Frame %s' % frameNum,
        'Annotation Area %s' % stats.annotatedArea,
-       'Localization Area %s' % stats.localizationArea,
+       'Localization Area %f' % stats.localizationArea,
        'Area Ratio %s' % stats.areaRatio,
        'Corner %s' % stats.corner,
        'Enclosed %s' % stats.overAllEnclosed,

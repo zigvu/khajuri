@@ -7,7 +7,7 @@ from multiprocessing import Process
 baseScriptDir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append('%s/../VideoReader' % baseScriptDir)
 
-import VideoReader
+from VideoReader import VideoReader
 
 if __name__ == '__main__':
   if len(sys.argv) < 4:

@@ -27,9 +27,9 @@ class FramePostProcessor(object):
     lclzPatches = lclzPeaks.getPeakBboxes()
     for lp in lclzPatches:
       logging.info(
-          'Localization at: %s, with intensity: %s for class %s and zDist %s' %
+          'Localization at: %s, with intensity: %s for class %s and zDist %s and orig scale %s.' %
           (lp['bbox'].json_format(), lp['intensity'], self.classId,
-           self.zDistThreshold))
+           self.zDistThreshold, lclzOrigScale ) )
       rect = Rect(
           lp['bbox'].x0, lp['bbox'].y0, lp['bbox'].width, lp['bbox'].height)
       l = Localization(

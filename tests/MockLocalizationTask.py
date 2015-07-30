@@ -20,8 +20,9 @@ class MockLocalizationTask( Task ):
     annotatedFrame.frame = Frame(
             self.config.ci_allClassIds, len( annotatedFrame.patchMapping ),
             self.config.ci_scoreTypes.keys() )
+    annotatedFrame.frame.frameNumber = annotatedFrame.frameNum
     self.caffe.scoreFrame( annotatedFrame )
     self.localization( self.classFilter( ( annotatedFrame.frame, self.config.ci_allClassIds ) ) )
     singleFrameStat = SingleFrameStatistics( self.config.sw_frame_width,
         self.config.sw_frame_height, annotatedFrame )
-    return annotatedFrame
+    return singleFrameStat
