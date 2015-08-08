@@ -6,10 +6,11 @@ import numpy as np
 import time
 
 AREASTEP = 0.10
-AREARATIO = 5
+AREARATIO = 3
 POSITIONSTEP = 10
 areaConstraintMax = 1.5
-MAXANNOTATIONPERFRAME = 1
+MAXANNOTATIONPERFRAME = 5
+MAXDETECTABLELEN = ( 256.0/0.4 )
 
 class RandomAnnotationGenerator( object ):
   def __init__( self, config ):
@@ -55,6 +56,9 @@ class RandomAnnotationGenerator( object ):
          if myRect.intersect( a ):
            intersects = True
        if intersects:
+         continue
+       if myRect.h >= MAXDETECTABLELEN \
+           or myRect.w >= MAXDETECTABLELEN:
          continue
        annotatedFrame.addAnnotation( myRect )
        self.usedIndexes.add( rndIndex )

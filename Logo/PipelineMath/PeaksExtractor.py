@@ -22,7 +22,9 @@ class PeaksExtractor(object):
 
     #myArray = self.pixelMap.cellValues
     #threshold = np.min(myArray[ np.argpartition(myArray, -uniques)[-uniques:] ])
-    threshold = self.config.pp_detectorThreshold
+    #threshold = self.config.pp_detectorThreshold
+    #threshold = np.percentile(  self.pixelMap.cellValues, 70 )
+    threshold = 0.1
 
     # zero out all pixels below threshold
     maxima = self.pixelMap.copy()
@@ -40,10 +42,13 @@ class PeaksExtractor(object):
 
     # Find Islands and Number them
     while len(posValueSet) > 0:
-      i = posValueSet.pop()
-      neighbors, maxValue, avgValue, cb = maxima.BFS(i)
+      i = np.argmax( maxima.cellValues )
+      neighbors, maxValue, avgValue, cb = maxima.BFS(i, 0.2 )
       posValueSet.difference_update(neighbors.difference(set([i])))
-
+      assert maxima.cellValues[ i ] == maxValue
+      posValueSet.remove( i )
+      maxima.cellValues[ i ] = 0
+      maxima.cellValues[ list( neighbors ) ] = 0
       bbox = Rectangle.rectangle_from_endpoints(cb[0], cb[1], cb[2], cb[3])
       candidateBboxes.append({'bbox': bbox, 'intensity': avgValue})
     return candidateBboxes

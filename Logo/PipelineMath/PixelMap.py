@@ -1,4 +1,4 @@
-import os
+import os, sys
 import logging
 import numpy as np
 from shapely.geometry import box
@@ -69,7 +69,7 @@ class PixelMap(object):
       pixelCount[cb["y0"]:cb["y3"], cb["x0"]:cb["x3"]] = self.cellValues[idx]
     return pixelCount
 
-  def BFS(self, index):
+  def BFS(self, index, threshold = 0):
     cb = self.cellBoundaries[index]
     xMin = cb["x0"]
     yMin = cb["y0"]
@@ -78,12 +78,20 @@ class PixelMap(object):
     neighbors = set()
     unvisitedCells = set()
     unvisitedCells.add(index)
+    origPointValue = self.cellValues[ index ] 
+    if threshold:
+      maxValue = origPointValue + threshold 
+      minValue = origPointValue - threshold 
+    else:
+      maxValue = sys.maxint
+      minValue = 0
+
     while len(unvisitedCells) > 0:
       index = unvisitedCells.pop()
       if index in neighbors:
         continue
       for n in self.neighborMap[self.scaleFactor][index].keys():
-        if n not in neighbors and self.cellValues[n] > 0:
+        if n not in neighbors and ( self.cellValues[n] > minValue and self.cellValues[ n ] < maxValue ):
           cb = self.neighborMap[self.scaleFactor][index][n]
           if xMin > cb[0]:
             xMin = cb[0]

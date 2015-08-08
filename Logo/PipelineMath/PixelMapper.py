@@ -29,7 +29,6 @@ class PixelMapper(object):
         #plt.imshow(
         #        PixelMapper.mapAllCellCountCache[scale].toNumpyArray() ).\
         #    write_png( 'CellMapScale_%s.png' % scale )
-        self.cellMapDetails( PixelMapper.mapAllCellCountCache[scale] )
 
       localizationMap, intensityMap = self.populatePixelMap(scale)
       self.pixelMaps += [{'scale': scale, \
@@ -42,11 +41,6 @@ class PixelMapper(object):
       #plt.imshow( localizationMap.toNumpyArray() ).write_png( 'lclz_%s_%s_%s_%s.png'
       #    % ( self.frame.frameNumber, classId, scale, zDistThreshold ) )
   
-  def cellMapDetails( self, cellMap ):
-    uniqueValues = np.unique( cellMap.cellValues )
-    logging.info( 'CellMap at scale %s has %s unique values'
-            % ( cellMap.scaleFactor, len( uniqueValues ) ) )
-
 
   #@profile
   def populatePixelMap(self, scale):
@@ -62,10 +56,10 @@ class PixelMapper(object):
     # Map Patch Scores to cellValues
     patchScores = self.frame.scores[self.zDistThreshold][:, self.classId, 0]
     patchScoresAboveThresh = np.zeros(len(patchScores), dtype=np.float)
-    patchScoresAboveThresh[patchScores > self.config.pp_detectorThreshold] = 3
+    patchScoresAboveThresh[patchScores > self.config.pp_detectorThreshold] = 1
     mapDetectionCellCount.addScore(patchScoresAboveThresh)
     intensityMap.addScore_max(patchScores)
-    localizationMap.addScore_max(patchScoresAboveThresh)
+    localizationMap.addScore_max(patchScores)
 
     # Massage the cellValues
     #self.massageRescoringMap(mapAllCellCount, mapDetectionCellCount)
@@ -164,7 +158,8 @@ class PixelMapper(object):
       if pm['scale'] == scale:
         pm['decayedMap'] = decayedMap
         break
-    # return
+    #plt.imshow(
+    #    decayedMap.toNumpyArray() ).write_png( 'decayedMap_%s.png' % ( scale ) )
     return decayedMap
 
   #@profile

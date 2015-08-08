@@ -20,22 +20,22 @@ class MockCaffeModel( object ):
         patchDim[ 3 ] - patchDim[ 1 ], 
         patchDim[ 4 ] - patchDim[ 2 ]
         )
-    logging.info( 'Patch is %s at scale %s' % ( patchRect, scale ) )
+    ##logging.info( 'Patch is %s at scale %s' % ( patchRect, scale ) )
     for a in annotations:
-        logging.info( 'Annotation is %s' % a )
+        #logging.info( 'Annotation is %s' % a )
         scaledAnnotation = Rect( a.x * scale, a.y * scale, a.w * scale, a.h * scale )
-        logging.info( 'Scaled Annotation is %s at scale %s' % ( scaledAnnotation, scale ) )
+        #logging.info( 'Scaled Annotation is %s at scale %s' % ( scaledAnnotation, scale ) )
         if scaledAnnotation.area <= ( 0.07 * ( 256 * 256 ) ):
-          logging.info( 'Scaled Annotation is too small %s, should be at least %s at scale %s' % ( scaledAnnotation.area, 
-                      ( 0.07  * 256 * 256 ), scale ) )
+          #logging.info( 'Scaled Annotation is too small %s, should be at least %s at scale %s' % ( scaledAnnotation.area, 
+                      #( 0.07  * 256 * 256 ), scale ) )
           continue
         areaIntersect = patchRect.intersect( scaledAnnotation )
         if areaIntersect >= ( 0.8 * scaledAnnotation.area ):
-          logging.info( 'Scale Annotation is large enough at scale %s' % scale )
+          #logging.info( 'Scale Annotation is large enough at scale %s' % scale )
           return True
-        else:
-          logging.info( 'Scaled Annotation intersect is too small %s, should be at least %s at scale %s' % ( areaIntersect,
-                      ( 0.8  * scaledAnnotation.area ), scale ) )
+        #else:
+          #logging.info( 'Scaled Annotation intersect is too small %s, should be at least %s at scale %s' % ( areaIntersect,
+           #           ( 0.8  * scaledAnnotation.area ), scale ) )
     return False
 
   def probPatch( self, patchDim, annotations ):

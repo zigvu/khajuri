@@ -38,7 +38,11 @@ def drawImage( stats, frameNum, config ):
      draw.rectangle( ( a.x, a.y, a.x + a.w, a.y + a.h ), outline="green" )
    for classId, ls in stats.annotatedFrame.frame.localizations.items():
        for l in ls:
-         draw.rectangle( ( l.rect.x, l.rect.y, l.rect.x + l.rect.w, l.rect.y + l.rect.h ), outline="red" )
+         if not l.discarded:
+           draw.rectangle( ( l.rect.x, l.rect.y, l.rect.x + l.rect.w, l.rect.y + l.rect.h ), outline="red" )
+         else:
+           draw.rectangle( ( l.rect.x, l.rect.y, l.rect.x + l.rect.w, l.rect.y + l.rect.h ), outline="blue" )
+
    textToDraw = [ 
        'Frame %s' % frameNum,
        'Annotation Area %s' % stats.annotatedArea,

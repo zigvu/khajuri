@@ -16,7 +16,6 @@ class SingleFrameStatistics( object ):
          self.localizationAtScales.append( l.scale )
     self.numOfLocalizations = len( localizations )
     self.localizationScale = np.unique( self.localizationAtScales )
-    assert len( self.localizationScale ) == 1
 
 
     # Multiple Annotations and Localizations
@@ -79,3 +78,12 @@ class SingleFrameStatistics( object ):
          if l.intersect( a ) >= 0.1 * a.area:
            self.missingAnnotations.remove( l )
            break
+
+  def values( self ):
+    return [
+          self.numOfAnnotations,
+          self.numOfLocalizations,
+          len( self.missingAnnotations ),
+          len( self.missingLocalization ),
+          self.overAllEnclosed,
+    ]

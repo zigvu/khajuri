@@ -8,7 +8,6 @@ from config.Config import Config
 from config.Status import Status
 from config.Version import Version
 
-from tests.RandomRectGenerator import RandomAnnotationGenerator
 from tests.RandomRectGenerator import MAXANNOTATIONPERFRAME
 from tests.MockLocalizationTask import MockLocalizationTask
 from tests.Statistics import Statistics
@@ -16,9 +15,38 @@ from AnnotatedFrame import FrameDumpWriter
 from AnnotatedFrame import AnnotatedFrame
 from DrawFrame import drawImage
 from postprocessing.type.Rect import Rect
+from AnnotatedFrame import FrameDumpReader
 
-NUMOFFRAMESTOEVAL = 100
-def printLocalizationStats( configFileName ):
+import matplotlib.pyplot as plt
+import texttable
+
+def printPlots( statsByScale ):
+  plots = []
+  legends = []
+  for key, value in sorted( statsByScale.iteritems() ):
+    plt.subplot( 1, 2, 1 )
+    f1, = plt.plot( sorted( value.areaRatio ) )
+    plots.append( f1 )
+    legends.append( '%s' % key ) 
+  plt.legend( plots, legends )
+  plots = []
+  legends = []
+  for key, value in sorted( statsByScale.iteritems() ):
+    plt.subplot( 1, 2, 2 )
+    f1, = plt.plot( sorted( value.centerDistance ) )
+    plots.append( f1 )
+    legends.append( '%s' % key ) 
+  plt.legend( plots, legends )
+
+  plt.subplot( 1, 2, 1 )
+  plt.ylabel( 'Area Ratio' )
+  plt.subplot( 1, 2, 2 )
+  plt.ylabel( 'Center Distance' )
+  plt.savefig( 'Stats.png' )
+  plt.close()
+
+ 
+def printLocalizationStats( configFileName, annotationsFile ):
   config = Config( configFileName )
   assert config.allCellBoundariesDict
   assert config.neighborMap
@@ -30,54 +58,50 @@ def printLocalizationStats( configFileName ):
           [ MockLocalizationTask( config, status ) ],
           inputs, results )
   myPipeline.start()
-
-  aGen = RandomAnnotationGenerator( config )
+  fdr = FrameDumpReader( annotationsFile,
+          MAXANNOTATIONPERFRAME )
   frameNum = 0
-  for a in aGen:
-    inputs.put( a )
+  for f in fdr:
+    inputs.put( f )
     frameNum += 1 
-    if frameNum >= NUMOFFRAMESTOEVAL:
-       break
-  #frameNum = 0
-  #a = AnnotatedFrame()
-  ##a.addAnnotation( Rect( 549, 95, 116, 34 ) )
-  #a.addAnnotation( Rect( 680, 145, 160, 160 ) )
-  ##a.addAnnotation( Rect( 50, 300, 150, 116 ) )
-  ##a.addAnnotation( Rect( 700, 530, 100, 100 ) )
-  ##a.addAnnotation( Rect( 1000, 100, 130, 130 ) )
-  #a.frameNum = frameNum
-  #frameNum += 1
-  #inputs.put( a )
-  statsByScale = {}
-  for scale in config.sw_scales:
-    statsByScale[ scale ] = Statistics( config, scale )
+    if frameNum >= 100:
+      break
 
   num_consumers = multiprocessing.cpu_count()
   for i in xrange(num_consumers):
     inputs.put(None)
  
+  x = texttable.Texttable()
+  x.add_row( [ 
+          "NumOfAnnotations",
+          "NumOfLocalizations",
+          "ExtraLocalization",
+          "MissingLocalization",
+          "Enclosed",
+          ] )
   while frameNum > 0:
     logging.info( 'Waiting for results' )
     singleFrameStat = results.get()
     results.task_done()
     if singleFrameStat:
-      #drawImage( singleFrameStat, frameNum, config )
-      logging.info( 'Adding %s to result set' % singleFrameStat )
-      statsByScale[ singleFrameStat.localizationScale[0] ].addFrameStats( singleFrameStat )
       frameNum -= 1
+      x.add_row( singleFrameStat.values() )
   
   myPipeline.join()
-  for key, value in statsByScale.iteritems():
-    print 'Displaying result at scale %s' % key
-    value.printStat()
-     
-if __name__=="__main__":
-  if len(sys.argv) < 2:
-    print 'Usage %s <config.yaml>' % sys.argv[ 0 ]
+  print x.draw()
+
+    
+def main():
+  if len(sys.argv) < 3:
+    print 'Usage %s <config.yaml> <annotations.file> ' % sys.argv[ 0 ]
     sys.exit(1)
   #logging.basicConfig(
   #    format=
   #    '{%(filename)s::%(lineno)d::%(asctime)s} %(levelname)s PID:%(process)d - %(message)s',
   #    level=logging.INFO,
   #    datefmt="%Y-%m-%d--%H:%M:%S")
-  printLocalizationStats( sys.argv[ 1 ] )
+  printLocalizationStats( sys.argv[ 1 ], sys.argv[ 2 ] )
+
+if __name__=="__main__":
+  main()
+
