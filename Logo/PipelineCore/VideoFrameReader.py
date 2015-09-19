@@ -12,9 +12,9 @@ class VideoFrameReader(object):
     """Initialization"""
     # Load video - since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
-    self.videoFrameReader = VideoReader.VideoFrameReader(5000, 5000, videoFileName)
+    self.videoFrameReader = VideoReader.VideoFrameReader(150, 150, videoFileName)
     self.videoFrameReader.generateFrames()
-    time.sleep(1)
+    time.sleep(10)
 
     # Get frame dimensions and create bounding boxes
     frame = self.videoFrameReader.getFrameWithFrameNumber(1)
@@ -55,9 +55,12 @@ class VideoFrameReader(object):
 
   def savePngWithFrameNumber(self, frameNumber, imageFileName):
     """Save PNG with frame number"""
-    self.videoFrameReader.savePngWithFrameNumber(
-        int(frameNumber), str(imageFileName))
-    return True
+    if self.getFrameWithFrameNumber(frameNumber) == None:
+      return False
+    else:
+      self.videoFrameReader.savePngWithFrameNumber(
+          int(frameNumber), str(imageFileName))
+      return True
 
   def close(self):
     """Gracefully close the stream"""
