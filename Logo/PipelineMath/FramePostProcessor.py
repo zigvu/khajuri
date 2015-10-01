@@ -1,4 +1,5 @@
 from Logo.PipelineMath.PeaksExtractor import PeaksExtractor
+from Logo.PipelineMath.PixelMapper import PixelMapper
 
 from postprocessing.type.Localization import Localization
 from postprocessing.type.Rect import Rect
@@ -40,4 +41,3 @@ class FramePostProcessor(object):
             self.zDistThreshold, self.classId, rect, lp['intensity'],
             lclzOrigScale)
         self.frame.addLocalization(self.classId, loc)
-      return lclzPatches
