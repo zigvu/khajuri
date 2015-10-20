@@ -19,14 +19,11 @@ class FramePostProcessor(object):
 
   def localize(self):
     """Collect and analyze detection results"""
-    # set up decay pixel map
     pixelMapper = PixelMapper(
       self.classId, self.config, self.frame, self.zDistThreshold)
-    pixelMapper.setupScaleDecayedMapCache(
-        self.slidingWindowCfg.sw_scale_decay_factors)
     # get localizations for all scales
     for lclzOrigScale in self.slidingWindowCfg.sw_scales:
-      lclzPixelMap = pixelMapper.getScaleDecayedMap(lclzOrigScale)
+      lclzPixelMap = pixelMapper.getLocalizationMap(lclzOrigScale)
       lclzPixelMap.setScale(1.0)
       lclzPeaks = PeaksExtractor(lclzPixelMap, self.config)
       lclzPatches = lclzPeaks.getPeakBboxes()

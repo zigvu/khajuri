@@ -18,8 +18,8 @@ class PixelMapper(object):
     self.allCellBoundariesDict = self.config.allCellBoundariesDict
     self.neighborMap = self.config.neighborMap
 
-    self.sigmoidCenter = self.slidingWindowCfg.sw_scale_decay_sigmoid_center
-    self.sigmoidSteepness = self.slidingWindowCfg.sw_scale_decay_sigmoid_steepness
+    self.sigmoidCenter = self.slidingWindowCfg.sw_rescore_sigmoid_center
+    self.sigmoidSteepness = self.slidingWindowCfg.sw_rescore_sigmoid_steepness
     self.zDistThreshold = zDistThreshold
     self.pixelMaps = []
     patchScores = frame.scores[self.zDistThreshold][:, self.classId, 0]
@@ -33,8 +33,7 @@ class PixelMapper(object):
       localizationMap, intensityMap = self.populatePixelMap(scale)
       self.pixelMaps += [{'scale': scale, \
         'localizationMap': localizationMap, \
-        'intensityMap': intensityMap,\
-        'decayedMap': None}]
+        'intensityMap': intensityMap}]
 
   #@profile
   def populatePixelMap(self, scale):
@@ -109,69 +108,6 @@ class PixelMapper(object):
     # STEP 3:
     # spike detections
     self.spikeDetection(mapAllCellCount)
-
-  #@profile
-  def getScaleDecayedMap(self, scale):
-    """Given decay factors, combines different scores across scales"""
-    # if in cache, return
-    for pm in self.pixelMaps:
-      if pm['scale'] == scale and pm['decayedMap'] != None:
-        return pm['decayedMap']
-    # else, create map by combining decay factors
-    decayedMap = PixelMap(
-        self.allCellBoundariesDict, self.neighborMap, scale)
-    decayFactors = None
-    for df in self.allDecayFactors:
-      if df['scale'] == scale:
-        decayFactors = df['factors']
-    for decayFactor in decayFactors:
-      dScale = decayFactor['scale']
-      dFactor = decayFactor['factor']
-      # check to see if in cache
-      decayMultipliedPm = None
-      for dmpm in self.decayMultipliedPixelMaps:
-        if dmpm['scale'] == dScale and dmpm['factor'] == dFactor:
-          decayMultipliedPm = dmpm['pixelMap']
-          break
-      # if not in cache, create
-      if decayMultipliedPm == None:
-        decayMultipliedPm = self.getLocalizationMap(dScale).copy()
-        decayMultipliedPm.cellValues *= dFactor
-        # and store in cache
-        for dmpm in self.decayMultipliedPixelMaps:
-          if dmpm['scale'] == dScale and dmpm['factor'] == dFactor:
-            dmpm['pixelMap'] = decayMultipliedPm
-            break
-      # add this decay multiplied pixelMap to final map
-      decayedMap = decayedMap + decayMultipliedPm
-    # save in cache
-    for pm in self.pixelMaps:
-      if pm['scale'] == scale:
-        pm['decayedMap'] = decayedMap
-        break
-    # return
-    return decayedMap
-
-  #@profile
-  def setupScaleDecayedMapCache(self, allDecayFactors):
-    """Set up data structure to hold all intermediate calculation
-    during scale decayed maps"""
-    self.allDecayFactors = allDecayFactors
-    self.decayMultipliedPixelMaps = []
-    for decayFactors in allDecayFactors:
-      for decayFactor in decayFactors['factors']:
-        dScale = decayFactor['scale']
-        dFactor = decayFactor['factor']
-        dfAbsent = True
-        for dmpm in self.decayMultipliedPixelMaps:
-          if dmpm['scale'] == dScale and dmpm['factor'] == dFactor:
-            dfAbsent = False
-            break
-        if dfAbsent:
-          self.decayMultipliedPixelMaps.append(
-              {'scale': dScale,
-               'factor': dFactor,
-               'pixelMap': None})
     # done
 
   def getLocalizationMap(self, scale):

@@ -34,22 +34,9 @@ class SlidingWindow(object):
       self.sw_yStride[float(sw_scale)] = swHash['y_stride'][i]
       i += 1
 
-    # Scale decay factors
-    decayFactorFileName = os.path.join(configHash['config_root_folder'],\
-        swHash['scale_decayed_factors_file'])
-    sdf = json.load(open(decayFactorFileName, 'r'))
-    self.sw_scale_decay_factors = sdf['scaleDecayFactors']
-    self.sw_scale_decay_sigmoid_center = 0.5
-    self.sw_scale_decay_sigmoid_steepness = 10
-    # check that JSON decay has all scale combinations
-    sdfScales = []
-    for sd in self.sw_scale_decay_factors:
-      sdfScales += [sd['scale']]
-      sdScales = []
-      for sdFactor in sd['factors']:
-        sdScales += [sdFactor['scale']]
-      assert sdScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
-    assert sdfScales == self.sw_scales, "JSON scale decay does NOT match with config scales"
+    # score adjust factors
+    self.sw_rescore_sigmoid_center = 0.5
+    self.sw_rescore_sigmoid_steepness = 10
 
     self.staticBBoxes = BoundingBoxes(
         self.sw_frame_width, self.sw_frame_height, self.sw_xStride, 

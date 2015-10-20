@@ -28,9 +28,6 @@ class Frame(object):
         (self.totalPatches, len(self.classIds), len(self.scoreTypes)),
         dtype=np.float)
 
-  def getPatchMapper(self):
-    return self.patchMapper
-
   def addLocalization(self, classId, loc):
     if not self.localizations.get(classId):
       self.localizations[classId] = []
