@@ -11,7 +11,6 @@ BOOST_PYTHON_MODULE(VideoReader)
     ;
     boost::python::class_<VideoFrameReader, boost::noncopyable >( "VideoFrameReader", boost::python::init<uint, uint, char *>() )
 			.add_property("fps", &VideoFrameReader::getFps )
-			.add_property("lengthInMicroSeconds", &VideoFrameReader::getLengthInMicroSeconds)
 			.add_property("totalFrames", &VideoFrameReader::getTotalFrames)
 			.add_property("eof", &VideoFrameReader::eof)
       .def("generateFrames", &VideoFrameReader::startThreads)

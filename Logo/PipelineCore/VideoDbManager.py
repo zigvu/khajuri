@@ -6,6 +6,8 @@ from collections import OrderedDict
 
 from VideoReader import VideoReader
 
+from Logo.PipelineCore.VideoFrameReader import VideoFrameReader
+
 from config.Config import Config
 from config.Utils import Utils
 
@@ -61,8 +63,8 @@ class VideoDbManager(object):
       frame = self.videoFrameReader.getFrameWithFrameNumber(1)
 
     fps = self.videoFrameReader.fps
-    lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
-    self.totalNumOfFrames = int(fps * lengthInMicroSeconds / 1000000.0)
+    videoLengthSeconds = VideoFrameReader.getLengthInSeconds(videoFileName)
+    self.totalNumOfFrames = int(fps * videoLengthSeconds)
 
     # Video name prefix for all frames/patches:
     self.videoId = os.path.basename(videoFileName).split('.')[0]

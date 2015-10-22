@@ -131,7 +131,6 @@ class VideoProcessThread(object):
 
   def run(self):
     """Run the video through caffe"""
-    videoTimeLengthSeconds = 0
     videoFrameReader = None
 
     if self.runCaffe:
@@ -178,10 +177,7 @@ class VideoProcessThread(object):
 
     startTime = time.time()
     if self.runCaffe:
-      # get length of video
       videoFrameReader = VideoFrameReader(self.videoFileName)
-      videoTimeLengthSeconds = videoFrameReader.getLengthInMicroSeconds() * \
-          1.0 / 1000000
       # Calculate frameStep from density and fps
       self.frameStep = int(round(
           (1.0 * videoFrameReader.fps) / self.slidingWindowCfg.sw_frame_density))
@@ -282,10 +278,11 @@ class VideoProcessThread(object):
 
     # print runtime as multiple of video length
     if self.runCaffe:
-      multiFactor = (endTime - startTime) / videoTimeLengthSeconds
+      videoLengthSeconds = VideoFrameReader.getLengthInSeconds(self.videoFileName)
+      multiFactor = (endTime - startTime) / videoLengthSeconds
       self.logger.info(
           'The total runtime was (%0.2f x) of video length (%0.2f seconds)' %
-          (multiFactor, videoTimeLengthSeconds))
+          (multiFactor, videoLengthSeconds))
 
     # join logging queue
     self.logQueue.put(None)

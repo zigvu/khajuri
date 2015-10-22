@@ -1,4 +1,6 @@
+import subprocess
 import time
+import json
 
 from VideoReader import VideoReader
 
@@ -10,6 +12,7 @@ class VideoFrameReader(object):
 
   def __init__(self, videoFileName):
     """Initialization"""
+    self.videoFileName = videoFileName
     # Load video - since no expilicit synchronization exists to check if
     # VideoReader is ready, wait for 10 seconds
     self.videoFrameReader = VideoReader.VideoFrameReader(150, 150, videoFileName)
@@ -23,12 +26,11 @@ class VideoFrameReader(object):
     self.imageDim = Rectangle.rectangle_from_dimensions(
         frame.width, frame.height)
     self.fps = self.videoFrameReader.fps
-    self.lengthInMicroSeconds = self.videoFrameReader.lengthInMicroSeconds
     self.currentFrameNum = 0
 
   def getLengthInMicroSeconds(self):
     """Get length of video"""
-    return self.lengthInMicroSeconds
+    return VideoFrameReader.getLengthInSeconds(self.videoFileName) * 1000000
 
   def getImageDim(self):
     """Get image dim"""
@@ -71,3 +73,24 @@ class VideoFrameReader(object):
       self.videoFrameReader.seekToFrameWithFrameNumber(self.currentFrameNum)
       self.currentFrameNum += 1
     return True
+
+  @staticmethod
+  def getLengthInSeconds(videoFileName):
+    """Run ffprobe and return video length"""
+    ffprobeCmd = "ffprobe -v quiet -print_format json -show_format -show_streams %s" % videoFileName
+
+    length = 0
+    try:
+      ffprobeResult = subprocess.Popen(ffprobeCmd, shell=True, stdout=subprocess.PIPE).stdout.read()
+      ffprobeJSON = json.loads(ffprobeResult)
+
+      # get length
+      start_time = float(ffprobeJSON["format"]["start_time"])
+      duration = float(ffprobeJSON["format"]["duration"])
+      length = duration - start_time # get length in seconds
+
+    except:
+      print "Command: '%s'" % ffprobeCmd
+      print "Could not run ffprobe in video file %s" % videoFileName
+
+    return length
